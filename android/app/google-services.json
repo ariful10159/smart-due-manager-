@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "580307087717",
+    "project_id": "due-manager-10dd1",
+    "storage_bucket": "due-manager-10dd1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:580307087717:android:e2e8e146ae0019ef59318c",
+        "android_client_info": {
+          "package_name": "com.example.smart_due"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDArDzngTdgZH25T7gBkSvCzLe5l6Prr-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
