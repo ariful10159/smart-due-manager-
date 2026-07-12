@@ -4,6 +4,7 @@ class Customer {
   final String id;
   final String name;
   final String phone;
+  final String? address; // ✅ NEW
   final double totalDue;
   final DateTime lastPaymentDate;
   final DateTime createdAt;
@@ -19,6 +20,7 @@ class Customer {
     required this.createdAt,
     this.note,
     this.nextReminderDate,
+    this.address, // ✅ NEW
   });
 
   // ✅ Safe String parser
@@ -62,6 +64,7 @@ class Customer {
       id: _asString(map['id']),
       name: _asString(map['name']),
       phone: _asString(map['phone']),
+      address: map['address']?.toString(), // ✅ NEW
       totalDue: _asDouble(map['totalDue']),
       lastPaymentDate: _asDateTime(map['lastPaymentDate']),
       createdAt: _asDateTime(map['createdAt']),
@@ -77,6 +80,7 @@ class Customer {
       'id': id,
       'name': name,
       'phone': phone,
+      'address': address, // ✅ NEW
       'totalDue': totalDue,
       'lastPaymentDate':
           Timestamp.fromDate(lastPaymentDate),
@@ -89,11 +93,12 @@ class Customer {
     };
   }
 
-  // ✅ CopyWith (very useful for future updates)
+  // ✅ CopyWith (Updated with address)
   Customer copyWith({
     String? id,
     String? name,
     String? phone,
+    String? address,
     double? totalDue,
     DateTime? lastPaymentDate,
     DateTime? createdAt,
@@ -104,6 +109,7 @@ class Customer {
       id: id ?? this.id,
       name: name ?? this.name,
       phone: phone ?? this.phone,
+      address: address ?? this.address,
       totalDue: totalDue ?? this.totalDue,
       lastPaymentDate:
           lastPaymentDate ?? this.lastPaymentDate,
