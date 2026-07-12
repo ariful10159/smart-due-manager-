@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../models/customer.dart';
 import '../models/payment.dart';
@@ -25,68 +28,159 @@ class _CustomerDetailScreenState
     extends State<CustomerDetailScreen> {
   final _customerRepo = CustomerRepository();
 
-  Future<void> _editCustomer(Customer customer) async {
-    final nameController =
-        TextEditingController(text: customer.name);
-    final phoneController =
-        TextEditingController(text: customer.phone);
-    final addressController =
-        TextEditingController(text: customer.address ?? '');
-    final noteController =
-        TextEditingController(text: customer.note ?? '');
+  String _formatDateTime(DateTime date) {
+    return DateFormat('d MMMM yyyy • hh:mm a')
+        .format(date);
+  }
 
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Edit Customer"),
-        content: SingleChildScrollView(
-          child: Column(
+  String _formatDateOnly(DateTime date) {
+    return DateFormat('d MMMM yyyy').format(date);
+  }
+
+  Future<pw.Document> _generatePdf(
+      Customer customer) async {
+    final payments = await _customerRepo
+        .streamPayments(customer.id)
+        .first;
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        build: (context) => [
+          pw.Text(
+            'Customer Payment History',
+            style: pw.TextStyle(
+              fontSize: 22,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 16),
+          pw.Text('Name: ${customer.name}'),
+          pw.Text('Phone: ${customer.phone}'),
+          if (customer.address != null)
+            pw.Text(
+                'Address: ${customer.address}'),
+          pw.Text(
+            'Due Date: ${_formatDateOnly(customer.lastPaymentDate)}',
+          ),
+          pw.Text(
+            'Total Due: ${customer.totalDue.toStringAsFixed(2)}',
+          ),
+          if (customer.nextReminderDate != null)
+            pw.Text(
+              'Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}',
+            ),
+          pw.SizedBox(height: 20),
+          pw.Text(
+            'Payment History',
+            style: pw.TextStyle(
+              fontSize: 18,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          if (payments.isEmpty)
+            pw.Text('No transactions yet')
+          else
+            pw.Table.fromTextArray(
+              headers: const [
+                'Date',
+                'Type',
+                'Amount',
+                'Note',
+              ],
+              data: payments.map((payment) {
+                return [
+                  _formatDateTime(payment.date),
+                  payment.type ==
+                          PaymentType.payment
+                      ? 'Record Payment'
+                      : 'Add Charge',
+                  payment.amount
+                      .toStringAsFixed(2),
+                  payment.note ?? '',
+                ];
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+
+    return pdf;
+  }
+
+  Future<void> _printPdf(
+      Customer customer) async {
+    final pdf = await _generatePdf(customer);
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+    );
+  }
+
+  Future<void> _downloadPdf(
+      Customer customer) async {
+    try {
+      final pdf = await _generatePdf(customer);
+      final bytes = await pdf.save();
+
+      final directory =
+          Directory('/storage/emulated/0/Download');
+
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+
+      final fileName =
+          "${customer.name.replaceAll(" ", "_")}_payment_history.pdf";
+
+      final filePath =
+          "${directory.path}/$fileName";
+
+      final file = File(filePath);
+      await file.writeAsBytes(bytes);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          duration:
+              const Duration(seconds: 4),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: nameController,
-                decoration:
-                    const InputDecoration(labelText: "Name"),
+              const Text(
+                "PDF saved ✅",
+                style: TextStyle(
+                  fontWeight:
+                      FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              TextField(
-                controller: phoneController,
-                decoration:
-                    const InputDecoration(labelText: "Phone"),
-              ),
-              TextField(
-                controller: addressController,
-                decoration:
-                    const InputDecoration(labelText: "Address"),
-              ),
-              TextField(
-                controller: noteController,
-                decoration:
-                    const InputDecoration(labelText: "Note"),
+              Text(
+                "Location: Download/$fileName",
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _customerRepo.updateCustomerInfo(
-                customerId: customer.id,
-                name: nameController.text.trim(),
-                phone: phoneController.text.trim(),
-                address: addressController.text.trim(),
-                note: noteController.text.trim(),
-              );
-              if (!mounted) return;
-              Navigator.pop(context);
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+              "Download failed: $e"),
+        ),
+      );
+    }
   }
 
   Future<void> _addPayment(
@@ -95,10 +189,9 @@ class _CustomerDetailScreenState
     final payment =
         await Navigator.of(context).push<Payment>(
       MaterialPageRoute(
-        builder: (_) =>
-            AddPaymentScreen(
-                customer: currentCustomer,
-                type: type),
+        builder: (_) => AddPaymentScreen(
+            customer: currentCustomer,
+            type: type),
       ),
     );
 
@@ -125,11 +218,12 @@ class _CustomerDetailScreenState
     );
   }
 
-  Future<void> _setReminder(Customer customer) async {
+  Future<void> _setReminder(
+      Customer customer) async {
     final selectedDate = await showDatePicker(
       context: context,
-      initialDate:
-          DateTime.now().add(const Duration(days: 7)),
+      initialDate: DateTime.now()
+          .add(const Duration(days: 7)),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
@@ -150,15 +244,6 @@ class _CustomerDetailScreenState
       selectedTime.hour,
       selectedTime.minute,
     );
-
-    if (scheduledDateTime.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Select future time"),
-        ),
-      );
-      return;
-    }
 
     await _customerRepo.updateReminderDate(
       customerId: customer.id,
@@ -181,14 +266,83 @@ class _CustomerDetailScreenState
     );
   }
 
-  String _formatDateTime(DateTime date) {
-    return DateFormat('d MMMM yyyy • hh:mm a')
-        .format(date);
-  }
+  Future<void> _editCustomer(
+      Customer customer) async {
+    final nameController =
+        TextEditingController(text: customer.name);
+    final phoneController =
+        TextEditingController(
+            text: customer.phone);
+    final addressController =
+        TextEditingController(
+            text: customer.address ?? '');
+    final noteController =
+        TextEditingController(
+            text: customer.note ?? '');
 
-  String _formatDateOnly(DateTime date) {
-    return DateFormat('d MMMM yyyy')
-        .format(date);
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Edit Customer"),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: nameController,
+                decoration:
+                    const InputDecoration(
+                        labelText: "Name"),
+              ),
+              TextField(
+                controller: phoneController,
+                decoration:
+                    const InputDecoration(
+                        labelText: "Phone"),
+              ),
+              TextField(
+                controller: addressController,
+                decoration:
+                    const InputDecoration(
+                        labelText: "Address"),
+              ),
+              TextField(
+                controller: noteController,
+                decoration:
+                    const InputDecoration(
+                        labelText: "Note"),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await _customerRepo
+                  .updateCustomerInfo(
+                customerId: customer.id,
+                name: nameController.text
+                    .trim(),
+                phone:
+                    phoneController.text.trim(),
+                address: addressController
+                    .text
+                    .trim(),
+                note: noteController.text
+                    .trim(),
+              );
+              if (!mounted) return;
+              Navigator.pop(context);
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -207,7 +361,8 @@ class _CustomerDetailScreenState
       ),
       body: StreamBuilder<Customer>(
         stream: _customerRepo
-            .streamCustomerById(widget.customer.id),
+            .streamCustomerById(
+                widget.customer.id),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(
@@ -224,62 +379,44 @@ class _CustomerDetailScreenState
               crossAxisAlignment:
                   CrossAxisAlignment.start,
               children: [
-
-                Text(
-                  customer.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
+                Text(customer.name,
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight.bold)),
                 const SizedBox(height: 4),
-
                 Text(customer.phone,
                     style: const TextStyle(
                         color: Colors.grey)),
-
-                if (customer.address != null) ...[
-                  const SizedBox(height: 4),
+                if (customer.address != null)
                   Text(customer.address!,
                       style: const TextStyle(
                           color: Colors.grey)),
-                ],
-
                 const SizedBox(height: 6),
-
-                // ✅ THIS IS THE DATE FROM ADD CUSTOMER SCREEN
                 Text(
                   "Due date: ${_formatDateOnly(customer.lastPaymentDate)}",
                   style: const TextStyle(
                       color: Colors.grey),
                 ),
-
                 const SizedBox(height: 10),
-
                 Text(
                   "Total Due: ${customer.totalDue.toStringAsFixed(2)}",
                   style: TextStyle(
                     fontWeight:
                         FontWeight.bold,
-                    color: customer.totalDue >
-                            0
+                    color: customer.totalDue > 0
                         ? Colors.red
                         : Colors.green,
                   ),
                 ),
-
-                if (customer.nextReminderDate != null) ...[
-                  const SizedBox(height: 6),
+                if (customer.nextReminderDate !=
+                    null)
                   Text(
                     "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
                     style: const TextStyle(
                         color: Colors.orange),
                   ),
-                ],
-
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Expanded(
@@ -287,7 +424,8 @@ class _CustomerDetailScreenState
                         onPressed: () =>
                             _addPayment(
                                 customer,
-                                PaymentType.payment),
+                                PaymentType
+                                    .payment),
                         child: const Text(
                             "Record Payment"),
                       ),
@@ -298,72 +436,89 @@ class _CustomerDetailScreenState
                         onPressed: () =>
                             _addPayment(
                                 customer,
-                                PaymentType.dueAdded),
+                                PaymentType
+                                    .dueAdded),
                         child: const Text(
                             "Add Charge"),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         _setReminder(customer),
-                    icon:
-                        const Icon(Icons.alarm),
+                    icon: const Icon(
+                        Icons.alarm),
                     label: const Text(
                         "Set Reminder"),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                const Text(
-                  "Payment History",
-                  style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold),
+                Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween,
+                  children: [
+                    const Text(
+                      "Payment History",
+                      style: TextStyle(
+                          fontWeight:
+                              FontWeight.bold),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                              Icons.print),
+                          onPressed: () =>
+                              _printPdf(customer),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                              Icons.download),
+                          onPressed: () =>
+                              _downloadPdf(
+                                  customer),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-
                 const SizedBox(height: 10),
-
                 Expanded(
-                  child:
-                      StreamBuilder<
-                          List<Payment>>(
+                  child: StreamBuilder<
+                      List<Payment>>(
                     stream: _customerRepo
-                        .streamPayments(customer.id),
+                        .streamPayments(
+                            customer.id),
                     builder: (context,
                         paymentSnapshot) {
-                      if (!paymentSnapshot.hasData) {
+                      if (!paymentSnapshot
+                          .hasData) {
                         return const Center(
                             child:
                                 CircularProgressIndicator());
                       }
-
                       final payments =
                           paymentSnapshot.data!;
-
                       if (payments.isEmpty) {
                         return const Center(
                           child: Text(
                               "No transactions yet"),
                         );
                       }
-
                       return ListView.separated(
-                        itemCount: payments.length,
+                        itemCount:
+                            payments.length,
                         separatorBuilder:
                             (_, __) =>
                                 const SizedBox(
                                     height: 8),
                         itemBuilder:
-                            (context,
-                                index) {
+                            (context, index) {
                           return PaymentHistoryTile(
                               payment:
                                   payments[index]);
