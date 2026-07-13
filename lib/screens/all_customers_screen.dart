@@ -273,7 +273,7 @@ class _AllCustomersScreenState
                                 children: [
                                   Text(customer.phone),
                                   Text(
-                                    "Baki From: ${_formatDate(customer.lastPaymentDate)}",
+                                    "Due date: ${_formatDate(customer.lastPaymentDate)}",
                                     style: const TextStyle(
                                         fontSize: 12,
                                         color:

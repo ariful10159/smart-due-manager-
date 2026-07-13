@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/customer.dart';
 import '../models/payment.dart';
@@ -59,8 +60,7 @@ class _CustomerDetailScreenState
           pw.Text('Name: ${customer.name}'),
           pw.Text('Phone: ${customer.phone}'),
           if (customer.address != null)
-            pw.Text(
-                'Address: ${customer.address}'),
+            pw.Text('Address: ${customer.address}'),
           pw.Text(
             'Due Date: ${_formatDateOnly(customer.lastPaymentDate)}',
           ),
@@ -93,12 +93,10 @@ class _CustomerDetailScreenState
               data: payments.map((payment) {
                 return [
                   _formatDateTime(payment.date),
-                  payment.type ==
-                          PaymentType.payment
+                  payment.type == PaymentType.payment
                       ? 'Record Payment'
                       : 'Add Charge',
-                  payment.amount
-                      .toStringAsFixed(2),
+                  payment.amount.toStringAsFixed(2),
                   payment.note ?? '',
                 ];
               }).toList(),
@@ -110,16 +108,14 @@ class _CustomerDetailScreenState
     return pdf;
   }
 
-  Future<void> _printPdf(
-      Customer customer) async {
+  Future<void> _printPdf(Customer customer) async {
     final pdf = await _generatePdf(customer);
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
     );
   }
 
-  Future<void> _downloadPdf(
-      Customer customer) async {
+  Future<void> _downloadPdf(Customer customer) async {
     try {
       final pdf = await _generatePdf(customer);
       final bytes = await pdf.save();
@@ -134,41 +130,22 @@ class _CustomerDetailScreenState
       final fileName =
           "${customer.name.replaceAll(" ", "_")}_payment_history.pdf";
 
-      final filePath =
-          "${directory.path}/$fileName";
-
+      final filePath = "${directory.path}/$fileName";
       final file = File(filePath);
       await file.writeAsBytes(bytes);
 
       if (!mounted) return;
 
+      // ✅ Auto Open using Share Sheet
+      await Share.shareXFiles(
+        [XFile(filePath)],
+        text: "${customer.name} - Payment History",
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.green,
-          duration:
-              const Duration(seconds: 4),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "PDF saved ✅",
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                "Location: Download/$fileName",
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+          content: Text("PDF saved and opened ✅"),
         ),
       );
     } catch (e) {
@@ -176,8 +153,7 @@ class _CustomerDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text(
-              "Download failed: $e"),
+          content: Text("Download failed: $e"),
         ),
       );
     }
@@ -190,8 +166,7 @@ class _CustomerDetailScreenState
         await Navigator.of(context).push<Payment>(
       MaterialPageRoute(
         builder: (_) => AddPaymentScreen(
-            customer: currentCustomer,
-            type: type),
+            customer: currentCustomer, type: type),
       ),
     );
 
@@ -218,12 +193,11 @@ class _CustomerDetailScreenState
     );
   }
 
-  Future<void> _setReminder(
-      Customer customer) async {
+  Future<void> _setReminder(Customer customer) async {
     final selectedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now()
-          .add(const Duration(days: 7)),
+      initialDate:
+          DateTime.now().add(const Duration(days: 7)),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
@@ -266,19 +240,15 @@ class _CustomerDetailScreenState
     );
   }
 
-  Future<void> _editCustomer(
-      Customer customer) async {
+  Future<void> _editCustomer(Customer customer) async {
     final nameController =
         TextEditingController(text: customer.name);
     final phoneController =
-        TextEditingController(
-            text: customer.phone);
+        TextEditingController(text: customer.phone);
     final addressController =
-        TextEditingController(
-            text: customer.address ?? '');
+        TextEditingController(text: customer.address ?? '');
     final noteController =
-        TextEditingController(
-            text: customer.note ?? '');
+        TextEditingController(text: customer.note ?? '');
 
     await showDialog(
       context: context,
@@ -290,50 +260,39 @@ class _CustomerDetailScreenState
               TextField(
                 controller: nameController,
                 decoration:
-                    const InputDecoration(
-                        labelText: "Name"),
+                    const InputDecoration(labelText: "Name"),
               ),
               TextField(
                 controller: phoneController,
                 decoration:
-                    const InputDecoration(
-                        labelText: "Phone"),
+                    const InputDecoration(labelText: "Phone"),
               ),
               TextField(
                 controller: addressController,
                 decoration:
-                    const InputDecoration(
-                        labelText: "Address"),
+                    const InputDecoration(labelText: "Address"),
               ),
               TextField(
                 controller: noteController,
                 decoration:
-                    const InputDecoration(
-                        labelText: "Note"),
+                    const InputDecoration(labelText: "Note"),
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () =>
-                Navigator.pop(context),
+            onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
           ElevatedButton(
             onPressed: () async {
-              await _customerRepo
-                  .updateCustomerInfo(
+              await _customerRepo.updateCustomerInfo(
                 customerId: customer.id,
-                name: nameController.text
-                    .trim(),
-                phone:
-                    phoneController.text.trim(),
-                address: addressController
-                    .text
-                    .trim(),
-                note: noteController.text
-                    .trim(),
+                name: nameController.text.trim(),
+                phone: phoneController.text.trim(),
+                address: addressController.text.trim(),
+                note: noteController.text.trim(),
               );
               if (!mounted) return;
               Navigator.pop(context);
@@ -361,20 +320,17 @@ class _CustomerDetailScreenState
       ),
       body: StreamBuilder<Customer>(
         stream: _customerRepo
-            .streamCustomerById(
-                widget.customer.id),
+            .streamCustomerById(widget.customer.id),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(
-                child:
-                    CircularProgressIndicator());
+                child: CircularProgressIndicator());
           }
 
           final customer = snapshot.data!;
 
           return Padding(
-            padding:
-                const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
@@ -382,8 +338,7 @@ class _CustomerDetailScreenState
                 Text(customer.name,
                     style: const TextStyle(
                         fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold)),
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(customer.phone,
                     style: const TextStyle(
@@ -402,15 +357,13 @@ class _CustomerDetailScreenState
                 Text(
                   "Total Due: ${customer.totalDue.toStringAsFixed(2)}",
                   style: TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                     color: customer.totalDue > 0
                         ? Colors.red
                         : Colors.green,
                   ),
                 ),
-                if (customer.nextReminderDate !=
-                    null)
+                if (customer.nextReminderDate != null)
                   Text(
                     "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
                     style: const TextStyle(
@@ -424,8 +377,7 @@ class _CustomerDetailScreenState
                         onPressed: () =>
                             _addPayment(
                                 customer,
-                                PaymentType
-                                    .payment),
+                                PaymentType.payment),
                         child: const Text(
                             "Record Payment"),
                       ),
@@ -436,8 +388,7 @@ class _CustomerDetailScreenState
                         onPressed: () =>
                             _addPayment(
                                 customer,
-                                PaymentType
-                                    .dueAdded),
+                                PaymentType.dueAdded),
                         child: const Text(
                             "Add Charge"),
                       ),
@@ -450,38 +401,31 @@ class _CustomerDetailScreenState
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         _setReminder(customer),
-                    icon: const Icon(
-                        Icons.alarm),
-                    label: const Text(
-                        "Set Reminder"),
+                    icon: const Icon(Icons.alarm),
+                    label: const Text("Set Reminder"),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween,
+                      MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       "Payment History",
                       style: TextStyle(
-                          fontWeight:
-                              FontWeight.bold),
+                          fontWeight: FontWeight.bold),
                     ),
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(
-                              Icons.print),
+                          icon: const Icon(Icons.print),
                           onPressed: () =>
                               _printPdf(customer),
                         ),
                         IconButton(
-                          icon: const Icon(
-                              Icons.download),
+                          icon: const Icon(Icons.download),
                           onPressed: () =>
-                              _downloadPdf(
-                                  customer),
+                              _downloadPdf(customer),
                         ),
                       ],
                     ),
@@ -489,39 +433,33 @@ class _CustomerDetailScreenState
                 ),
                 const SizedBox(height: 10),
                 Expanded(
-                  child: StreamBuilder<
-                      List<Payment>>(
+                  child: StreamBuilder<List<Payment>>(
                     stream: _customerRepo
-                        .streamPayments(
-                            customer.id),
-                    builder: (context,
-                        paymentSnapshot) {
-                      if (!paymentSnapshot
-                          .hasData) {
+                        .streamPayments(customer.id),
+                    builder: (context, paymentSnapshot) {
+                      if (!paymentSnapshot.hasData) {
                         return const Center(
                             child:
                                 CircularProgressIndicator());
                       }
+
                       final payments =
                           paymentSnapshot.data!;
+
                       if (payments.isEmpty) {
                         return const Center(
                           child: Text(
                               "No transactions yet"),
                         );
                       }
+
                       return ListView.separated(
-                        itemCount:
-                            payments.length,
-                        separatorBuilder:
-                            (_, __) =>
-                                const SizedBox(
-                                    height: 8),
-                        itemBuilder:
-                            (context, index) {
+                        itemCount: payments.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
                           return PaymentHistoryTile(
-                              payment:
-                                  payments[index]);
+                              payment: payments[index]);
                         },
                       );
                     },
