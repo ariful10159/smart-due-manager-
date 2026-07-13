@@ -4,12 +4,13 @@ class Customer {
   final String id;
   final String name;
   final String phone;
-  final String? address; // ✅ NEW
+  final String? address;
   final double totalDue;
   final DateTime lastPaymentDate;
   final DateTime createdAt;
   final String? note;
   final DateTime? nextReminderDate;
+  final bool isHidden; // ✅ NEW — soft delete flag
 
   const Customer({
     required this.id,
@@ -20,7 +21,8 @@ class Customer {
     required this.createdAt,
     this.note,
     this.nextReminderDate,
-    this.address, // ✅ NEW
+    this.address,
+    this.isHidden = false, // ✅ NEW — default false (visible)
   });
 
   // ✅ Safe String parser
@@ -33,6 +35,13 @@ class Customer {
   static double _asDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  // ✅ Safe Bool parser
+  static bool _asBool(dynamic value, {bool fallback = false}) {
+    if (value is bool) return value;
+    if (value == null) return fallback;
+    return value.toString().toLowerCase() == 'true';
   }
 
   // ✅ Safe DateTime parser (non-nullable)
@@ -64,13 +73,13 @@ class Customer {
       id: _asString(map['id']),
       name: _asString(map['name']),
       phone: _asString(map['phone']),
-      address: map['address']?.toString(), // ✅ NEW
+      address: map['address']?.toString(),
       totalDue: _asDouble(map['totalDue']),
       lastPaymentDate: _asDateTime(map['lastPaymentDate']),
       createdAt: _asDateTime(map['createdAt']),
       note: map['note']?.toString(),
-      nextReminderDate:
-          _asNullableDateTime(map['nextReminderDate']),
+      nextReminderDate: _asNullableDateTime(map['nextReminderDate']),
+      isHidden: _asBool(map['isHidden']), // ✅ NEW
     );
   }
 
@@ -80,20 +89,19 @@ class Customer {
       'id': id,
       'name': name,
       'phone': phone,
-      'address': address, // ✅ NEW
+      'address': address,
       'totalDue': totalDue,
-      'lastPaymentDate':
-          Timestamp.fromDate(lastPaymentDate),
-      'createdAt':
-          Timestamp.fromDate(createdAt),
+      'lastPaymentDate': Timestamp.fromDate(lastPaymentDate),
+      'createdAt': Timestamp.fromDate(createdAt),
       'note': note,
       'nextReminderDate': nextReminderDate != null
           ? Timestamp.fromDate(nextReminderDate!)
           : null,
+      'isHidden': isHidden, // ✅ NEW
     };
   }
 
-  // ✅ CopyWith (Updated with address)
+  // ✅ CopyWith (Updated with isHidden)
   Customer copyWith({
     String? id,
     String? name,
@@ -104,6 +112,7 @@ class Customer {
     DateTime? createdAt,
     String? note,
     DateTime? nextReminderDate,
+    bool? isHidden,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -111,12 +120,11 @@ class Customer {
       phone: phone ?? this.phone,
       address: address ?? this.address,
       totalDue: totalDue ?? this.totalDue,
-      lastPaymentDate:
-          lastPaymentDate ?? this.lastPaymentDate,
+      lastPaymentDate: lastPaymentDate ?? this.lastPaymentDate,
       createdAt: createdAt ?? this.createdAt,
       note: note ?? this.note,
-      nextReminderDate:
-          nextReminderDate ?? this.nextReminderDate,
+      nextReminderDate: nextReminderDate ?? this.nextReminderDate,
+      isHidden: isHidden ?? this.isHidden,
     );
   }
 }

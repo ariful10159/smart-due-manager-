@@ -21,12 +21,23 @@ class CustomerRepository {
     return _col.doc(customerId).collection('payments');
   }
 
-  // ✅ Stream all customers
+  // ✅ Stream all VISIBLE customers only (hidden বাদ দিয়ে)
   Stream<List<Customer>> streamCustomers() {
     return _col.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return Customer.fromMap({...doc.data(), 'id': doc.id});
-      }).toList();
+      return snapshot.docs
+          .map((doc) => Customer.fromMap({...doc.data(), 'id': doc.id}))
+          .where((customer) => !customer.isHidden) // ✅ hidden filter out
+          .toList();
+    });
+  }
+
+  // ✅ Stream all HIDDEN/Archived customers only
+  Stream<List<Customer>> streamHiddenCustomers() {
+    return _col.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Customer.fromMap({...doc.data(), 'id': doc.id}))
+          .where((customer) => customer.isHidden) // ✅ শুধু hidden গুলো
+          .toList();
     });
   }
 
@@ -151,8 +162,29 @@ class CustomerRepository {
     });
   }
 
-  // ✅ Delete customer (BONUS)
-  Future<void> deleteCustomer(String customerId) async {
+  // ✅ Hide customer (SOFT DELETE — ডেটা থেকে যাবে, শুধু main list এ দেখাবে না)
+  Future<void> hideCustomer(String customerId) async {
+    await _col.doc(customerId).update({'isHidden': true});
+  }
+
+  // ✅ Restore customer (Hidden থেকে আবার Visible করা)
+  Future<void> restoreCustomer(String customerId) async {
+    await _col.doc(customerId).update({'isHidden': false});
+  }
+
+  // ✅ Permanently delete customer (with all subcollections)
+  // ⚠️ এটা ব্যবহার করলে ডেটা সম্পূর্ণ মুছে যাবে, ফেরত পাওয়া যাবে না
+  Future<void> deleteCustomerPermanently(String customerId) async {
+    final paymentsSnapshot = await _paymentsCol(customerId).get();
+    for (final doc in paymentsSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    final remindersSnapshot = await _reminderCol(customerId).get();
+    for (final doc in remindersSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
     await _col.doc(customerId).delete();
   }
 }

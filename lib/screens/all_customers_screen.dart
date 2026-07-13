@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import 'add_customer_screen.dart';
+import 'archived_customers_screen.dart';
 import 'customer_detail_screen.dart';
 import 'home_screen.dart';
 import 'reminder_screen.dart';
@@ -13,12 +14,10 @@ class AllCustomersScreen extends StatefulWidget {
   const AllCustomersScreen({super.key});
 
   @override
-  State<AllCustomersScreen> createState() =>
-      _AllCustomersScreenState();
+  State<AllCustomersScreen> createState() => _AllCustomersScreenState();
 }
 
-class _AllCustomersScreenState
-    extends State<AllCustomersScreen> {
+class _AllCustomersScreenState extends State<AllCustomersScreen> {
   final _repo = CustomerRepository();
 
   int _selectedIndex = 2;
@@ -68,13 +67,11 @@ class _AllCustomersScreenState
     return customers.where((customer) {
       final date = customer.lastPaymentDate;
 
-      if (_selectedYear != null &&
-          date.year != _selectedYear) {
+      if (_selectedYear != null && date.year != _selectedYear) {
         return false;
       }
 
-      if (_selectedMonth != null &&
-          date.month != _selectedMonth) {
+      if (_selectedMonth != null && date.month != _selectedMonth) {
         return false;
       }
 
@@ -102,45 +99,52 @@ class _AllCustomersScreenState
       appBar: AppBar(
         title: const Text("All Customers"),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.archive),
+            tooltip: "Archived Customers",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ArchivedCustomersScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<List<Customer>>(
         stream: _repo.streamCustomers(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-                child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
-          final filteredCustomers =
-              _applyFilters(snapshot.data!);
+          final filteredCustomers = _applyFilters(snapshot.data!);
 
           return Column(
             children: [
-
               // ✅ FILTER DROPDOWNS
               Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
-
                     // ✅ Year
                     Expanded(
                       child: DropdownButtonFormField<int>(
                         value: _selectedYear,
                         hint: const Text("Year"),
-                        items: List.generate(
-                          6,
-                          (index) {
-                            final year =
-                                currentYear - index;
-                            return DropdownMenuItem(
-                              value: year,
-                              child:
-                                  Text(year.toString()),
-                            );
-                          },
-                        ),
+                        items: List.generate(6, (index) {
+                          final year = currentYear - index;
+                          return DropdownMenuItem(
+                            value: year,
+                            child: Text(year.toString()),
+                          );
+                        }),
                         onChanged: (value) {
                           setState(() {
                             _selectedYear = value;
@@ -156,19 +160,14 @@ class _AllCustomersScreenState
                       child: DropdownButtonFormField<int>(
                         value: _selectedMonth,
                         hint: const Text("Month"),
-                        items: List.generate(
-                          12,
-                          (index) {
-                            return DropdownMenuItem(
-                              value: index + 1,
-                              child: Text(
-                                DateFormat.MMM().format(
-                                  DateTime(0, index + 1),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        items: List.generate(12, (index) {
+                          return DropdownMenuItem(
+                            value: index + 1,
+                            child: Text(
+                              DateFormat.MMM().format(DateTime(0, index + 1)),
+                            ),
+                          );
+                        }),
                         onChanged: (value) {
                           setState(() {
                             _selectedMonth = value;
@@ -181,8 +180,7 @@ class _AllCustomersScreenState
 
                     // ✅ Reminder Filter
                     Expanded(
-                      child:
-                          DropdownButtonFormField<String>(
+                      child: DropdownButtonFormField<String>(
                         value: _reminderFilter,
                         hint: const Text("Reminder"),
                         items: const [
@@ -197,8 +195,7 @@ class _AllCustomersScreenState
                         ],
                         onChanged: (value) {
                           setState(() {
-                            _reminderFilter =
-                                value;
+                            _reminderFilter = value;
                           });
                         },
                       ),
@@ -212,31 +209,18 @@ class _AllCustomersScreenState
               // ✅ CUSTOMER LIST
               Expanded(
                 child: filteredCustomers.isEmpty
-                    ? const Center(
-                        child: Text(
-                            "No customers found"),
-                      )
+                    ? const Center(child: Text("No customers found"))
                     : ListView.separated(
-                        padding:
-                            const EdgeInsets.all(16),
-                        itemCount:
-                            filteredCustomers.length,
-                        separatorBuilder:
-                            (_, __) =>
-                                const SizedBox(
-                                    height: 8),
-                        itemBuilder:
-                            (context, index) {
-                          final customer =
-                              filteredCustomers[
-                                  index];
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredCustomers.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final customer = filteredCustomers[index];
 
                           return Card(
                             child: ListTile(
-                              leading:
-                                  const CircleAvatar(
-                                child: Icon(
-                                    Icons.person),
+                              leading: const CircleAvatar(
+                                child: Icon(Icons.person),
                               ),
 
                               // ✅ NAME + REMINDER ICON
@@ -245,87 +229,63 @@ class _AllCustomersScreenState
                                   Expanded(
                                     child: Text(
                                       customer.name,
-                                      style:
-                                          const TextStyle(
-                                        fontWeight:
-                                            FontWeight
-                                                .bold,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
-                                  if (customer
-                                          .nextReminderDate !=
-                                      null)
+                                  if (customer.nextReminderDate != null)
                                     const Icon(
-                                      Icons
-                                          .notifications_active,
-                                      color:
-                                          Colors.orange,
+                                      Icons.notifications_active,
+                                      color: Colors.orange,
                                       size: 20,
                                     ),
                                 ],
                               ),
 
                               subtitle: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment
-                                        .start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(customer.phone),
                                   Text(
                                     "Due date: ${_formatDate(customer.lastPaymentDate)}",
                                     style: const TextStyle(
-                                        fontSize: 12,
-                                        color:
-                                            Colors.grey),
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                 ],
                               ),
 
                               trailing: Row(
-                                mainAxisSize:
-                                    MainAxisSize.min,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    customer.totalDue
-                                        .toStringAsFixed(
-                                            2),
+                                    customer.totalDue.toStringAsFixed(2),
                                     style: TextStyle(
-                                      color: customer
-                                                  .totalDue >
-                                              0
+                                      color: customer.totalDue > 0
                                           ? Colors.red
                                           : Colors.green,
-                                      fontWeight:
-                                          FontWeight
-                                              .bold,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(
-                                      width: 8),
+                                  const SizedBox(width: 8),
                                   IconButton(
                                     icon: const Icon(
                                       Icons.call,
-                                      color:
-                                          Colors.green,
+                                      color: Colors.green,
                                     ),
                                     onPressed: () =>
-                                        _callCustomer(
-                                            customer
-                                                .phone),
+                                        _callCustomer(customer.phone),
                                   ),
                                 ],
                               ),
 
                               onTap: () {
-                                Navigator.of(
-                                        context)
-                                    .push(
+                                Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        CustomerDetailScreen(
-                                      customer:
-                                          customer,
+                                    builder: (_) => CustomerDetailScreen(
+                                      customer: customer,
                                     ),
                                   ),
                                 );
@@ -342,35 +302,26 @@ class _AllCustomersScreenState
 
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected:
-            _onDestinationSelected,
+        onDestinationSelected: _onDestinationSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon:
-                Icon(Icons.home),
+            selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons
-                .person_add_alt_1_outlined),
-            selectedIcon:
-                Icon(Icons
-                    .person_add_alt_1),
+            icon: Icon(Icons.person_add_alt_1_outlined),
+            selectedIcon: Icon(Icons.person_add_alt_1),
             label: 'Add Customer',
           ),
           NavigationDestination(
             icon: Icon(Icons.people_outline),
-            selectedIcon:
-                Icon(Icons.people),
+            selectedIcon: Icon(Icons.people),
             label: 'All Customers',
           ),
           NavigationDestination(
-            icon: Icon(Icons
-                .notifications_outlined),
-            selectedIcon:
-                Icon(Icons
-                    .notifications),
+            icon: Icon(Icons.notifications_outlined),
+            selectedIcon: Icon(Icons.notifications),
             label: 'Reminders',
           ),
         ],

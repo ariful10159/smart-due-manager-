@@ -202,6 +202,59 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     ).showSnackBar(const SnackBar(content: Text("Reminder Updated ✅")));
   }
 
+  // ignore: unused_element
+  Future<void> _confirmDeleteCustomer(Customer customer) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Hide Customer"),
+        content: Text(
+          "আপনি কি নিশ্চিত '${customer.name}' কে হাইড করতে চান? "
+          "এটি main list থেকে সরে যাবে, কিন্তু সব তথ্য ও payment history "
+          "সংরক্ষিত থাকবে। প্রয়োজনে পরে Archived section থেকে আবার "
+          "ফিরিয়ে আনা যাবে।",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Hide", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _hideCustomer(customer);
+    }
+  }
+
+  Future<void> _hideCustomer(Customer customer) async {
+    try {
+      await _customerRepo.hideCustomer(customer.id);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          content: Text("${customer.name} hidden successfully"),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text("Hide failed: $e")),
+      );
+    }
+  }
+
+  // ignore: unused_element
   Future<void> _editCustomer(Customer customer) async {
     final nameController = TextEditingController(text: customer.name);
     final phoneController = TextEditingController(text: customer.phone);
@@ -268,8 +321,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _editCustomer(widget.customer),
+            icon: const Icon(Icons.visibility_off, color: Colors.orange),
+            onPressed: () => _confirmDeleteCustomer(widget.customer),
           ),
         ],
       ),
