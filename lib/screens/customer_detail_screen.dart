@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -109,7 +111,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
       if (!mounted) return;
 
-      // ✅ Auto Open using Share Sheet
       await Share.shareXFiles([
         XFile(filePath),
       ], text: "${customer.name} - Payment History");
@@ -202,7 +203,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     ).showSnackBar(const SnackBar(content: Text("Reminder Updated ✅")));
   }
 
-  // ignore: unused_element
   Future<void> _confirmDeleteCustomer(Customer customer) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -254,7 +254,26 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     }
   }
 
-  // ignore: unused_element
+  // ✅ ছবিকে Base64 string এ কনভার্ট করা হচ্ছে (Firestore এ সেভ করার জন্য, Storage লাগবে না)
+  Future<String?> _encodeImageToBase64(File imageFile) async {
+    final bytes = await imageFile.readAsBytes();
+
+    // Firestore এর 1MB document limit এর মধ্যে রাখার জন্য সাইজ চেক
+    if (bytes.length > 700 * 1024) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'ছবিটা বেশি বড়, দয়া করে আরেকটু ছোট/হালকা ছবি বেছে নিন',
+          ),
+        ),
+      );
+      return null;
+    }
+
+    return base64Encode(bytes);
+  }
+
   Future<void> _editCustomer(Customer customer) async {
     final nameController = TextEditingController(text: customer.name);
     final phoneController = TextEditingController(text: customer.phone);
@@ -262,54 +281,177 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       text: customer.address ?? '',
     );
     final noteController = TextEditingController(text: customer.note ?? '');
+    final dueAmountController = TextEditingController(
+      text: customer.totalDue.toStringAsFixed(2),
+    );
+    final dateController = TextEditingController(
+      text:
+          "${customer.lastPaymentDate.day}-${customer.lastPaymentDate.month}-${customer.lastPaymentDate.year}",
+    );
+
+    File? newSelectedImage; // এই dialog এর মধ্যে নতুন ছবি বেছে নিলে এখানে থাকবে
+    bool isSavingEdit = false;
 
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Edit Customer"),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Name"),
-              ),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(labelText: "Phone"),
-              ),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(labelText: "Address"),
-              ),
-              TextField(
-                controller: noteController,
-                decoration: const InputDecoration(labelText: "Note"),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _customerRepo.updateCustomerInfo(
-                customerId: customer.id,
-                name: nameController.text.trim(),
-                phone: phoneController.text.trim(),
-                address: addressController.text.trim(),
-                note: noteController.text.trim(),
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Future<void> pickEditImage() async {
+              final picker = ImagePicker();
+              final image = await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 70,
+                maxWidth: 400,
+                maxHeight: 400,
               );
-              if (!mounted) return;
-              Navigator.pop(context);
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
+              if (image != null) {
+                setDialogState(() {
+                  newSelectedImage = File(image.path);
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: const Text("Edit Customer"),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // ✅ Photo picker — এখন Base64 (MemoryImage) থেকে দেখানো হচ্ছে
+                    GestureDetector(
+                      onTap: pickEditImage,
+                      child: CircleAvatar(
+                        radius: 40,
+                        backgroundImage: newSelectedImage != null
+                            ? FileImage(newSelectedImage!)
+                            : (customer.photoUrl != null
+                                  ? MemoryImage(
+                                          base64Decode(customer.photoUrl!),
+                                        )
+                                        as ImageProvider
+                                  : null),
+                        child:
+                            newSelectedImage == null &&
+                                customer.photoUrl == null
+                            ? const Icon(Icons.add_a_photo, size: 30)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: "Name"),
+                    ),
+                    TextField(
+                      controller: phoneController,
+                      decoration: const InputDecoration(labelText: "Phone"),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    TextField(
+                      controller: addressController,
+                      decoration: const InputDecoration(labelText: "Address"),
+                    ),
+                    TextField(
+                      controller: dueAmountController,
+                      decoration: const InputDecoration(
+                        labelText: "Due Amount",
+                      ),
+                      readOnly: true,
+                      keyboardType: TextInputType.number,
+                    ),
+                    TextField(
+                      controller: dateController,
+                      readOnly: true,
+                      enabled: false,
+                      decoration: const InputDecoration(labelText: 'Date'),
+                    ),
+                    TextField(
+                      controller: noteController,
+                      decoration: const InputDecoration(labelText: "Note"),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSavingEdit
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: isSavingEdit
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isSavingEdit = true;
+                          });
+
+                          // ✅ ছবি বদলানো হলে Base64 এ কনভার্ট
+                          String? photoBase64;
+                          if (newSelectedImage != null) {
+                            photoBase64 = await _encodeImageToBase64(
+                              newSelectedImage!,
+                            );
+                          }
+
+                          // ✅ Due amount parse
+                          final totalDue = double.tryParse(
+                            dueAmountController.text.trim(),
+                          );
+
+                          // ✅ Date parse
+                          DateTime? lastPaymentDate;
+                          final dateText = dateController.text.trim();
+                          if (dateText.isNotEmpty) {
+                            final parts = dateText.split('-');
+                            if (parts.length == 3) {
+                              final day = int.tryParse(parts[0]);
+                              final month = int.tryParse(parts[1]);
+                              final year = int.tryParse(parts[2]);
+                              if (day != null &&
+                                  month != null &&
+                                  year != null) {
+                                lastPaymentDate = DateTime(year, month, day);
+                              }
+                            }
+                          }
+
+                          await _customerRepo.updateCustomerInfo(
+                            customerId: customer.id,
+                            name: nameController.text.trim(),
+                            phone: phoneController.text.trim(),
+                            address: addressController.text.trim(),
+                            note: noteController.text.trim(),
+                            totalDue: totalDue,
+                            lastPaymentDate: lastPaymentDate,
+                            photoUrl: photoBase64,
+                          );
+
+                          if (!mounted) return;
+                          Navigator.pop(dialogContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: Colors.green,
+                              content: Text("Customer details updated ✅"),
+                            ),
+                          );
+                        },
+                  child: isSavingEdit
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Save"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -320,6 +462,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         title: Text(widget.customer.name),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => _editCustomer(widget.customer),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_active, color: Colors.blue),
+            onPressed: () => NotificationService.showTestNotification(),
+          ),
           IconButton(
             icon: const Icon(Icons.visibility_off, color: Colors.orange),
             onPressed: () => _confirmDeleteCustomer(widget.customer),
@@ -340,22 +490,42 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  customer.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                // ✅ Profile photo দেখানো হচ্ছে (Base64 → MemoryImage)
+                Center(
+                  child: CircleAvatar(
+                    radius: 45,
+                    backgroundImage: customer.photoUrl != null
+                        ? MemoryImage(base64Decode(customer.photoUrl!))
+                              as ImageProvider
+                        : null,
+                    child: customer.photoUrl == null
+                        ? const Icon(Icons.person, size: 40)
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    customer.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  customer.phone,
-                  style: const TextStyle(color: Colors.grey),
+                Center(
+                  child: Text(
+                    customer.phone,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                 ),
                 if (customer.address != null)
-                  Text(
-                    customer.address!,
-                    style: const TextStyle(color: Colors.grey),
+                  Center(
+                    child: Text(
+                      customer.address!,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
                   ),
                 const SizedBox(height: 6),
                 Text(

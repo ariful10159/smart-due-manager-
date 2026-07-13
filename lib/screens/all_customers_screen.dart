@@ -24,7 +24,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
 
   int? _selectedYear;
   int? _selectedMonth;
-  String? _reminderFilter; // ✅ NULL SAFE
+  String? _reminderFilter;
 
   Future<void> _callCustomer(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
@@ -63,6 +63,39 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     return DateFormat('d MMM yyyy').format(date);
   }
 
+  // ✅ Customer লিস্ট থেকে যেসব বছর সত্যিই আছে, শুধু সেগুলো বের করা হচ্ছে
+  List<int> _availableYears(List<Customer> customers) {
+    final years = customers.map((c) => c.lastPaymentDate.year).toSet().toList();
+    years.sort((a, b) => b.compareTo(a)); // নতুন বছর আগে
+    return years;
+  }
+
+  // ✅ যেসব মাসে সত্যিই customer আছে (যদি বছর সিলেক্ট করা থাকে, সেই বছরের মধ্যে)
+  List<int> _availableMonths(List<Customer> customers) {
+    final relevant = _selectedYear != null
+        ? customers.where((c) => c.lastPaymentDate.year == _selectedYear)
+        : customers;
+
+    final months = relevant.map((c) => c.lastPaymentDate.month).toSet().toList();
+    months.sort();
+    return months;
+  }
+
+  // ✅ Reminder filter option — শুধু তখনই দেখাবে যদি সেই ধরনের customer থাকে
+  List<String> _availableReminderOptions(List<Customer> customers) {
+    final options = <String>[];
+
+    final hasReminderSet =
+        customers.any((c) => c.nextReminderDate != null);
+    final hasNoReminder =
+        customers.any((c) => c.nextReminderDate == null);
+
+    if (hasReminderSet) options.add("Reminder Set");
+    if (hasNoReminder) options.add("No Reminder");
+
+    return options;
+  }
+
   List<Customer> _applyFilters(List<Customer> customers) {
     return customers.where((customer) {
       final date = customer.lastPaymentDate;
@@ -91,10 +124,19 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     }).toList();
   }
 
+  bool get _hasActiveFilters =>
+      _selectedYear != null || _selectedMonth != null || _reminderFilter != null;
+
+  void _clearAllFilters() {
+    setState(() {
+      _selectedYear = null;
+      _selectedMonth = null;
+      _reminderFilter = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentYear = DateTime.now().year;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("All Customers"),
@@ -121,7 +163,34 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final filteredCustomers = _applyFilters(snapshot.data!);
+          final allCustomers = snapshot.data!;
+          final filteredCustomers = _applyFilters(allCustomers);
+
+          final availableYears = _availableYears(allCustomers);
+          final availableMonths = _availableMonths(allCustomers);
+          final availableReminderOptions =
+              _availableReminderOptions(allCustomers);
+
+          // ✅ যদি সিলেক্ট করা year/month/reminder এখন আর available list এ না থাকে
+          // (যেমন সব customer delete হয়ে গেছে), তাহলে filter নিজে থেকেই রিসেট হবে
+          if (_selectedYear != null &&
+              !availableYears.contains(_selectedYear)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _selectedYear = null);
+            });
+          }
+          if (_selectedMonth != null &&
+              !availableMonths.contains(_selectedMonth)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _selectedMonth = null);
+            });
+          }
+          if (_reminderFilter != null &&
+              !availableReminderOptions.contains(_reminderFilter)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _reminderFilter = null);
+            });
+          }
 
           return Column(
             children: [
@@ -131,75 +200,134 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                   horizontal: 12,
                   vertical: 8,
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    // ✅ Year
-                    Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: _selectedYear,
-                        hint: const Text("Year"),
-                        items: List.generate(6, (index) {
-                          final year = currentYear - index;
-                          return DropdownMenuItem(
-                            value: year,
-                            child: Text(year.toString()),
-                          );
-                        }),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedYear = value;
-                          });
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // ✅ Month
-                    Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: _selectedMonth,
-                        hint: const Text("Month"),
-                        items: List.generate(12, (index) {
-                          return DropdownMenuItem(
-                            value: index + 1,
-                            child: Text(
-                              DateFormat.MMM().format(DateTime(0, index + 1)),
+                    Row(
+                      children: [
+                        // ✅ Year
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: availableYears.contains(_selectedYear)
+                                ? _selectedYear
+                                : null,
+                            hint: const Text("Year"),
+                            decoration: InputDecoration(
+                              suffixIcon: _selectedYear != null
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () {
+                                        setState(() => _selectedYear = null);
+                                      },
+                                    )
+                                  : null,
                             ),
-                          );
-                        }),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedMonth = value;
-                          });
-                        },
-                      ),
+                            items: availableYears.map((year) {
+                              return DropdownMenuItem(
+                                value: year,
+                                child: Text(year.toString()),
+                              );
+                            }).toList(),
+                            onChanged: availableYears.isEmpty
+                                ? null
+                                : (value) {
+                                    setState(() {
+                                      _selectedYear = value;
+                                      // ✅ বছর বদলালে মাস reset করা হচ্ছে,
+                                      // কারণ নতুন বছরে আগের মাসের ডেটা নাও থাকতে পারে
+                                      _selectedMonth = null;
+                                    });
+                                  },
+                          ),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        // ✅ Month
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: availableMonths.contains(_selectedMonth)
+                                ? _selectedMonth
+                                : null,
+                            hint: const Text("Month"),
+                            decoration: InputDecoration(
+                              suffixIcon: _selectedMonth != null
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () {
+                                        setState(() => _selectedMonth = null);
+                                      },
+                                    )
+                                  : null,
+                            ),
+                            items: availableMonths.map((month) {
+                              return DropdownMenuItem(
+                                value: month,
+                                child: Text(
+                                  DateFormat.MMM().format(DateTime(0, month)),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: availableMonths.isEmpty
+                                ? null
+                                : (value) {
+                                    setState(() {
+                                      _selectedMonth = value;
+                                    });
+                                  },
+                          ),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        // ✅ Reminder Filter
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: availableReminderOptions
+                                    .contains(_reminderFilter)
+                                ? _reminderFilter
+                                : null,
+                            hint: const Text("Reminder"),
+                            decoration: InputDecoration(
+                              suffixIcon: _reminderFilter != null
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () {
+                                        setState(() => _reminderFilter = null);
+                                      },
+                                    )
+                                  : null,
+                            ),
+                            items: availableReminderOptions.map((option) {
+                              return DropdownMenuItem(
+                                value: option,
+                                child: Text(
+                                  option,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: availableReminderOptions.isEmpty
+                                ? null
+                                : (value) {
+                                    setState(() {
+                                      _reminderFilter = value;
+                                    });
+                                  },
+                          ),
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(width: 8),
-
-                    // ✅ Reminder Filter
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _reminderFilter,
-                        hint: const Text("Reminder"),
-                        items: const [
-                          DropdownMenuItem(
-                            value: "Reminder Set",
-                            child: Text("Reminder"),
-                          ),
-                          DropdownMenuItem(
-                            value: "No Reminder",
-                            child: Text("No Reminder"),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _reminderFilter = value;
-                          });
-                        },
+                    // ✅ Clear All Filters বাটন — শুধু কোনো filter active থাকলে দেখাবে
+                    if (_hasActiveFilters)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _clearAllFilters,
+                          icon: const Icon(Icons.filter_alt_off, size: 18),
+                          label: const Text("Clear All Filters"),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -223,7 +351,6 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                 child: Icon(Icons.person),
                               ),
 
-                              // ✅ NAME + REMINDER ICON
                               title: Row(
                                 children: [
                                   Expanded(

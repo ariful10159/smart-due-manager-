@@ -64,13 +64,30 @@ class CustomerRepository {
     required String phone,
     String? address,
     String? note,
+    double? totalDue,
+    DateTime? lastPaymentDate,
+    String? photoUrl,
   }) async {
-    await _col.doc(customerId).update({
+    final data = <String, dynamic>{
       'name': name,
       'phone': phone,
       'address': address,
       'note': note,
-    });
+    };
+
+    if (totalDue != null) {
+      data['totalDue'] = totalDue;
+    }
+
+    if (lastPaymentDate != null) {
+      data['lastPaymentDate'] = Timestamp.fromDate(lastPaymentDate);
+    }
+
+    if (photoUrl != null) {
+      data['photoUrl'] = photoUrl;
+    }
+
+    await _col.doc(customerId).update(data);
   }
 
   // ✅ Update due

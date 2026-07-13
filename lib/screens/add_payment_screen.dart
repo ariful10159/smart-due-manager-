@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -22,125 +24,123 @@ class AddPaymentScreen extends StatefulWidget {
 class _AddPaymentScreenState extends State<AddPaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  final _noteController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _dateController = TextEditingController();
 
-  // ✅ Payment Method
-  PaymentMethod? _selectedPaymentMethod;
-
-  // ✅ Image
+  PaymentMethod? _selectedMethod;
+  DateTime _selectedDate = DateTime.now();
   File? _selectedImage;
-  final ImagePicker _picker = ImagePicker();
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _dateController.text =
+        "${_selectedDate.day}-${_selectedDate.month}-${_selectedDate.year}";
+  }
 
   @override
   void dispose() {
     _amountController.dispose();
-    _noteController.dispose();
     _descriptionController.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 
-  // ✅ Image Picker Bottom Sheet
-  Future<void> _pickImage() async {
-    showModalBottomSheet(
+  Future<void> _selectDate() async {
+    final pickedDate = await showDatePicker(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Select Image Source',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.camera_alt),
-              ),
-              title: const Text('Camera'),
-              onTap: () async {
-                Navigator.pop(context);
-                final XFile? image = await _picker.pickImage(
-                  source: ImageSource.camera,
-                  imageQuality: 70,
-                );
-                if (image != null) {
-                  setState(() {
-                    _selectedImage = File(image.path);
-                  });
-                }
-              },
-            ),
-            ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.photo_library),
-              ),
-              title: const Text('Gallery'),
-              onTap: () async {
-                Navigator.pop(context);
-                final XFile? image = await _picker.pickImage(
-                  source: ImageSource.gallery,
-                  imageQuality: 70,
-                );
-                if (image != null) {
-                  setState(() {
-                    _selectedImage = File(image.path);
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
+
+    if (pickedDate != null) {
+      setState(() {
+        _selectedDate = pickedDate;
+        _dateController.text =
+            "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
+      });
+    }
   }
 
-  // ✅ Remove Image
-  void _removeImage() {
-    setState(() {
-      _selectedImage = null;
-    });
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+      maxWidth: 800,
+      maxHeight: 800,
+    );
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
   }
 
-  // ✅ Save Payment
-  void _savePayment() {
+  // ✅ ছবিকে Base64 string এ কনভার্ট করা হচ্ছে (Firestore এ সেভ করার জন্য)
+  Future<String?> _encodeImageToBase64() async {
+    if (_selectedImage == null) return null;
+
+    final bytes = await _selectedImage!.readAsBytes();
+
+    if (bytes.length > 700 * 1024) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'ছবিটা বেশি বড়, দয়া করে আরেকটু ছোট/হালকা ছবি বেছে নিন',
+          ),
+        ),
+      );
+      return null;
+    }
+
+    return base64Encode(bytes);
+  }
+
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final payment = Payment(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      customerId: widget.customer.id,
-      amount: double.parse(_amountController.text.trim()),
-      type: widget.type,
-      paymentMethod: _selectedPaymentMethod,
-      note: _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      receiptImageUrl: null,
-      receiptImageFile: _selectedImage,
-      date: DateTime.now(),
-    );
+    final amount = double.tryParse(_amountController.text.trim());
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      return;
+    }
 
-    Navigator.of(context).pop(payment);
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final receiptBase64 = await _encodeImageToBase64();
+
+      final payment = Payment(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        customerId: widget.customer.id,
+        amount: amount,
+        type: widget.type,
+        paymentMethod: _selectedMethod,
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        receiptImageUrl: receiptBase64,
+        date: _selectedDate,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context, payment);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
@@ -151,234 +151,158 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
             children: [
+              Text(
+                widget.customer.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
 
-              // ✅ Amount Field
+              // ✅ Amount
               TextFormField(
                 controller: _amountController,
+                keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Amount *',
-                  prefixIcon: Icon(Icons.attach_money),
+                  labelText: 'Amount',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Amount is required';
-                  }
-                  if (double.tryParse(value.trim()) == null) {
-                    return 'Enter a valid number';
+                  final amount = double.tryParse((value ?? '').trim());
+                  if (amount == null || amount <= 0) {
+                    return 'Enter a valid amount';
                   }
                   return null;
                 },
               ),
-
               const SizedBox(height: 16),
 
-              // ✅ Payment Method Dropdown
-              DropdownButtonFormField<PaymentMethod>(
-                value: _selectedPaymentMethod,
-                decoration: const InputDecoration(
-                  labelText: 'Payment Method (Optional)',
-                  prefixIcon: Icon(Icons.payment),
-                  border: OutlineInputBorder(),
-                ),
-                items: PaymentMethod.values.map((method) {
-                  return DropdownMenuItem<PaymentMethod>(
-                    value: method,
-                    child: Row(
-                      children: [
-                        Icon(_getPaymentMethodIcon(method)),
-                        const SizedBox(width: 8),
-                        Text(Payment.paymentMethodToString(method)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPaymentMethod = value;
-                  });
-                },
-                hint: const Text('Select Payment Method'),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ✅ Note Field
+              // ✅ Date
               TextFormField(
-                controller: _noteController,
+                controller: _dateController,
+                readOnly: true,
                 decoration: const InputDecoration(
-                  labelText: 'Note (Optional)',
-                  prefixIcon: Icon(Icons.note),
+                  labelText: 'Date',
                   border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.calendar_today),
                 ),
+                onTap: _selectDate,
               ),
-
               const SizedBox(height: 16),
 
-              // ✅ Description Field
+              // ✅ Payment Method
+              DropdownButtonFormField<PaymentMethod?>(
+                value: _selectedMethod,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Method',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text('Select method (optional)'),
+                  ),
+                  DropdownMenuItem(
+                    value: PaymentMethod.bKash,
+                    child: Text('bKash'),
+                  ),
+                  DropdownMenuItem(
+                    value: PaymentMethod.nagad,
+                    child: Text('Nagad'),
+                  ),
+                  DropdownMenuItem(
+                    value: PaymentMethod.handCash,
+                    child: Text('Hand Cash'),
+                  ),
+                  DropdownMenuItem(
+                    value: PaymentMethod.bank,
+                    child: Text('Bank'),
+                  ),
+                ],
+                onChanged: _isSaving
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _selectedMethod = value;
+                        });
+                      },
+              ),
+              const SizedBox(height: 16),
+
+              // ✅ Description (আগের "note" এর জায়গায়)
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description (Optional)',
-                  prefixIcon: Icon(Icons.description),
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
                 maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
               ),
-
               const SizedBox(height: 16),
 
-              // ✅ Image Picker Section
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.receipt_long, color: Colors.grey),
-                        SizedBox(width: 8),
-                        Text(
-                          'Receipt Image (Optional)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
+              // ✅ Receipt Photo (Optional)
+              const Text(
+                'Payment Receipt (Optional)',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _selectedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            _selectedImage!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                        )
+                      : const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_a_photo, size: 32),
+                              SizedBox(height: 6),
+                              Text('Tap to add receipt photo'),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ✅ Image Preview or Add Button
-                    if (_selectedImage == null)
-                      OutlinedButton.icon(
-                        onPressed: _pickImage,
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Add Receipt Image'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          minimumSize: const Size(double.infinity, 0),
-                        ),
-                      )
-                    else
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              _selectedImage!,
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          // ✅ Remove Button
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: _removeImage,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // ✅ Change Button
-                          Positioned(
-                            bottom: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                      size: 14,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Change',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
                 ),
               ),
 
               const SizedBox(height: 24),
-
-              // ✅ Save Button
-              ElevatedButton(
-                onPressed: _savePayment,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _save,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save'),
                 ),
               ),
-
-              const SizedBox(height: 16),
             ],
           ),
         ),
       ),
     );
-  }
-
-  // ✅ Payment Method Icon
-  IconData _getPaymentMethodIcon(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.bKash:
-        return Icons.phone_android;
-      case PaymentMethod.nagad:
-        return Icons.phone_android;
-      case PaymentMethod.handCash:
-        return Icons.money;
-      case PaymentMethod.bank:
-        return Icons.account_balance;
-    }
   }
 }

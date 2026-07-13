@@ -10,7 +10,8 @@ class Customer {
   final DateTime createdAt;
   final String? note;
   final DateTime? nextReminderDate;
-  final bool isHidden; // ✅ NEW — soft delete flag
+  final bool isHidden;
+  final String? photoUrl; // ✅ NEW — customer profile photo URL
 
   const Customer({
     required this.id,
@@ -22,29 +23,26 @@ class Customer {
     this.note,
     this.nextReminderDate,
     this.address,
-    this.isHidden = false, // ✅ NEW — default false (visible)
+    this.isHidden = false,
+    this.photoUrl, // ✅ NEW
   });
 
-  // ✅ Safe String parser
   static String _asString(dynamic value, {String fallback = ''}) {
     if (value == null) return fallback;
     return value.toString();
   }
 
-  // ✅ Safe Double parser
   static double _asDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0.0;
   }
 
-  // ✅ Safe Bool parser
   static bool _asBool(dynamic value, {bool fallback = false}) {
     if (value is bool) return value;
     if (value == null) return fallback;
     return value.toString().toLowerCase() == 'true';
   }
 
-  // ✅ Safe DateTime parser (non-nullable)
   static DateTime _asDateTime(dynamic value, {DateTime? fallback}) {
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
@@ -56,7 +54,6 @@ class Customer {
         DateTime.now();
   }
 
-  // ✅ Safe DateTime parser (nullable)
   static DateTime? _asNullableDateTime(dynamic value) {
     if (value == null) return null;
     if (value is Timestamp) return value.toDate();
@@ -67,7 +64,6 @@ class Customer {
     return DateTime.tryParse(value.toString());
   }
 
-  // ✅ From Firestore Map
   factory Customer.fromMap(Map<String, dynamic> map) {
     return Customer(
       id: _asString(map['id']),
@@ -79,11 +75,11 @@ class Customer {
       createdAt: _asDateTime(map['createdAt']),
       note: map['note']?.toString(),
       nextReminderDate: _asNullableDateTime(map['nextReminderDate']),
-      isHidden: _asBool(map['isHidden']), // ✅ NEW
+      isHidden: _asBool(map['isHidden']),
+      photoUrl: map['photoUrl']?.toString(), // ✅ NEW
     );
   }
 
-  // ✅ To Firestore Map
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -97,11 +93,11 @@ class Customer {
       'nextReminderDate': nextReminderDate != null
           ? Timestamp.fromDate(nextReminderDate!)
           : null,
-      'isHidden': isHidden, // ✅ NEW
+      'isHidden': isHidden,
+      'photoUrl': photoUrl, // ✅ NEW
     };
   }
 
-  // ✅ CopyWith (Updated with isHidden)
   Customer copyWith({
     String? id,
     String? name,
@@ -113,6 +109,7 @@ class Customer {
     String? note,
     DateTime? nextReminderDate,
     bool? isHidden,
+    String? photoUrl,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -125,6 +122,7 @@ class Customer {
       note: note ?? this.note,
       nextReminderDate: nextReminderDate ?? this.nextReminderDate,
       isHidden: isHidden ?? this.isHidden,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 }
