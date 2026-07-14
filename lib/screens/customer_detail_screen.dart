@@ -35,6 +35,15 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return DateFormat('d MMMM yyyy').format(date);
   }
 
+  // ✅ Manual ও Reminder-based SMS দুই জায়গাতেই এই একই dynamic message ব্যবহার হবে
+  String _buildDueMessage(Customer customer) {
+    return "প্রিয় ${customer.name}, "
+        "আপনার বর্তমান বকেয়া: ${customer.totalDue.toStringAsFixed(2)} টাকা। "
+        "দয়া করে দ্রুত পরিশোধ করুন। ধন্যবাদ।\n"
+        "ভাই ভাই ট্রেডার্স\n"
+        "দেবপুর বাজার, বুড়িচং,কুমিল্লা";
+  }
+
   Future<pw.Document> _generatePdf(Customer customer) async {
     final payments = await _customerRepo.streamPayments(customer.id).first;
 
@@ -197,10 +206,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     );
 
     // ✅ নির্দিষ্ট সময়ে customer এর নাম্বারে SMS auto-send schedule করা
-    final smsMessage =
-        "প্রিয় ${customer.name}, আপনার বকেয়া পরিশোধের তারিখ। "
-        "বর্তমান বকেয়া: ${customer.totalDue.toStringAsFixed(2)} টাকা। "
-        "দয়া করে দ্রুত পরিশোধ করুন। ধন্যবাদ।";
+    final smsMessage = _buildDueMessage(customer);
 
     await NotificationService.scheduleSms(
       taskId: 'sms_${customer.id}',
@@ -526,6 +532,21 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         title: Text(widget.customer.name),
         centerTitle: true,
         actions: [
+          // ✅ Edit বাটনের ঠিক বাম পাশে Manual SMS বাটনটি যুক্ত করা হলো
+          IconButton(
+            icon: const Icon(Icons.sms),
+            onPressed: () async {
+              await NotificationService.sendSmsNow(
+                phoneNumber: widget.customer.phone,
+                message: _buildDueMessage(widget.customer),
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('SMS send attempted')),
+                );
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () => _editCustomer(widget.customer),

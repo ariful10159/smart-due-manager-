@@ -29,6 +29,10 @@ class NotificationService {
 
     // ✅ SMS permission — app চালু হওয়ার সময় একবার নেওয়া হচ্ছে
     await Permission.sms.request();
+
+    // ✅ Multipart SMS (বাংলা/Unicode বা লম্বা মেসেজ) পাঠাতে SIM/subscription
+    // info দরকার হয় (getGroupIdLevel1 ইত্যাদি) — এটা ছাড়া sendSms fail করে
+    await Permission.phone.request();
   }
 
   // ✅ Reminder notification schedule করা
@@ -62,9 +66,9 @@ class NotificationService {
     required String phoneNumber,
     required String message,
   }) async {
-    final permissionGranted = await Permission.sms.isGranted;
+    final smsGranted = await Permission.sms.isGranted;
 
-    if (!permissionGranted) {
+    if (!smsGranted) {
       final result = await Permission.sms.request();
       if (!result.isGranted) {
         debugPrint('❌ SMS PERMISSION DENIED');
@@ -72,15 +76,35 @@ class NotificationService {
       }
     }
 
+    // ✅ isMultipart: true হলে প্লাগইন SIM/subscription info পড়ে (getGroupIdLevel1
+    // ইত্যাদি) — READ_PHONE_STATE ছাড়া সেটা fail করে এবং sendSms পুরোটাই থ্রো করে
+    final phoneGranted = await Permission.phone.isGranted;
+    if (!phoneGranted) {
+      final result = await Permission.phone.request();
+      if (!result.isGranted) {
+        debugPrint('❌ PHONE (READ_PHONE_STATE) PERMISSION DENIED');
+        return;
+      }
+    }
+
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-]'), '');
 
-    await _telephony.sendSms(
-      to: cleanPhone,
-      message: message,
-      statusListener: (status) {
-        debugPrint('📊 SMS STATUS ($cleanPhone): $status');
-      },
-    );
+    try {
+      await _telephony.sendSms(
+        to: cleanPhone,
+        message: message,
+        // ✅ বাংলা/Unicode টেক্সট বা ১৬০ char এর বেশি length হলে multipart না দিলে
+        // silently fail করে (কোনো status callback ই আসে না)
+        isMultipart: true,
+        statusListener: (status) {
+          debugPrint('📊 SMS STATUS ($cleanPhone): $status');
+        },
+      );
+    } catch (e) {
+      // ✅ platform exception (যেমন failed_to_fetch_sms) এলে যাতে পুরো অ্যাপ
+      // crash না করে, সেটা এখানে ধরে ফেলা হচ্ছে
+      debugPrint('❌ SMS SEND FAILED ($cleanPhone): $e');
+    }
   }
 
   // ✅ নির্দিষ্ট সময়ে SMS পাঠানোর জন্য background task schedule করা
@@ -123,5 +147,3 @@ class NotificationService {
     debugPrint('🗑️ SMS TASK CANCELLED: $taskId');
   }
 }
-
-

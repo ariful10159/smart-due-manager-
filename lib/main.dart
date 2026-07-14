@@ -1,3 +1,4 @@
+import 'dart:async'; // ✅ Completer এবং timeout এর জন্য এটি প্রয়োজন
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,22 +34,54 @@ void callbackDispatcher() {
             debugPrint('⚠️ WakeLock enable failed (non-critical): $e');
           }
 
+          // ✅ Radio কে network এ re-sync হওয়ার সময় দেওয়া হচ্ছে
+          // (Doze থেকে wake হওয়ার পর radio সাথে সাথে ready থাকে না)
+          debugPrint('⏳ Waiting 5 seconds for radio to warm up...');
+          await Future.delayed(const Duration(seconds: 5));
+
           final telephony = Telephony.instance;
+          bool sendSucceeded = false;
+          int attempts = 0;
 
-          await telephony.sendSms(
-            to: phone,
-            message: message,
-            statusListener: (status) {
-              debugPrint('📊 [BACKGROUND] SMS STATUS ($phone): $status');
-            },
-          );
+          // ✅ Maximum 3 বার পর্যন্ত Retry মেকানিজম
+          while (!sendSucceeded && attempts < 3) {
+            attempts++;
+            final completer = Completer<bool>();
+            
+            debugPrint('🚀 Sending SMS, Attempt: $attempts');
 
-          debugPrint(
-            '✅ sendSms() call completed for $phone (see status above)',
-          );
+            await telephony.sendSms(
+              to: phone,
+              message: message,
+              statusListener: (status) {
+                debugPrint('📊 [BACKGROUND] SMS STATUS attempt=$attempts ($phone): $status');
+                // Status delivery successful বা sent হলে completer complete করা হচ্ছে
+                if (!completer.isCompleted) {
+                  completer.complete(true);
+                }
+              },
+            );
 
-          // ✅ Delivery status callback আসার জন্য যথেষ্ট সময় দেওয়া হচ্ছে
-          await Future.delayed(const Duration(seconds: 15));
+            // ✅ status callback এর জন্য প্রতিটি attempt এ ২০ সেকেন্ড wait করা হচ্ছে
+            sendSucceeded = await completer.future.timeout(
+              const Duration(seconds: 20),
+              onTimeout: () {
+                debugPrint('⏳ Attempt $attempts timed out.');
+                return false;
+              },
+            );
+
+            // যদি fail/timeout হয় এবং ৩ বার চেষ্টা শেষ না হয়, তবে ৩ সেকেন্ড পর আবার চেষ্টা করবে
+            if (!sendSucceeded && attempts < 3) {
+              debugPrint('⚠️ Attempt $attempts failed/timed out, retrying in 3s...');
+              await Future.delayed(const Duration(seconds: 3));
+            }
+          }
+
+          debugPrint(sendSucceeded
+              ? '✅ SMS confirmed sent after $attempts attempt(s)'
+              : '❌ SMS failed after $attempts attempts');
+
         } catch (e, stackTrace) {
           debugPrint('❌ SMS SEND FAILED: $e');
           debugPrint('❌ STACK TRACE: $stackTrace');
