@@ -196,11 +196,79 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       scheduledDate: scheduledDateTime,
     );
 
+    // ✅ নির্দিষ্ট সময়ে customer এর নাম্বারে SMS auto-send schedule করা
+    final smsMessage =
+        "প্রিয় ${customer.name}, আপনার বকেয়া পরিশোধের তারিখ। "
+        "বর্তমান বকেয়া: ${customer.totalDue.toStringAsFixed(2)} টাকা। "
+        "দয়া করে দ্রুত পরিশোধ করুন। ধন্যবাদ।";
+
+    await NotificationService.scheduleSms(
+      taskId: 'sms_${customer.id}',
+      phoneNumber: customer.phone,
+      message: smsMessage,
+      scheduledDate: scheduledDateTime,
+    );
+
     if (!mounted) return;
 
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text("Reminder Updated ✅")));
+  }
+
+  Future<void> _confirmClearReminder(Customer customer) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Cancel Reminder"),
+        content: Text(
+          "'${customer.name}' এর জন্য সেট করা reminder টা বাতিল করতে চান?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "Remove Reminder",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _clearReminder(customer);
+    }
+  }
+
+  Future<void> _clearReminder(Customer customer) async {
+    try {
+      await _customerRepo.clearReminder(customer.id);
+
+      // ✅ Reminder বাতিল করলে schedule করা SMS ও বাতিল হবে
+      await NotificationService.cancelScheduledSms('sms_${customer.id}');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text("Reminder removed ✅"),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Failed to remove reminder: $e"),
+        ),
+      );
+    }
   }
 
   Future<void> _confirmDeleteCustomer(Customer customer) async {
@@ -289,7 +357,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           "${customer.lastPaymentDate.day}-${customer.lastPaymentDate.month}-${customer.lastPaymentDate.year}",
     );
 
-    File? newSelectedImage; // এই dialog এর মধ্যে নতুন ছবি বেছে নিলে এখানে থাকবে
+    File? newSelectedImage;
     bool isSavingEdit = false;
 
     await showDialog(
@@ -318,7 +386,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               content: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // ✅ Photo picker — এখন Base64 (MemoryImage) থেকে দেখানো হচ্ছে
                     GestureDetector(
                       onTap: pickEditImage,
                       child: CircleAvatar(
@@ -389,7 +456,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             isSavingEdit = true;
                           });
 
-                          // ✅ ছবি বদলানো হলে Base64 এ কনভার্ট
                           String? photoBase64;
                           if (newSelectedImage != null) {
                             photoBase64 = await _encodeImageToBase64(
@@ -397,12 +463,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             );
                           }
 
-                          // ✅ Due amount parse
                           final totalDue = double.tryParse(
                             dueAmountController.text.trim(),
                           );
 
-                          // ✅ Date parse
                           DateTime? lastPaymentDate;
                           final dateText = dateController.text.trim();
                           if (dateText.isNotEmpty) {
@@ -467,10 +531,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             onPressed: () => _editCustomer(widget.customer),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_active, color: Colors.blue),
-            onPressed: () => NotificationService.showTestNotification(),
-          ),
-          IconButton(
             icon: const Icon(Icons.visibility_off, color: Colors.orange),
             onPressed: () => _confirmDeleteCustomer(widget.customer),
           ),
@@ -490,7 +550,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Profile photo দেখানো হচ্ছে (Base64 → MemoryImage)
                 Center(
                   child: CircleAvatar(
                     radius: 45,
@@ -541,9 +600,24 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   ),
                 ),
                 if (customer.nextReminderDate != null)
-                  Text(
-                    "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
-                    style: const TextStyle(color: Colors.orange),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
+                          style: const TextStyle(color: Colors.orange),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.cancel,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                        tooltip: "Remove Reminder",
+                        onPressed: () => _confirmClearReminder(customer),
+                      ),
+                    ],
                   ),
                 const SizedBox(height: 16),
                 Row(

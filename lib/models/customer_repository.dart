@@ -21,6 +21,14 @@ class CustomerRepository {
     return _col.doc(customerId).collection('payments');
   }
 
+  // ✅ সব customer এর payment একসাথে (Report এর জন্য) — one-time fetch
+  Future<List<Payment>> fetchAllPaymentsOnce() async {
+    final snapshot = await _firestore.collectionGroup('payments').get();
+    return snapshot.docs.map((doc) {
+      return Payment.fromMap({...doc.data(), 'id': doc.id});
+    }).toList();
+  }
+
   // ✅ Stream all VISIBLE customers only (hidden বাদ দিয়ে)
   Stream<List<Customer>> streamCustomers() {
     return _col.snapshots().map((snapshot) {

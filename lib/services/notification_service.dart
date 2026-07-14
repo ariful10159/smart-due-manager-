@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:another_telephony/telephony.dart';
+import 'package:another_telephony/telephony.dart' hide NetworkType;
 import 'package:timezone/data/latest.dart' as tzData;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:workmanager/workmanager.dart';
 
 class NotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
@@ -25,11 +27,11 @@ class NotificationService {
     // ✅ Exact alarm permission (Android 12+) — এটা ছাড়া scheduled notification silently fail করে
     await Permission.scheduleExactAlarm.request();
 
-    // ✅ SMS permission
+    // ✅ SMS permission — app চালু হওয়ার সময় একবার নেওয়া হচ্ছে
     await Permission.sms.request();
   }
 
-  // ✅ Reminder notification schedule করা (আগের মতোই, শুধু deprecated parameter ঠিক করা হলো)
+  // ✅ Reminder notification schedule করা
   static Future<void> scheduleReminder({
     required int id,
     required String title,
@@ -55,30 +57,7 @@ class NotificationService {
     );
   }
 
-  // ✅ শুধু টেস্ট করার জন্য — তৎক্ষণাৎ notification পাঠাবে
-  static Future<void> showTestNotification() async {
-    await _notifications.show(
-      999,
-      'Test Notification',
-      'যদি এটা দেখতে পান, notification system কাজ করছে',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'reminder_channel',
-          'Reminders',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-      ),
-    );
-  }
-
-  // ✅ NEW — নির্দিষ্ট সময়ে SMS auto-send schedule করা
-  //
-  // ⚠️ গুরুত্বপূর্ণ সীমাবদ্ধতা: flutter_local_notifications নিজে SMS পাঠাতে পারে না,
-  // এটা শুধু notification দেখাতে পারে। তাই SMS পাঠানোর সময়টা নির্ভুলভাবে ধরতে হলে
-  // notification ট্রিগার হওয়ার মুহূর্তে backend logic (SMS পাঠানো) কল করতে হবে।
-  // এজন্য নিচে "notification payload" এ SMS তথ্য পাঠানো হচ্ছে, এবং app চালু/background
-  // অবস্থায় সেটা catch করে SMS পাঠানো হবে (main.dart এ setup করতে হবে)।
+  // ✅ তৎক্ষণাৎ SMS পাঠানো (foreground থেকে)
   static Future<void> sendSmsNow({
     required String phoneNumber,
     required String message,
@@ -87,9 +66,62 @@ class NotificationService {
 
     if (!permissionGranted) {
       final result = await Permission.sms.request();
-      if (!result.isGranted) return;
+      if (!result.isGranted) {
+        debugPrint('❌ SMS PERMISSION DENIED');
+        return;
+      }
     }
 
-    await _telephony.sendSms(to: phoneNumber, message: message);
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-]'), '');
+
+    await _telephony.sendSms(
+      to: cleanPhone,
+      message: message,
+      statusListener: (status) {
+        debugPrint('📊 SMS STATUS ($cleanPhone): $status');
+      },
+    );
+  }
+
+  // ✅ নির্দিষ্ট সময়ে SMS পাঠানোর জন্য background task schedule করা
+  static Future<void> scheduleSms({
+    required String taskId,
+    required String phoneNumber,
+    required String message,
+    required DateTime scheduledDate,
+  }) async {
+    final delay = scheduledDate.difference(DateTime.now());
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-]'), '');
+
+    debugPrint(
+      '📱 [REMINDER FLOW] SMS SCHEDULE: taskId=$taskId, phone=$cleanPhone, '
+      'scheduledDate=$scheduledDate, delay=$delay',
+    );
+
+    if (delay.isNegative) {
+      debugPrint('❌ [REMINDER FLOW] SKIPPED: delay is negative');
+      return;
+    }
+
+    await Workmanager().registerOneOffTask(
+      taskId,
+      'sendReminderSms',
+      initialDelay: delay,
+      inputData: {
+        'phone': cleanPhone,
+        'message': message,
+      },
+      existingWorkPolicy: ExistingWorkPolicy.replace,
+    );
+
+    debugPrint('✅ [REMINDER FLOW] TASK REGISTERED: $taskId');
+  }
+
+  // ✅ আগে schedule করা SMS task বাতিল করা (reminder cancel/edit করলে)
+  static Future<void> cancelScheduledSms(String taskId) async {
+    await Workmanager().cancelByUniqueName(taskId);
+    debugPrint('🗑️ SMS TASK CANCELLED: $taskId');
   }
 }
+
+

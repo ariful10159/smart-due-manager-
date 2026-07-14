@@ -76,7 +76,10 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
         ? customers.where((c) => c.lastPaymentDate.year == _selectedYear)
         : customers;
 
-    final months = relevant.map((c) => c.lastPaymentDate.month).toSet().toList();
+    final months = relevant
+        .map((c) => c.lastPaymentDate.month)
+        .toSet()
+        .toList();
     months.sort();
     return months;
   }
@@ -85,10 +88,16 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   List<String> _availableReminderOptions(List<Customer> customers) {
     final options = <String>[];
 
-    final hasReminderSet =
-        customers.any((c) => c.nextReminderDate != null);
-    final hasNoReminder =
-        customers.any((c) => c.nextReminderDate == null);
+    final hasReminderSet = customers.any(
+      (c) =>
+          c.nextReminderDate != null &&
+          c.nextReminderDate!.isAfter(DateTime.now()),
+    );
+    final hasNoReminder = customers.any(
+      (c) =>
+          c.nextReminderDate == null ||
+          !c.nextReminderDate!.isAfter(DateTime.now()),
+    );
 
     if (hasReminderSet) options.add("Reminder Set");
     if (hasNoReminder) options.add("No Reminder");
@@ -109,13 +118,15 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
       }
 
       if (_reminderFilter != null) {
-        if (_reminderFilter == "Reminder Set" &&
-            customer.nextReminderDate == null) {
+        final hasActiveReminder =
+            customer.nextReminderDate != null &&
+            customer.nextReminderDate!.isAfter(DateTime.now());
+
+        if (_reminderFilter == "Reminder Set" && !hasActiveReminder) {
           return false;
         }
 
-        if (_reminderFilter == "No Reminder" &&
-            customer.nextReminderDate != null) {
+        if (_reminderFilter == "No Reminder" && hasActiveReminder) {
           return false;
         }
       }
@@ -125,7 +136,9 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   }
 
   bool get _hasActiveFilters =>
-      _selectedYear != null || _selectedMonth != null || _reminderFilter != null;
+      _selectedYear != null ||
+      _selectedMonth != null ||
+      _reminderFilter != null;
 
   void _clearAllFilters() {
     setState(() {
@@ -168,8 +181,9 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
 
           final availableYears = _availableYears(allCustomers);
           final availableMonths = _availableMonths(allCustomers);
-          final availableReminderOptions =
-              _availableReminderOptions(allCustomers);
+          final availableReminderOptions = _availableReminderOptions(
+            allCustomers,
+          );
 
           // ✅ যদি সিলেক্ট করা year/month/reminder এখন আর available list এ না থাকে
           // (যেমন সব customer delete হয়ে গেছে), তাহলে filter নিজে থেকেই রিসেট হবে
@@ -282,8 +296,10 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                         // ✅ Reminder Filter
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: availableReminderOptions
-                                    .contains(_reminderFilter)
+                            value:
+                                availableReminderOptions.contains(
+                                  _reminderFilter,
+                                )
                                 ? _reminderFilter
                                 : null,
                             hint: const Text("Reminder"),
@@ -361,7 +377,10 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                       ),
                                     ),
                                   ),
-                                  if (customer.nextReminderDate != null)
+                                  if (customer.nextReminderDate != null &&
+                                      customer.nextReminderDate!.isAfter(
+                                        DateTime.now(),
+                                      ))
                                     const Icon(
                                       Icons.notifications_active,
                                       color: Colors.orange,
