@@ -607,6 +607,35 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       style: const TextStyle(color: Colors.grey),
                     ),
                   ),
+                
+                // ✅ কাস্টমারের Note দেখানোর জন্য সুন্দর Card UI এখানে যুক্ত করা হলো
+                if (customer.note != null && customer.note!.trim().isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blueGrey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.blueGrey.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.sticky_note_2_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            customer.note!,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
                 const SizedBox(height: 6),
                 Text(
                   "Due date: ${_formatDateOnly(customer.lastPaymentDate)}",

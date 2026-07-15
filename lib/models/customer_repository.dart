@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'customer.dart';
 import 'payment.dart';
@@ -21,30 +22,57 @@ class CustomerRepository {
     return _col.doc(customerId).collection('payments');
   }
 
-  // ✅ সব customer এর payment একসাথে (Report এর জন্য) — one-time fetch
-  Future<List<Payment>> fetchAllPaymentsOnce() async {
-    final snapshot = await _firestore.collectionGroup('payments').get();
-    return snapshot.docs.map((doc) {
-      return Payment.fromMap({...doc.data(), 'id': doc.id});
-    }).toList();
+  // ✅ NEW — বর্তমান login করা user এর ID
+  String get _currentUserId {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      throw Exception('User not logged in');
+    }
+    return uid;
   }
 
-  // ✅ Stream all VISIBLE customers only (hidden বাদ দিয়ে)
+  // ✅ সব customer এর payment একসাথে (Report এর জন্য) — শুধু বর্তমান user এর
+  Future<List<Payment>> fetchAllPaymentsOnce() async {
+    // ✅ প্রথমে বর্তমান user এর customer id গুলো বের করা হচ্ছে
+    final myCustomers =
+        await _col.where('ownerId', isEqualTo: _currentUserId).get();
+    final myCustomerIds = myCustomers.docs.map((d) => d.id).toSet();
+
+    // ✅ collectionGroup দিয়ে সব payment এনে, শুধু নিজের customer এর payment filter করা
+    final snapshot = await _firestore.collectionGroup('payments').get();
+
+    return snapshot.docs
+        .where((doc) {
+          final parentCustomerId = doc.reference.parent.parent?.id;
+          return parentCustomerId != null &&
+              myCustomerIds.contains(parentCustomerId);
+        })
+        .map((doc) => Payment.fromMap({...doc.data(), 'id': doc.id}))
+        .toList();
+  }
+
+  // ✅ Stream all VISIBLE customers — শুধু বর্তমান user এর নিজের customer
   Stream<List<Customer>> streamCustomers() {
-    return _col.snapshots().map((snapshot) {
+    return _col
+        .where('ownerId', isEqualTo: _currentUserId)
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs
           .map((doc) => Customer.fromMap({...doc.data(), 'id': doc.id}))
-          .where((customer) => !customer.isHidden) // ✅ hidden filter out
+          .where((customer) => !customer.isHidden)
           .toList();
     });
   }
 
-  // ✅ Stream all HIDDEN/Archived customers only
+  // ✅ Stream all HIDDEN/Archived customers — শুধু বর্তমান user এর
   Stream<List<Customer>> streamHiddenCustomers() {
-    return _col.snapshots().map((snapshot) {
+    return _col
+        .where('ownerId', isEqualTo: _currentUserId)
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs
           .map((doc) => Customer.fromMap({...doc.data(), 'id': doc.id}))
-          .where((customer) => customer.isHidden) // ✅ শুধু hidden গুলো
+          .where((customer) => customer.isHidden)
           .toList();
     });
   }
@@ -56,9 +84,10 @@ class CustomerRepository {
     });
   }
 
-  // ✅ Fetch once
+  // ✅ Fetch once — শুধু বর্তমান user এর customer
   Future<List<Customer>> fetchCustomersOnce() async {
-    final snapshot = await _col.get();
+    final snapshot =
+        await _col.where('ownerId', isEqualTo: _currentUserId).get();
 
     return snapshot.docs.map((doc) {
       return Customer.fromMap({...doc.data(), 'id': doc.id});

@@ -11,7 +11,8 @@ class Customer {
   final String? note;
   final DateTime? nextReminderDate;
   final bool isHidden;
-  final String? photoUrl; // ✅ NEW — customer profile photo URL
+  final String? photoUrl;
+  final String ownerId; // ✅ NEW — কোন user এই customer এর মালিক
 
   const Customer({
     required this.id,
@@ -20,11 +21,12 @@ class Customer {
     required this.totalDue,
     required this.lastPaymentDate,
     required this.createdAt,
+    required this.ownerId, // ✅ NEW
     this.note,
     this.nextReminderDate,
     this.address,
     this.isHidden = false,
-    this.photoUrl, // ✅ NEW
+    this.photoUrl,
   });
 
   static String _asString(dynamic value, {String fallback = ''}) {
@@ -76,7 +78,8 @@ class Customer {
       note: map['note']?.toString(),
       nextReminderDate: _asNullableDateTime(map['nextReminderDate']),
       isHidden: _asBool(map['isHidden']),
-      photoUrl: map['photoUrl']?.toString(), // ✅ NEW
+      photoUrl: map['photoUrl']?.toString(),
+      ownerId: _asString(map['ownerId']), // ✅ NEW
     );
   }
 
@@ -94,7 +97,8 @@ class Customer {
           ? Timestamp.fromDate(nextReminderDate!)
           : null,
       'isHidden': isHidden,
-      'photoUrl': photoUrl, // ✅ NEW
+      'photoUrl': photoUrl,
+      'ownerId': ownerId, // ✅ NEW
     };
   }
 
@@ -110,6 +114,7 @@ class Customer {
     DateTime? nextReminderDate,
     bool? isHidden,
     String? photoUrl,
+    String? ownerId,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -123,6 +128,7 @@ class Customer {
       nextReminderDate: nextReminderDate ?? this.nextReminderDate,
       isHidden: isHidden ?? this.isHidden,
       photoUrl: photoUrl ?? this.photoUrl,
+      ownerId: ownerId ?? this.ownerId,
     );
   }
 }

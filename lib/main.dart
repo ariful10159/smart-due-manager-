@@ -1,4 +1,5 @@
-import 'dart:async'; // ✅ Completer এবং timeout এর জন্য এটি প্রয়োজন
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:another_telephony/telephony.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
 import 'services/notification_service.dart';
 
 // ✅ Background task handler — এটা অবশ্যই top-level function হতে হবে
@@ -25,8 +27,6 @@ void callbackDispatcher() {
 
       if (phone != null && phone.isNotEmpty && message != null) {
         try {
-          // ✅ WakeLock enable — background task চলাকালীন ফোন যেন
-          // Doze mode এ চলে না যায়, network access বজায় থাকে
           try {
             await WakelockPlus.enable();
             debugPrint('🔓 WakeLock enabled');
@@ -34,8 +34,6 @@ void callbackDispatcher() {
             debugPrint('⚠️ WakeLock enable failed (non-critical): $e');
           }
 
-          // ✅ Radio কে network এ re-sync হওয়ার সময় দেওয়া হচ্ছে
-          // (Doze থেকে wake হওয়ার পর radio সাথে সাথে ready থাকে না)
           debugPrint('⏳ Waiting 5 seconds for radio to warm up...');
           await Future.delayed(const Duration(seconds: 5));
 
@@ -43,26 +41,25 @@ void callbackDispatcher() {
           bool sendSucceeded = false;
           int attempts = 0;
 
-          // ✅ Maximum 3 বার পর্যন্ত Retry মেকানিজম
           while (!sendSucceeded && attempts < 3) {
             attempts++;
             final completer = Completer<bool>();
-            
+
             debugPrint('🚀 Sending SMS, Attempt: $attempts');
 
             await telephony.sendSms(
               to: phone,
               message: message,
               statusListener: (status) {
-                debugPrint('📊 [BACKGROUND] SMS STATUS attempt=$attempts ($phone): $status');
-                // Status delivery successful বা sent হলে completer complete করা হচ্ছে
+                debugPrint(
+                  '📊 [BACKGROUND] SMS STATUS attempt=$attempts ($phone): $status',
+                );
                 if (!completer.isCompleted) {
                   completer.complete(true);
                 }
               },
             );
 
-            // ✅ status callback এর জন্য প্রতিটি attempt এ ২০ সেকেন্ড wait করা হচ্ছে
             sendSucceeded = await completer.future.timeout(
               const Duration(seconds: 20),
               onTimeout: () {
@@ -71,22 +68,23 @@ void callbackDispatcher() {
               },
             );
 
-            // যদি fail/timeout হয় এবং ৩ বার চেষ্টা শেষ না হয়, তবে ৩ সেকেন্ড পর আবার চেষ্টা করবে
             if (!sendSucceeded && attempts < 3) {
-              debugPrint('⚠️ Attempt $attempts failed/timed out, retrying in 3s...');
+              debugPrint(
+                '⚠️ Attempt $attempts failed/timed out, retrying in 3s...',
+              );
               await Future.delayed(const Duration(seconds: 3));
             }
           }
 
-          debugPrint(sendSucceeded
-              ? '✅ SMS confirmed sent after $attempts attempt(s)'
-              : '❌ SMS failed after $attempts attempts');
-
+          debugPrint(
+            sendSucceeded
+                ? '✅ SMS confirmed sent after $attempts attempt(s)'
+                : '❌ SMS failed after $attempts attempts',
+          );
         } catch (e, stackTrace) {
           debugPrint('❌ SMS SEND FAILED: $e');
           debugPrint('❌ STACK TRACE: $stackTrace');
         } finally {
-          // ✅ কাজ শেষে WakeLock disable করা — ব্যাটারি বাঁচাতে
           try {
             await WakelockPlus.disable();
             debugPrint('🔒 WakeLock disabled');
@@ -129,17 +127,40 @@ class SmartDueApp extends StatelessWidget {
           seedColor: Colors.deepPurple,
           brightness: Brightness.light,
         ),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 2,
-        ),
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 2),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         colorSchemeSeed: Colors.deepPurple,
       ),
-      home: const HomeScreen(),
+      // ✅ AuthWrapper দিয়ে ঠিক করা হচ্ছে login করা আছে নাকি না
+      home: const AuthWrapper(),
+    );
+  }
+}
+
+// ✅ Login state অনুযায়ী HomeScreen বা LoginScreen দেখানো হচ্ছে
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasData) {
+          return const HomeScreen();
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 }

@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'report_screen.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
+import '../services/auth_service.dart';
+import '../services/auth_service.dart'; 
 import 'add_customer_screen.dart';
 import 'customer_detail_screen.dart';
 import 'all_customers_screen.dart';
@@ -74,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Smart Due'),
         actions: [
-          // 📊 রিপোর্ট স্ক্রিনে যাওয়ার জন্য বাটন যোগ করা হয়েছে
+          // 📊 রিপোর্ট স্ক্রিনে যাওয়ার বাটন
           IconButton(
             onPressed: () {
               Navigator.of(context).push(
@@ -86,6 +88,39 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             onPressed: _openAddCustomer, 
             icon: const Icon(Icons.add),
+          ),
+          // ✅ আপনার চাহিদা অনুযায়ী Logout বাটনটি এখানে যুক্ত করা হলো
+          IconButton(
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text("Logout"),
+                  content: const Text("আপনি কি লগআউট করতে চান?"),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text("Cancel"),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        "Logout",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true) {
+                await AuthService.logout();
+                // ✅ লগআউট হওয়ার পর যদি ইউজারকে একদম প্রথম স্ক্রিনে রিডাইরেক্ট করতে চান
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              }
+            },
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),

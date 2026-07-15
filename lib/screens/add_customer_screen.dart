@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -72,8 +73,32 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     }
   }
 
+  // ✨ ফর্মের সব ডেটা রিসেট করার জন্য নতুন মেথড
+  void _resetForm() {
+    _nameController.clear();
+    _phoneController.clear();
+    _addressController.clear();
+    _dueAmountController.clear();
+    _dateController.clear();
+    _noteController.clear();
+    setState(() {
+      _selectedImage = null;
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (currentUserId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in')),
+        );
+      }
+      return;
+    }
 
     final totalDue = double.tryParse(_dueAmountController.text.trim()) ?? 0.0;
 
@@ -105,7 +130,8 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       createdAt: DateTime.now(),
       note: _noteController.text.trim().isEmpty
           ? null
-          : _noteController.text.trim(),
+          : _noteController.text.trim(), 
+      ownerId: currentUserId,
     );
 
     setState(() {
@@ -120,15 +146,49 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
       if (!mounted) return;
 
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
+      // ✅ সুন্দর সাকসেস মেসেজ দেখানো হচ্ছে
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Success!',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                    ),
+                    Text(
+                      '${customer.name} has been added successfully.',
+                      style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.9)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green[700],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          duration: const Duration(seconds: 2),
         ),
-        (route) => false,
       );
+
+      // ✅ হোম স্ক্রিনে যাওয়ার কোডটি বাদ দিয়ে ফর্মটি রিসেট করা হয়েছে যাতে ইউজার এই স্ক্রিনেই থাকেন
+      _resetForm();
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save: $e')),
+        SnackBar(
+          content: Text('Failed to save: $e'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       if (mounted) {
@@ -165,7 +225,6 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     }
   }
 
-  // ✨ একটি রি-ইউজেবল মডার্ন ইনপুট ডেকোরেশন জেনারেটর
   InputDecoration _buildInputDecoration({
     required String labelText,
     required IconData prefixIcon,
@@ -226,7 +285,6 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 📸 আল্ট্রা-মডার্ন স্কয়ার-রাউন্ডেড প্রোফাইল পিকচার সিলেক্টর
                 Center(
                   child: Stack(
                     children: [
@@ -292,7 +350,6 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // 🏢 প্রিমিয়াম গ্লাস-স্টাইল কার্ড ফর ইনপুটস
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -388,7 +445,6 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // 🚀 নিওন-শ্যাডো অ্যানিমেটেড ফিল্ড সেভ বাটন
                 _isSaving
                     ? const Center(child: CircularProgressIndicator())
                     : Container(
