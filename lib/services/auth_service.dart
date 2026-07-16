@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -24,19 +25,19 @@ class AuthService {
     try {
       final email = _phoneToEmail(phone);
 
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final credential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password)
+          .timeout(const Duration(seconds: 15));
 
-      // ✅ User profile Firestore এ সেভ করা হচ্ছে
       await _firestore.collection('users').doc(credential.user!.uid).set({
         'name': name,
         'phone': phone,
         'createdAt': Timestamp.now(),
-      });
+      }).timeout(const Duration(seconds: 15));
 
-      return null; // null মানে কোনো error নেই, সফল
+      return null;
+    } on TimeoutException {
+      return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
     } on FirebaseAuthException catch (e) {
       return _mapAuthError(e);
     } catch (e) {
@@ -52,9 +53,30 @@ class AuthService {
     try {
       final email = _phoneToEmail(phone);
 
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final credential = await _auth
+          .signInWithEmailAndPassword(email: email, password: password)
+          .timeout(const Duration(seconds: 15));
+
+      // ✅ Race-condition ফিক্স: signIn() সফল হলেও Android প্লাগিনে
+      // currentUser getter কখনো কখনো native সাইড থেকে সিঙ্ক হতে দেরি করে।
+      // তাই সরাসরি এগিয়ে যাওয়ার আগে নিশ্চিত হচ্ছি যে currentUser আসলেই সেট হয়েছে।
+      if (_auth.currentUser == null) {
+        await _auth.authStateChanges().firstWhere(
+          (user) => user != null,
+        ).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => credential.user,
+        );
+      }
+
+      // ✅ তারপরও যদি null থাকে (অত্যন্ত বিরল), স্পষ্ট এরর দেখানো হচ্ছে
+      if (_auth.currentUser == null && credential.user == null) {
+        return 'লগইন সম্পন্ন হয়নি, আবার চেষ্টা করুন';
+      }
 
       return null;
+    } on TimeoutException {
+      return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
     } on FirebaseAuthException catch (e) {
       return _mapAuthError(e);
     } catch (e) {
@@ -66,7 +88,6 @@ class AuthService {
     await _auth.signOut();
   }
 
-  // ✅ Firebase এর technical error message কে বাংলায় user-friendly বানানো
   static String _mapAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'email-already-in-use':
@@ -80,6 +101,10 @@ class AuthService {
         return 'ভুল পাসওয়ার্ড';
       case 'invalid-email':
         return 'ফোন নাম্বার সঠিক ফরম্যাটে দিন';
+      case 'network-request-failed':
+        return 'ইন্টারনেট সংযোগ পাওয়া যাচ্ছে না, চেক করে আবার চেষ্টা করুন';
+      case 'too-many-requests':
+        return 'অনেকবার চেষ্টা করা হয়েছে, কিছুক্ষণ পর আবার চেষ্টা করুন';
       default:
         return e.message ?? 'কিছু একটা ভুল হয়েছে';
     }

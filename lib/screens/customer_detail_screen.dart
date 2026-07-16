@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
-
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/customer.dart';
 import '../models/payment.dart';
 import '../models/customer_repository.dart';
@@ -35,13 +36,19 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return DateFormat('d MMMM yyyy').format(date);
   }
 
-  // ✅ Manual ও Reminder-based SMS দুই জায়গাতেই এই একই dynamic message ব্যবহার হবে
   String _buildDueMessage(Customer customer) {
-    return "প্রিয় ${customer.name}, "
+    return " ${customer.name}, "
         "আপনার বর্তমান বকেয়া: ${customer.totalDue.toStringAsFixed(2)} টাকা। "
         "দয়া করে দ্রুত পরিশোধ করুন। ধন্যবাদ।\n"
         "ভাই ভাই ট্রেডার্স\n"
-        "দেবপুর বাজার, বুড়িচং,কুমিল্লা";
+        "দেবপুর বাজার,বুড়িচং,কুমিল্লা";
+  }
+
+  String _daysSincePayment(DateTime lastPaymentDate) {
+    final days = DateTime.now().difference(lastPaymentDate).inDays;
+    if (days == 0) return "আজকে";
+    if (days == 1) return "গতকাল";
+    return "$days দিন আগে";
   }
 
   Future<pw.Document> _generatePdf(Customer customer) async {
@@ -125,7 +132,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ], text: "${customer.name} - Payment History");
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           backgroundColor: Colors.green,
           content: Text("PDF saved and opened ✅"),
         ),
@@ -156,10 +163,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     if (updatedDue < 0) updatedDue = 0;
 
+    // ✅ Due Date এখন থেকে পরিবর্তন হবে না — customer এর আসল/আগের lastPaymentDate
+    // অপরিবর্তিত রাখা হচ্ছে। শুধু totalDue আপডেট হবে। Payment এর তারিখ
+    // এমনিতেই Payment History তে দেখা যায়, সেটাই যথেষ্ট।
     await _customerRepo.updateCustomerDue(
       customerId: currentCustomer.id,
       newTotalDue: updatedDue,
-      lastPaymentDate: DateTime.now(),
+      lastPaymentDate: currentCustomer.lastPaymentDate, // ✅ FIXED — বদলাচ্ছে না
     );
 
     await _customerRepo.addPayment(
@@ -205,7 +215,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       scheduledDate: scheduledDateTime,
     );
 
-    // ✅ নির্দিষ্ট সময়ে customer এর নাম্বারে SMS auto-send schedule করা
     final smsMessage = _buildDueMessage(customer);
 
     await NotificationService.scheduleSms(
@@ -213,6 +222,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       phoneNumber: customer.phone,
       message: smsMessage,
       scheduledDate: scheduledDateTime,
+      customerId: customer.id,
     );
 
     if (!mounted) return;
@@ -254,8 +264,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   Future<void> _clearReminder(Customer customer) async {
     try {
       await _customerRepo.clearReminder(customer.id);
-
-      // ✅ Reminder বাতিল করলে schedule করা SMS ও বাতিল হবে
       await NotificationService.cancelScheduledSms('sms_${customer.id}');
 
       if (!mounted) return;
@@ -328,11 +336,9 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     }
   }
 
-  // ✅ ছবিকে Base64 string এ কনভার্ট করা হচ্ছে (Firestore এ সেভ করার জন্য, Storage লাগবে না)
   Future<String?> _encodeImageToBase64(File imageFile) async {
     final bytes = await imageFile.readAsBytes();
 
-    // Firestore এর 1MB document limit এর মধ্যে রাখার জন্য সাইজ চেক
     if (bytes.length > 700 * 1024) {
       if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -412,7 +418,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     TextField(
                       controller: nameController,
                       decoration: const InputDecoration(labelText: "Name"),
@@ -525,6 +530,95 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     );
   }
 
+  void _showSmsHistory(Customer customer) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("SMS Sent History"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: _customerRepo.streamSmsLogs(customer.id),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final logs = snapshot.data!;
+
+              if (logs.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text("এখনো কোনো SMS পাঠানো হয়নি"),
+                );
+              }
+
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 350),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: logs.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final log = logs[index];
+                    final sentAt = (log['sentAt'] as Timestamp).toDate();
+                    final type = log['type'] as String? ?? 'manual';
+
+                    return ListTile(
+                      dense: true,
+                      leading: Icon(
+                        type == 'reminder' ? Icons.alarm : Icons.touch_app,
+                        size: 18,
+                        color: Colors.blueGrey,
+                      ),
+                      title: Text(_formatDateTime(sentAt)),
+                      subtitle: Text(
+                        type == 'reminder'
+                            ? 'Reminder এর মাধ্যমে auto-send'
+                            : 'ম্যানুয়ালি পাঠানো হয়েছে',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openWhatsApp(Customer customer) async {
+    final cleanPhone = customer.phone.replaceAll(RegExp(r'[\s\-]'), '');
+    final fullPhone = cleanPhone.startsWith('0')
+        ? '88$cleanPhone'
+        : cleanPhone.startsWith('+')
+            ? cleanPhone.substring(1)
+            : cleanPhone;
+
+    final message = Uri.encodeComponent(_buildDueMessage(customer));
+    final uri = Uri.parse('https://wa.me/$fullPhone?text=$message');
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WhatsApp খোলা যায়নি')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -532,7 +626,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         title: Text(widget.customer.name),
         centerTitle: true,
         actions: [
-          // ✅ Edit বাটনের ঠিক বাম পাশে Manual SMS বাটনটি যুক্ত করা হলো
           IconButton(
             icon: const Icon(Icons.sms),
             onPressed: () async {
@@ -540,6 +633,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 phoneNumber: widget.customer.phone,
                 message: _buildDueMessage(widget.customer),
               );
+
+              await _customerRepo.logSmsSent(
+                customerId: widget.customer.id,
+                type: 'manual',
+              );
+
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('SMS send attempted')),
@@ -595,11 +694,30 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Center(
-                  child: Text(
-                    customer.phone,
-                    style: const TextStyle(color: Colors.grey),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        customer.phone,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => _openWhatsApp(customer),
+                        borderRadius: BorderRadius.circular(20),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.chat,
+                            size: 18,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+
                 if (customer.address != null)
                   Center(
                     child: Text(
@@ -607,8 +725,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       style: const TextStyle(color: Colors.grey),
                     ),
                   ),
-                
-                // ✅ কাস্টমারের Note দেখানোর জন্য সুন্দর Card UI এখানে যুক্ত করা হলো
+
                 if (customer.note != null && customer.note!.trim().isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(top: 10),
@@ -635,10 +752,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       ],
                     ),
                   ),
-                  
-                const SizedBox(height: 6),
+
+                const SizedBox(height: 10),
                 Text(
-                  "Due date: ${_formatDateOnly(customer.lastPaymentDate)}",
+                  "Due date: ${_formatDateOnly(customer.lastPaymentDate)} "
+                  "(${_daysSincePayment(customer.lastPaymentDate)})",
                   style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 10),
@@ -649,6 +767,54 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     color: customer.totalDue > 0 ? Colors.red : Colors.green,
                   ),
                 ),
+                const SizedBox(height: 8),
+                StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _customerRepo.streamSmsLogs(customer.id),
+                  builder: (context, smsSnapshot) {
+                    final count = smsSnapshot.data?.length ?? 0;
+
+                    return InkWell(
+                      onTap: () => _showSmsHistory(customer),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.sms_outlined,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              "SMS পাঠানো হয়েছে: $count বার",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
                 if (customer.nextReminderDate != null)
                   Row(
                     children: [

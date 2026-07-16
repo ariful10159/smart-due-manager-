@@ -22,6 +22,11 @@ class CustomerRepository {
     return _col.doc(customerId).collection('payments');
   }
 
+  // ✅ SMS log subcollection reference  
+  CollectionReference<Map<String, dynamic>> _smsLogsCol(String customerId) {    
+    return _col.doc(customerId).collection('smsLogs');  
+  }
+
   // ✅ NEW — বর্তমান login করা user এর ID
   String get _currentUserId {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -160,6 +165,25 @@ class CustomerRepository {
     required Payment payment,
   }) async {
     await _paymentsCol(customerId).doc(payment.id).set(payment.toMap());
+  }
+
+  // ✅ প্রতিবার SMS পাঠানোর পর একটা log entry যোগ করা (manual বা reminder — দুই ক্ষেত্রেই)  
+  Future<void> logSmsSent({    
+    required String customerId,    
+    required String type, // 'manual' অথবা 'reminder'  
+  }) async {    
+    await _smsLogsCol(customerId).add({      
+      'sentAt': Timestamp.now(),      
+      'type': type,    
+    });  
+  }  
+
+  // ✅ SMS history stream (সময় অনুযায়ী নতুন আগে)  
+  Stream<List<Map<String, dynamic>>> streamSmsLogs(String customerId) {    
+    return _smsLogsCol(customerId)        
+        .orderBy('sentAt', descending: true)        
+        .snapshots()        
+        .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());  
   }
 
   // ✅ Add new reminder

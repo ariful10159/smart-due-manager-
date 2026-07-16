@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +12,7 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/notification_service.dart';
 
-// ✅ Background task handler — এটা অবশ্যই top-level function হতে হবে
+// ✅ Background task handler
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -81,10 +82,31 @@ void callbackDispatcher() {
                 ? '✅ SMS confirmed sent after $attempts attempt(s)'
                 : '❌ SMS failed after $attempts attempts',
           );
+
+          // ✅ SMS পাঠানো সফল হলে Firestore এ log রাখা হচ্ছে
+          if (sendSucceeded) {
+            final customerId = inputData?['customerId'] as String?;
+            if (customerId != null) {
+              try {
+                await Firebase.initializeApp();
+                await FirebaseFirestore.instance
+                    .collection('customers')
+                    .doc(customerId)
+                    .collection('smsLogs')
+                    .add({
+                      'sentAt': Timestamp.now(), 
+                      'type': 'reminder',
+                    });
+                debugPrint('📝 SMS log saved for customer $customerId');
+              } catch (e) {
+                debugPrint('⚠️ Failed to log SMS (non-critical): $e');
+              }
+            }
+          }
         } catch (e, stackTrace) {
           debugPrint('❌ SMS SEND FAILED: $e');
           debugPrint('❌ STACK TRACE: $stackTrace');
-        } finally {
+        } finally { // ✅ এখানে টাইপো ঠিক করা হয়েছে (finally)
           try {
             await WakelockPlus.disable();
             debugPrint('🔒 WakeLock disabled');
@@ -134,13 +156,11 @@ class SmartDueApp extends StatelessWidget {
         brightness: Brightness.dark,
         colorSchemeSeed: Colors.deepPurple,
       ),
-      // ✅ AuthWrapper দিয়ে ঠিক করা হচ্ছে login করা আছে নাকি না
       home: const AuthWrapper(),
     );
   }
 }
 
-// ✅ Login state অনুযায়ী HomeScreen বা LoginScreen দেখানো হচ্ছে
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 

@@ -107,38 +107,40 @@ class NotificationService {
     }
   }
 
-  // ✅ নির্দিষ্ট সময়ে SMS পাঠানোর জন্য background task schedule করা
-  static Future<void> scheduleSms({
-    required String taskId,
-    required String phoneNumber,
-    required String message,
-    required DateTime scheduledDate,
-  }) async {
-    final delay = scheduledDate.difference(DateTime.now());
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-]'), '');
-
+  // ✅ নির্দিষ্ট সময়ে SMS পাঠানোর জন্য background task schedule করা  
+  static Future<void> scheduleSms({    
+    required String taskId,    
+    required String phoneNumber,    
+    required String message,    
+    required DateTime scheduledDate,    
+    required String customerId, // ✅ NEW — background log এর জন্য  
+  }) async {    
+    final delay = scheduledDate.difference(DateTime.now());    
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-]'), '');    
+    
     debugPrint(
       '📱 [REMINDER FLOW] SMS SCHEDULE: taskId=$taskId, phone=$cleanPhone, '
-      'scheduledDate=$scheduledDate, delay=$delay',
+      'scheduledDate=$scheduledDate, delay=$delay, customerId=$customerId',
     );
 
-    if (delay.isNegative) {
-      debugPrint('❌ [REMINDER FLOW] SKIPPED: delay is negative');
-      return;
-    }
-
-    await Workmanager().registerOneOffTask(
-      taskId,
-      'sendReminderSms',
-      initialDelay: delay,
-      inputData: {
-        'phone': cleanPhone,
-        'message': message,
-      },
-      existingWorkPolicy: ExistingWorkPolicy.replace,
-    );
-
-    debugPrint('✅ [REMINDER FLOW] TASK REGISTERED: $taskId');
+    if (delay.isNegative) {      
+      debugPrint('❌ SMS SCHEDULE SKIPPED: delay is negative');      
+      return;    
+    }    
+    
+    await Workmanager().registerOneOffTask(      
+      taskId,      
+      'sendReminderSms',      
+      initialDelay: delay,      
+      inputData: {        
+        'phone': cleanPhone,        
+        'message': message,        
+        'customerId': customerId, // ✅ NEW      
+      },      
+      existingWorkPolicy: ExistingWorkPolicy.replace,    
+    );    
+    
+    debugPrint('✅ SMS TASK REGISTERED: $taskId (fires in $delay)');  
   }
 
   // ✅ আগে schedule করা SMS task বাতিল করা (reminder cancel/edit করলে)

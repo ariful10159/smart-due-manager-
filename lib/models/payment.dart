@@ -63,19 +63,28 @@ class Payment {
     }
   }
 
-  // ✅ String → PaymentMethod enum
-  static PaymentMethod? paymentMethodFromString(String? value) {
-    switch (value) {
-      case 'bKash':
-        return PaymentMethod.bKash;
-      case 'Nagad':
-        return PaymentMethod.nagad;
-      case 'Hand Cash':
-        return PaymentMethod.handCash;
-      case 'Bank':
-        return PaymentMethod.bank;
-      default:
-        return null;
+  // ✅ String → PaymentMethod enum (সম্পূর্ণ নিরাপদ এবং কেস-ইনসেন্সিটিভ করা হয়েছে)
+  static PaymentMethod? paymentMethodFromString(dynamic value) {
+    if (value == null) return null;
+    
+    // যদি অলরেডি অবজেক্টটি Enum টাইপই হয়ে থাকে
+    if (value is PaymentMethod) return value;
+    
+    final String strValue = value.toString().trim().toLowerCase();
+    
+    // ১. সরাসরি ফায়ারবেস র-স্ট্রিং ভ্যালু ম্যাচিং (যেমন স্ক্রিনশটে: 'bkash')
+    if (strValue == 'bkash') return PaymentMethod.bKash;
+    if (strValue == 'nagad') return PaymentMethod.nagad;
+    if (strValue == 'hand cash' || strValue == 'handcash') return PaymentMethod.handCash;
+    if (strValue == 'bank') return PaymentMethod.bank;
+    
+    // ২. ডার্ট Enum ফুল নেম ম্যাচিং ব্যাকআপ (যেমন: 'paymentmethod.bkash' বা শুধু 'bkash')
+    try {
+      return PaymentMethod.values.firstWhere(
+        (e) => e.name.toLowerCase() == strValue || e.toString().toLowerCase().split('.').last == strValue,
+      );
+    } catch (_) {
+      return null;
     }
   }
 
@@ -94,19 +103,18 @@ class Payment {
     'date': Timestamp.fromDate(date),
   };
 
-  // ✅ From Firestore Map
+  // ✅ From Firestore Map (আপডেট ও সম্পূর্ণ সুরক্ষিত)
   factory Payment.fromMap(Map<String, dynamic> map) {
     return Payment(
       id: _asString(map['id']),
       customerId: _asString(map['customerId']),
       amount: _asDouble(map['amount']),
       type: PaymentType.values.firstWhere(
-        (value) => value.name == map['type'],
+        (value) => value.name == map['type'] || value.toString().split('.').last == map['type'],
         orElse: () => PaymentType.payment,
       ),
-      paymentMethod: Payment.paymentMethodFromString(
-        map['paymentMethod']?.toString(),
-      ),
+      // ✅ এখানে paymentMethodFromString এ সরাসরি ম্যাপ অবজেক্ট পাঠিয়ে ইন্টারনাল কাস্টিং হ্যান্ডেল করা হয়েছে
+      paymentMethod: Payment.paymentMethodFromString(map['paymentMethod']),
       note: map['note']?.toString(),
       description: map['description']?.toString(),
       receiptImageUrl: map['receiptImageUrl']?.toString(),

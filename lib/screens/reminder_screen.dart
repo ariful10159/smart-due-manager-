@@ -178,8 +178,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
       },
     );
 
-    // ✅ null ফেরত এসেছে মানে "Custom" বেছে নিয়েছে, কিন্তু bottom sheet
-    // dismiss হয়েও যেতে পারে (back button/outside tap) — তাই আলাদা flag লাগবে
     if (!mounted) return;
 
     DateTime? newReminderDate;
@@ -187,8 +185,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
     if (choice != null) {
       newReminderDate = DateTime.now().add(choice);
     } else {
-      // Custom date/time বেছে নেওয়ার চেষ্টা — কিন্তু bottom sheet বাইরে ট্যাপ
-      // করে বন্ধ করলেও choice == null হয়, তাই এখানে explicit ফ্ল্যাগ দরকার
       final wantsCustom = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
@@ -260,6 +256,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
         phoneNumber: customer.phone,
         message: smsMessage,
         scheduledDate: newDate,
+        customerId: customer.id, // ✅ NEW — SMS log এর জন্য
       );
 
       if (!mounted) return;
@@ -341,7 +338,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
           return Column(
             children: [
-              // ✅ Overdue count summary bar
               if (overdueCount > 0)
                 Container(
                   width: double.infinity,
@@ -489,7 +485,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
                               },
                             ),
 
-                            // ✅ Snooze / Delete action row
                             Padding(
                               padding: const EdgeInsets.only(
                                 left: 8,
@@ -541,13 +536,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
     );
   }
 
-  // ✅ Pretty Date Format
   String _formatDateTime(DateTime date) {
     final formatter = DateFormat('d MMMM yyyy • hh:mm a');
     return formatter.format(date);
   }
 
-  // ✅ Countdown Logic
   String _countdownText(DateTime reminderDate) {
     final now = DateTime.now();
     final difference = reminderDate.difference(now);

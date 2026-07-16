@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart'; 
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../models/payment.dart';
 
-enum ReportPeriod { weekly, monthly }
+enum ReportPeriod { daily, weekly, monthly }
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -19,8 +19,8 @@ class ReportScreen extends StatefulWidget {
 class _ReportScreenState extends State<ReportScreen> {
   final _repo = CustomerRepository();
 
-  ReportPeriod _period = ReportPeriod.weekly;
-  int _offset = 0; // 0 = current period, -1 = আগের period, ইত্যাদি
+  ReportPeriod _period = ReportPeriod.daily; 
+  int _offset = 0; 
 
   bool _loading = true;
   List<Customer> _customers = [];
@@ -32,15 +32,41 @@ class _ReportScreenState extends State<ReportScreen> {
     _loadData();
   }
 
+  // ✅ লুপ বর্জন করে collectionGroup এর মাধ্যমে সুপার-ফাস্ট ডাটা লোডিং লজিক
   Future<void> _loadData() async {
     setState(() => _loading = true);
     try {
+      // ১. প্যারালালি কাস্টমার লিস্ট লোড করা
       final customers = await _repo.fetchCustomersOnce();
-      final payments = await _repo.fetchAllPaymentsOnce();
+      
+      // কাস্টমার আইডিগুলো একটা সেট-এ রাখা যেন সহজে ফিল্টার করা যায়
+      final myCustomerIds = customers.map((c) => c.id).toSet();
+      final List<Payment> allPayments = [];
+
+      // ২. ⚡ collectionGroup ব্যবহার করে এক ক্লিকে সব কাস্টমারের পেমেন্ট একসাথে আনা
+      final snapshot = await FirebaseFirestore.instance
+          .collectionGroup('payments')
+          .get();
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final cId = data['customerId']?.toString() ?? '';
+        
+        // শুধু বর্তমান ইউজারের আওতাভুক্ত কাস্টমারদের পেমেন্টগুলোই ফিল্টার করে নেওয়া
+        if (myCustomerIds.contains(cId)) {
+          try {
+            final payment = Payment.fromMap({...data, 'id': doc.id});
+            allPayments.add(payment);
+          } catch (e) {
+            debugPrint("Error parsing payment ID ${doc.id}: $e");
+          }
+        }
+      }
+
       if (!mounted) return;
       setState(() {
         _customers = customers;
-        _payments = payments;
+        _payments = allPayments;
         _loading = false;
       });
     } catch (e) {
@@ -52,19 +78,19 @@ class _ReportScreenState extends State<ReportScreen> {
     }
   }
 
-  // ✅ বর্তমান period এর start/end date বের করা
   (DateTime, DateTime) _dateRange() {
     final now = DateTime.now();
 
-    if (_period == ReportPeriod.weekly) {
-      final currentWeekStart = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(Duration(days: now.weekday - 1));
+    if (_period == ReportPeriod.daily) {
+      final targetDay = now.add(Duration(days: _offset));
+      final start = DateTime(targetDay.year, targetDay.month, targetDay.day, 0, 0, 0);
+      final end = DateTime(targetDay.year, targetDay.month, targetDay.day, 23, 59, 59);
+      return (start, end);
+    } else if (_period == ReportPeriod.weekly) {
+      final currentWeekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
       final start = currentWeekStart.add(Duration(days: 7 * _offset));
-      final end = start.add(const Duration(days: 6));
-      return (start, DateTime(end.year, end.month, end.day, 23, 59, 59));
+      final end = start.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+      return (start, end);
     } else {
       final targetMonth = DateTime(now.year, now.month + _offset, 1);
       final start = DateTime(targetMonth.year, targetMonth.month, 1);
@@ -75,7 +101,9 @@ class _ReportScreenState extends State<ReportScreen> {
 
   String _periodLabel() {
     final (start, end) = _dateRange();
-    if (_period == ReportPeriod.weekly) {
+    if (_period == ReportPeriod.daily) {
+      return DateFormat('d MMMM yyyy').format(start);
+    } else if (_period == ReportPeriod.weekly) {
       return "${DateFormat('d MMM').format(start)} - ${DateFormat('d MMM yyyy').format(end)}";
     } else {
       return DateFormat('MMMM yyyy').format(start);
@@ -84,117 +112,79 @@ class _ReportScreenState extends State<ReportScreen> {
 
   List<Payment> _paymentsInRange(DateTime start, DateTime end) {
     return _payments
-        .where((p) => !p.date.isBefore(start) && !p.date.isAfter(end))
+        .where((p) => p.type == PaymentType.payment && !p.date.isBefore(start) && !p.date.isAfter(end))
         .toList();
   }
 
-  List<Customer> _newCustomersInRange(DateTime start, DateTime end) {
-    return _customers
-        .where((c) => !c.createdAt.isBefore(start) && !c.createdAt.isAfter(end))
-        .toList();
-  }
-
-  // ✅ Bar chart এর জন্য দিন-ভিত্তিক নেট collection হিসাব
-  List<MapEntry<String, double>> _dailyBreakdown(DateTime start, DateTime end) {
-    final dayCount = end.difference(start).inDays + 1;
-    final result = <MapEntry<String, double>>[];
-
-    for (int i = 0; i < dayCount; i++) {
-      final day = DateTime(start.year, start.month, start.day + i);
-      final dayEnd = DateTime(day.year, day.month, day.day, 23, 59, 59);
-
-      final dayPayments = _payments.where(
-        (p) => !p.date.isBefore(day) && !p.date.isAfter(dayEnd),
-      );
-
-      final collection = dayPayments
-          .where((p) => p.type == PaymentType.payment)
-          .fold<double>(0, (sum, p) => sum + p.amount);
-      final charges = dayPayments
-          .where((p) => p.type == PaymentType.dueAdded)
-          .fold<double>(0, (sum, p) => sum + p.amount);
-
-      final label = _period == ReportPeriod.weekly
-          ? DateFormat('E').format(day) // Mon, Tue...
-          : day.day.toString();
-
-      result.add(MapEntry(label, collection - charges));
+  List<Map<String, dynamic>> _getCustomerReportData(List<Payment> rangePayments) {
+    final List<Map<String, dynamic>> reportRows = [];
+    final Map<String, List<Payment>> customerPaymentsMap = {};
+    
+    for (var p in rangePayments) {
+      customerPaymentsMap.putIfAbsent(p.customerId, () => []).add(p);
     }
 
-    return result;
+    customerPaymentsMap.forEach((customerId, pList) {
+      final customer = _customers.firstWhere(
+        (c) => c.id == customerId,
+        orElse: () => Customer(
+          id: customerId, 
+          name: 'Unknown', 
+          phone: '', 
+          totalDue: 0.0, 
+          lastPaymentDate: DateTime.now(), 
+          createdAt: DateTime.now(), 
+          ownerId: ''
+        ),
+      );
+
+      final totalPaidInPeriod = pList.fold<double>(0, (sum, p) => sum + p.amount);
+      final totalDue = customer.totalDue + totalPaidInPeriod; 
+      final remaining = customer.totalDue;
+
+      reportRows.add({
+        'name': customer.name,
+        'phone': customer.phone,
+        'totalDue': totalDue,
+        'paid': totalPaidInPeriod,
+        'remaining': remaining,
+      });
+    });
+
+    return reportRows;
   }
 
   Future<void> _exportPdf() async {
     final (start, end) = _dateRange();
     final rangePayments = _paymentsInRange(start, end);
-    final newCustomers = _newCustomersInRange(start, end);
-
-    final collection = rangePayments
-        .where((p) => p.type == PaymentType.payment)
-        .fold<double>(0, (sum, p) => sum + p.amount);
-    final charges = rangePayments
-        .where((p) => p.type == PaymentType.dueAdded)
-        .fold<double>(0, (sum, p) => sum + p.amount);
-    final net = collection - charges;
+    final reportData = _getCustomerReportData(rangePayments);
+    final totalCollection = rangePayments.fold<double>(0, (sum, p) => sum + p.amount);
 
     final pdf = pw.Document();
-
     pdf.addPage(
       pw.MultiPage(
         build: (context) => [
-          pw.Text(
-            'Business Report',
-            style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.Text(_periodLabel()),
+          pw.Text('Collection Report (${_period.name.toUpperCase()})', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+          pw.Text('Period: ${_periodLabel()}', style: pw.TextStyle(fontSize: 14)),
+          pw.SizedBox(height: 15),
+          pw.Text('Total Collection: ${totalCollection.toStringAsFixed(2)} TK', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 20),
-          pw.Text(
-            'Summary',
-            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-          ),
+          pw.Text('Customer Statement Table:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 8),
-          pw.Bullet(text: 'Total Collection: ${collection.toStringAsFixed(2)}'),
-          pw.Bullet(text: 'Total Charges Added: ${charges.toStringAsFixed(2)}'),
-          pw.Bullet(text: 'Net: ${net.toStringAsFixed(2)}'),
-          pw.Bullet(text: 'New Customers: ${newCustomers.length}'),
-          pw.Bullet(text: 'Total Transactions: ${rangePayments.length}'),
-          pw.SizedBox(height: 20),
-          pw.Text(
-            'Transaction Details',
-            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 8),
-          if (rangePayments.isEmpty)
-            pw.Text('No transactions in this period')
+          if (reportData.isEmpty)
+            pw.Text('No payments received in this period.')
           else
             pw.TableHelper.fromTextArray(
-              headers: const ['Date', 'Type', 'Amount'],
-              data: rangePayments.map((p) {
+              headers: const ['Customer', 'Total Due', 'Payment', 'Remaining'],
+              data: reportData.map((row) {
                 return [
-                  DateFormat('d MMM, hh:mm a').format(p.date),
-                  p.type == PaymentType.payment ? 'Collection' : 'Charge',
-                  p.amount.toStringAsFixed(2),
+                  "${row['name']} (${row['phone']})",
+                  row['totalDue'].toStringAsFixed(0),
+                  row['paid'].toStringAsFixed(0),
+                  row['remaining'].toStringAsFixed(0),
                 ];
               }).toList(),
             ),
-          if (newCustomers.isNotEmpty) ...[
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'New Customers',
-              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.SizedBox(height: 8),
-            pw.TableHelper.fromTextArray(
-              headers: const ['Name', 'Phone', 'Joined'],
-              data: newCustomers.map((c) {
-                return [
-                  c.name,
-                  c.phone,
-                  DateFormat('d MMM yyyy').format(c.createdAt),
-                ];
-              }).toList(),
-            ),
-          ],
         ],
       ),
     );
@@ -206,12 +196,12 @@ class _ReportScreenState extends State<ReportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reports"),
+        title: const Text("Collection Reports"),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
-            tooltip: "Export PDF",
+            icon: const Icon(Icons.download_rounded),
+            tooltip: "Download PDF",
             onPressed: _loading ? null : _exportPdf,
           ),
         ],
@@ -228,34 +218,17 @@ class _ReportScreenState extends State<ReportScreen> {
   Widget _buildContent() {
     final (start, end) = _dateRange();
     final rangePayments = _paymentsInRange(start, end);
-    final newCustomers = _newCustomersInRange(start, end);
-
-    final collection = rangePayments
-        .where((p) => p.type == PaymentType.payment)
-        .fold<double>(0, (sum, p) => sum + p.amount);
-    final charges = rangePayments
-        .where((p) => p.type == PaymentType.dueAdded)
-        .fold<double>(0, (sum, p) => sum + p.amount);
-    final net = collection - charges;
-
-    final dailyData = _dailyBreakdown(start, end);
+    final reportData = _getCustomerReportData(rangePayments);
+    final totalCollection = rangePayments.fold<double>(0, (sum, p) => sum + p.amount);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ✅ Weekly/Monthly Toggle
         SegmentedButton<ReportPeriod>(
           segments: const [
-            ButtonSegment(
-              value: ReportPeriod.weekly,
-              label: Text("Weekly"),
-              icon: Icon(Icons.view_week),
-            ),
-            ButtonSegment(
-              value: ReportPeriod.monthly,
-              label: Text("Monthly"),
-              icon: Icon(Icons.calendar_view_month),
-            ),
+            ButtonSegment(value: ReportPeriod.daily, label: Text("Daily"), icon: Icon(Icons.today)),
+            ButtonSegment(value: ReportPeriod.weekly, label: Text("Weekly"), icon: Icon(Icons.view_week)),
+            ButtonSegment(value: ReportPeriod.monthly, label: Text("Monthly"), icon: Icon(Icons.calendar_view_month)),
           ],
           selected: {_period},
           onSelectionChanged: (selection) {
@@ -268,7 +241,6 @@ class _ReportScreenState extends State<ReportScreen> {
 
         const SizedBox(height: 16),
 
-        // ✅ Period Navigation
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -278,182 +250,107 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             Text(
               _periodLabel(),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right),
-              onPressed: _offset >= 0
-                  ? null
-                  : () => setState(() => _offset += 1),
+              onPressed: _offset >= 0 ? null : () => setState(() => _offset += 1),
             ),
           ],
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-        // ✅ Summary Cards
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.6,
-          children: [
-            _SummaryCard(
-              icon: Icons.arrow_downward,
-              label: "Collection",
-              value: collection.toStringAsFixed(0),
-              color: Colors.green,
-            ),
-            _SummaryCard(
-              icon: Icons.arrow_upward,
-              label: "Charges Added",
-              value: charges.toStringAsFixed(0),
-              color: Colors.red,
-            ),
-            _SummaryCard(
-              icon: Icons.account_balance,
-              label: "Net",
-              value: net.toStringAsFixed(0),
-              color: net >= 0 ? Colors.blue : Colors.orange,
-            ),
-            _SummaryCard(
-              icon: Icons.person_add,
-              label: "New Customers",
-              value: newCustomers.length.toString(),
-              color: Colors.teal,
-            ),
-          ],
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.green.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
+              const Text("Total Collection", style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const SizedBox(height: 6),
+              Text(
+                "${totalCollection.toStringAsFixed(0)} TK",
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
+              ),
+            ],
+          ),
         ),
 
         const SizedBox(height: 24),
 
-        // ✅ Bar Chart
         const Text(
-          "Daily Net Collection",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          "Customer Payment Details",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 12),
-        _BarChart(data: dailyData),
 
-        const SizedBox(height: 24),
-
-        // ✅ Transaction count summary line
-        Text(
-          "${rangePayments.length} transaction(s) in this period",
-          style: const TextStyle(color: Colors.grey),
-        ),
-
-        const SizedBox(height: 80),
+        if (reportData.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(child: Text("No transactions found for this period.", style: TextStyle(color: Colors.grey))),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: reportData.length,
+            separatorBuilder: (context, index) => const Divider(),
+            itemBuilder: (context, index) {
+              final row = reportData[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                key: ValueKey(row['phone']),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      row['name'],
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(row['phone'], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _AmountInfo(label: "Total Due", amount: row['totalDue'], color: Colors.orange),
+                        _AmountInfo(label: "Payment", amount: row['paid'], color: Colors.green),
+                        _AmountInfo(label: "Remaining", amount: row['remaining'], color: Colors.red),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        const SizedBox(height: 100),
       ],
     );
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final IconData icon;
+class _AmountInfo extends StatelessWidget {
+  const _AmountInfo({required this.label, required this.amount, required this.color});
   final String label;
-  final String value;
+  final double amount;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Icon(icon, color: color, size: 22),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-}
-
-// ✅ কোনো external chart package ছাড়াই বানানো সাধারণ Bar Chart
-class _BarChart extends StatelessWidget {
-  const _BarChart({required this.data});
-
-  final List<MapEntry<String, double>> data;
-
-  @override
-  Widget build(BuildContext context) {
-    if (data.isEmpty) {
-      return const SizedBox(
-        height: 150,
-        child: Center(child: Text("No data")),
-      );
-    }
-
-    final maxAbsValue = data
-        .map((e) => e.value.abs())
-        .fold<double>(1, (max, v) => v > max ? v : max);
-
-    return SizedBox(
-      height: 180,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: data.map((entry) {
-          final isPositive = entry.value >= 0;
-          final barHeight = (entry.value.abs() / maxAbsValue) * 120;
-
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    entry.value == 0 ? '' : entry.value.toStringAsFixed(0),
-                    style: const TextStyle(fontSize: 9, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    height: barHeight < 4 ? 4 : barHeight,
-                    decoration: BoxDecoration(
-                      color: isPositive ? Colors.green : Colors.red,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    entry.key,
-                    style: const TextStyle(fontSize: 10),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        const SizedBox(height: 2),
+        Text(
+          "${amount.toStringAsFixed(0)} TK",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
     );
   }
 }
