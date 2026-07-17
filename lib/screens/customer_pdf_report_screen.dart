@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../models/customer.dart';
@@ -10,7 +9,13 @@ import '../models/customer_repository.dart';
 
 enum _ReportFilter { all, dueOnly }
 
-enum _ReportSort { dueHighToLow, dueLowToHigh, nameAZ }
+enum _ReportSort {
+  dueHighToLow,
+  dueLowToHigh,
+  nameAZ,
+  dateNewestFirst,
+  dateOldestFirst,
+}
 
 class CustomerPdfReportScreen extends StatefulWidget {
   const CustomerPdfReportScreen({super.key});
@@ -66,7 +71,8 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
   }
 
   List<Customer> get _filteredSorted {
-    var list = [..._allCustomers];
+    // ✅ আর্কাইভ করা কাস্টমারদের রিপোর্ট থেকে বাদ দেওয়া হচ্ছে
+    var list = _allCustomers.where((c) => !c.isHidden).toList();
 
     if (_filter == _ReportFilter.dueOnly) {
       list = list.where((c) => c.totalDue > 0).toList();
@@ -82,129 +88,174 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
       case _ReportSort.nameAZ:
         list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         break;
+      case _ReportSort.dateNewestFirst:
+        list.sort((a, b) => b.lastPaymentDate.compareTo(a.lastPaymentDate));
+        break;
+      case _ReportSort.dateOldestFirst:
+        list.sort((a, b) => a.lastPaymentDate.compareTo(b.lastPaymentDate));
+        break;
     }
 
     return list;
   }
 
-  // ✅ PDF বানানোর মূল ফাংশন
-  Future<Uint8List> _buildPdf(List<Customer> customers) async {
-    final doc = pw.Document();
+  String _sortLabel(_ReportSort option) {
+    switch (option) {
+      case _ReportSort.dueHighToLow:
+        return "Due: বেশি থেকে কম";
+      case _ReportSort.dueLowToHigh:
+        return "Due: কম থেকে বেশি";
+      case _ReportSort.nameAZ:
+        return "নাম: A - Z";
+      case _ReportSort.dateNewestFirst:
+        return "Due Date: নতুন থেকে পুরাতন";
+      case _ReportSort.dateOldestFirst:
+        return "Due Date: পুরাতন থেকে নতুন";
+    }
+  }
 
-    // ✅ Google Fonts থেকে বাংলা ফন্ট লোড হচ্ছে (auto-download + cache)
-    final regularFont = await PdfGoogleFonts.notoSansBengaliRegular();
-    final boldFont = await PdfGoogleFonts.notoSansBengaliBold();
+  // ✅ HTML এ ব্যবহারের জন্য বিশেষ ক্যারেক্টার escape করা (& < > " ইত্যাদি)
+  String _escapeHtml(String input) {
+    return input
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+  }
 
+  // ✅ PDF বানানোর মূল ফাংশন — HTML দিয়ে (বাংলা text shaping সঠিকভাবে হওয়ার জন্য)
+  Future<Uint8List> _buildPdf(List<Customer> customers, PdfPageFormat format) async {
     final currencyFmt = NumberFormat('#,##0.00');
     final dateFmt = DateFormat('d MMM yyyy');
     final now = DateTime.now();
-
     final totalDue = customers.fold<double>(0, (sum, c) => sum + c.totalDue);
 
-    doc.addPage(
-      pw.MultiPage(
-        theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(28),
-        header: (context) {
-          if (context.pageNumber != 1) return pw.SizedBox();
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    "Smart Due — Customer Report",
-                    style: pw.TextStyle(font: boldFont, fontSize: 18),
-                  ),
-                  pw.Text(
-                    "তারিখ: ${dateFmt.format(now)}",
-                    style: pw.TextStyle(font: regularFont, fontSize: 10, color: PdfColors.grey700),
-                  ),
-                ],
-              ),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                "মোট কাস্টমার: ${customers.length}   |   মোট বকেয়া: ৳${currencyFmt.format(totalDue)}",
-                style: pw.TextStyle(font: regularFont, fontSize: 11, color: PdfColors.grey800),
-              ),
-              pw.SizedBox(height: 10),
-              pw.Divider(color: PdfColors.grey400),
-              pw.SizedBox(height: 6),
-            ],
-          );
-        },
-        footer: (context) => pw.Align(
-          alignment: pw.Alignment.centerRight,
-          child: pw.Text(
-            "Page ${context.pageNumber} / ${context.pagesCount}",
-            style: pw.TextStyle(font: regularFont, fontSize: 9, color: PdfColors.grey600),
-          ),
-        ),
-        build: (context) => [
-          pw.TableHelper.fromTextArray(
-            headerStyle: pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
-            headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF6366F1)),
-            cellStyle: pw.TextStyle(font: regularFont, fontSize: 9.5),
-            cellHeight: 26,
-            cellAlignments: {
-              0: pw.Alignment.centerLeft,
-              1: pw.Alignment.centerLeft,
-              2: pw.Alignment.centerLeft,
-              3: pw.Alignment.centerLeft,
-              4: pw.Alignment.centerLeft,
-              5: pw.Alignment.centerRight,
-            },
-            headers: const ["ক্র.", "নাম", "ফোন", "ঠিকানা", "Due Date", "বকেয়া"],
-            data: List.generate(customers.length, (index) {
-              final c = customers[index];
-              return [
-                "${index + 1}",
-                c.name,
-                c.phone,
-                _resolveAddress(c),
-                dateFmt.format(c.lastPaymentDate),
-                currencyFmt.format(c.totalDue),
-              ];
-            }),
-            columnWidths: const {
-              0: pw.FixedColumnWidth(28),
-              1: pw.FlexColumnWidth(2.2),
-              2: pw.FlexColumnWidth(1.4),
-              3: pw.FlexColumnWidth(2.6),
-              4: pw.FlexColumnWidth(1.3),
-              5: pw.FlexColumnWidth(1.3),
-            },
-            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-            rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
-          ),
-          pw.SizedBox(height: 16),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey100,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  "সর্বমোট বকেয়া",
-                  style: pw.TextStyle(font: boldFont, fontSize: 12),
-                ),
-                pw.Text(
-                  "৳${currencyFmt.format(totalDue)}",
-                  style: pw.TextStyle(font: boldFont, fontSize: 13, color: PdfColors.red700),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    final rowsHtml = StringBuffer();
+    for (var i = 0; i < customers.length; i++) {
+      final c = customers[i];
+      rowsHtml.write('''
+        <tr>
+          <td class="center">${i + 1}</td>
+          <td>${_escapeHtml(c.name)}</td>
+          <td>${_escapeHtml(c.phone.isNotEmpty ? c.phone : "-")}</td>
+          <td>${_escapeHtml(_resolveAddress(c))}</td>
+          <td>${dateFmt.format(c.lastPaymentDate)}</td>
+          <td class="right">${currencyFmt.format(c.totalDue)}</td>
+        </tr>
+      ''');
+    }
 
-    return doc.save();
+    final html = '''
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;
+    padding: 24px;
+    color: #1a1a1a;
+    font-size: 12px;
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+  }
+  .title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .date {
+    font-size: 10px;
+    color: #555;
+  }
+  .summary-line {
+    font-size: 11px;
+    color: #333;
+    margin: 6px 0 14px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead tr {
+    background-color: #6366F1;
+    color: #ffffff;
+  }
+  th, td {
+    border: 0.5px solid #ccc;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 10.5px;
+  }
+  th {
+    font-weight: 700;
+    font-size: 10.5px;
+  }
+  td.center, th.center { text-align: center; }
+  td.right, th.right { text-align: right; }
+  tbody tr:nth-child(even) {
+    background-color: #f7f7fb;
+  }
+  .total-box {
+    margin-top: 16px;
+    padding: 10px 14px;
+    background-color: #f0f0f5;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .total-label {
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .total-value {
+    font-weight: 700;
+    font-size: 13px;
+    color: #c0392b;
+  }
+</style>
+</head>
+<body>
+  <div class="header-row">
+    <p class="title">Smart Due — Customer Report</p>
+    <p class="date">তারিখ: ${dateFmt.format(now)}</p>
+  </div>
+  <p class="summary-line">
+    মোট কাস্টমার: ${customers.length} &nbsp;|&nbsp; মোট বকেয়া: ৳${currencyFmt.format(totalDue)}
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th class="center">ক্র.</th>
+        <th>নাম</th>
+        <th>ফোন</th>
+        <th>ঠিকানা</th>
+        <th>Due Date</th>
+        <th class="right">বকেয়া</th>
+      </tr>
+    </thead>
+    <tbody>
+      $rowsHtml
+    </tbody>
+  </table>
+  <div class="total-box">
+    <span class="total-label">সর্বমোট বকেয়া</span>
+    <span class="total-value">৳${currencyFmt.format(totalDue)}</span>
+  </div>
+</body>
+</html>
+''';
+
+    return Printing.convertHtml(format: format, html: html);
   }
 
   Future<void> _previewAndPrint() async {
@@ -212,7 +263,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     try {
       final customers = _filteredSorted;
       await Printing.layoutPdf(
-        onLayout: (format) => _buildPdf(customers),
+        onLayout: (format) => _buildPdf(customers, format),
         name: 'smart_due_customer_report.pdf',
       );
     } finally {
@@ -224,7 +275,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     setState(() => _generating = true);
     try {
       final customers = _filteredSorted;
-      final bytes = await _buildPdf(customers);
+      final bytes = await _buildPdf(customers, PdfPageFormat.a4);
       await Printing.sharePdf(
         bytes: bytes,
         filename: 'smart_due_customer_report.pdf',
@@ -355,20 +406,12 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                             dropdownColor: _surface,
                             icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary),
                             style: const TextStyle(color: _textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
-                            items: const [
-                              DropdownMenuItem(
-                                value: _ReportSort.dueHighToLow,
-                                child: Text("Due: বেশি থেকে কম"),
-                              ),
-                              DropdownMenuItem(
-                                value: _ReportSort.dueLowToHigh,
-                                child: Text("Due: কম থেকে বেশি"),
-                              ),
-                              DropdownMenuItem(
-                                value: _ReportSort.nameAZ,
-                                child: Text("নাম: A - Z"),
-                              ),
-                            ],
+                            items: _ReportSort.values.map((option) {
+                              return DropdownMenuItem(
+                                value: option,
+                                child: Text(_sortLabel(option)),
+                              );
+                            }).toList(),
                             onChanged: (value) {
                               if (value != null) setState(() => _sort = value);
                             },
@@ -434,7 +477,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
-                                          _resolveAddress(c, fallback: c.phone),
+                                          "${_resolveAddress(c, fallback: c.phone)}  •  ${DateFormat('d MMM yyyy').format(c.lastPaymentDate)}",
                                           style: const TextStyle(color: _textSecondary, fontSize: 11),
                                           overflow: TextOverflow.ellipsis,
                                         ),
