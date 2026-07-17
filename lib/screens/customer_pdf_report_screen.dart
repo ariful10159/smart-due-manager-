@@ -1,0 +1,561 @@
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
+import '../models/customer.dart';
+import '../models/customer_repository.dart';
+
+enum _ReportFilter { all, dueOnly }
+
+enum _ReportSort { dueHighToLow, dueLowToHigh, nameAZ }
+
+class CustomerPdfReportScreen extends StatefulWidget {
+  const CustomerPdfReportScreen({super.key});
+
+  @override
+  State<CustomerPdfReportScreen> createState() => _CustomerPdfReportScreenState();
+}
+
+class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
+  final _repo = CustomerRepository();
+
+  bool _loading = true;
+  bool _generating = false;
+  List<Customer> _allCustomers = [];
+
+  _ReportFilter _filter = _ReportFilter.all;
+  _ReportSort _sort = _ReportSort.dueHighToLow;
+
+  // 🎨 Shared dark navy palette
+  static const Color _scaffoldBg = Color(0xFF0F0F14);
+  static const Color _surface = Color(0xFF1B1B24);
+  static const Color _surfaceAlt = Color(0xFF20202B);
+  static const Color _borderColor = Color(0xFF2C2C3A);
+  static const Color _textPrimary = Colors.white;
+  static const Color _textSecondary = Color(0xFF9A9AAE);
+  static const Color _accent = Color(0xFF6366F1);
+  static const Color _accentAlt = Color(0xFF8B5CF6);
+  static const Color _due = Color(0xFFEF4444);
+  static const Color _clear = Color(0xFF10B981);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomers();
+  }
+
+  Future<void> _loadCustomers() async {
+    setState(() => _loading = true);
+    final customers = await _repo.fetchCustomersOnce();
+    if (!mounted) return;
+    setState(() {
+      _allCustomers = customers;
+      _loading = false;
+    });
+  }
+
+  // ✅ Address safely resolve করার helper — null/empty হলে fallback দেখায়
+  String _resolveAddress(Customer c, {String fallback = "-"}) {
+    if (c.address != null && c.address!.trim().isNotEmpty) {
+      return c.address!.trim();
+    }
+    return fallback;
+  }
+
+  List<Customer> get _filteredSorted {
+    var list = [..._allCustomers];
+
+    if (_filter == _ReportFilter.dueOnly) {
+      list = list.where((c) => c.totalDue > 0).toList();
+    }
+
+    switch (_sort) {
+      case _ReportSort.dueHighToLow:
+        list.sort((a, b) => b.totalDue.compareTo(a.totalDue));
+        break;
+      case _ReportSort.dueLowToHigh:
+        list.sort((a, b) => a.totalDue.compareTo(b.totalDue));
+        break;
+      case _ReportSort.nameAZ:
+        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+    }
+
+    return list;
+  }
+
+  // ✅ PDF বানানোর মূল ফাংশন
+  Future<Uint8List> _buildPdf(List<Customer> customers) async {
+    final doc = pw.Document();
+
+    // ✅ Google Fonts থেকে বাংলা ফন্ট লোড হচ্ছে (auto-download + cache)
+    final regularFont = await PdfGoogleFonts.notoSansBengaliRegular();
+    final boldFont = await PdfGoogleFonts.notoSansBengaliBold();
+
+    final currencyFmt = NumberFormat('#,##0.00');
+    final dateFmt = DateFormat('d MMM yyyy');
+    final now = DateTime.now();
+
+    final totalDue = customers.fold<double>(0, (sum, c) => sum + c.totalDue);
+
+    doc.addPage(
+      pw.MultiPage(
+        theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(28),
+        header: (context) {
+          if (context.pageNumber != 1) return pw.SizedBox();
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    "Smart Due — Customer Report",
+                    style: pw.TextStyle(font: boldFont, fontSize: 18),
+                  ),
+                  pw.Text(
+                    "তারিখ: ${dateFmt.format(now)}",
+                    style: pw.TextStyle(font: regularFont, fontSize: 10, color: PdfColors.grey700),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                "মোট কাস্টমার: ${customers.length}   |   মোট বকেয়া: ৳${currencyFmt.format(totalDue)}",
+                style: pw.TextStyle(font: regularFont, fontSize: 11, color: PdfColors.grey800),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Divider(color: PdfColors.grey400),
+              pw.SizedBox(height: 6),
+            ],
+          );
+        },
+        footer: (context) => pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: pw.Text(
+            "Page ${context.pageNumber} / ${context.pagesCount}",
+            style: pw.TextStyle(font: regularFont, fontSize: 9, color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headerStyle: pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
+            headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF6366F1)),
+            cellStyle: pw.TextStyle(font: regularFont, fontSize: 9.5),
+            cellHeight: 26,
+            cellAlignments: {
+              0: pw.Alignment.centerLeft,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerLeft,
+              3: pw.Alignment.centerLeft,
+              4: pw.Alignment.centerLeft,
+              5: pw.Alignment.centerRight,
+            },
+            headers: const ["ক্র.", "নাম", "ফোন", "ঠিকানা", "Due Date", "বকেয়া"],
+            data: List.generate(customers.length, (index) {
+              final c = customers[index];
+              return [
+                "${index + 1}",
+                c.name,
+                c.phone,
+                _resolveAddress(c),
+                dateFmt.format(c.lastPaymentDate),
+                currencyFmt.format(c.totalDue),
+              ];
+            }),
+            columnWidths: const {
+              0: pw.FixedColumnWidth(28),
+              1: pw.FlexColumnWidth(2.2),
+              2: pw.FlexColumnWidth(1.4),
+              3: pw.FlexColumnWidth(2.6),
+              4: pw.FlexColumnWidth(1.3),
+              5: pw.FlexColumnWidth(1.3),
+            },
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
+          ),
+          pw.SizedBox(height: 16),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  "সর্বমোট বকেয়া",
+                  style: pw.TextStyle(font: boldFont, fontSize: 12),
+                ),
+                pw.Text(
+                  "৳${currencyFmt.format(totalDue)}",
+                  style: pw.TextStyle(font: boldFont, fontSize: 13, color: PdfColors.red700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return doc.save();
+  }
+
+  Future<void> _previewAndPrint() async {
+    setState(() => _generating = true);
+    try {
+      final customers = _filteredSorted;
+      await Printing.layoutPdf(
+        onLayout: (format) => _buildPdf(customers),
+        name: 'smart_due_customer_report.pdf',
+      );
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
+  Future<void> _sharePdf() async {
+    setState(() => _generating = true);
+    try {
+      final customers = _filteredSorted;
+      final bytes = await _buildPdf(customers);
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'smart_due_customer_report.pdf',
+      );
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _filteredSorted;
+    final totalDue = result.fold<double>(0, (sum, c) => sum + c.totalDue);
+
+    return Scaffold(
+      backgroundColor: _scaffoldBg,
+      appBar: AppBar(
+        title: const Text(
+          "Customer PDF Report",
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: _textPrimary),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: _textPrimary),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _accent))
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(
+                    children: [
+                      // ✅ Summary card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [_accent, _accentAlt],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _accent.withOpacity(0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "${result.length} জন কাস্টমার",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  "মোট বকেয়া: ৳${totalDue.toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 26),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // ✅ Filter chips
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _FilterChip(
+                              label: "সব কাস্টমার",
+                              selected: _filter == _ReportFilter.all,
+                              onTap: () => setState(() => _filter = _ReportFilter.all),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _FilterChip(
+                              label: "শুধু বকেয়া",
+                              selected: _filter == _ReportFilter.dueOnly,
+                              onTap: () => setState(() => _filter = _ReportFilter.dueOnly),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // ✅ Sort dropdown
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: _surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _borderColor),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<_ReportSort>(
+                            value: _sort,
+                            isExpanded: true,
+                            dropdownColor: _surface,
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary),
+                            style: const TextStyle(color: _textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
+                            items: const [
+                              DropdownMenuItem(
+                                value: _ReportSort.dueHighToLow,
+                                child: Text("Due: বেশি থেকে কম"),
+                              ),
+                              DropdownMenuItem(
+                                value: _ReportSort.dueLowToHigh,
+                                child: Text("Due: কম থেকে বেশি"),
+                              ),
+                              DropdownMenuItem(
+                                value: _ReportSort.nameAZ,
+                                child: Text("নাম: A - Z"),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) setState(() => _sort = value);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // ✅ Preview list (short summary rows)
+                Expanded(
+                  child: result.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "কোনো কাস্টমার পাওয়া যায়নি",
+                            style: TextStyle(color: _textSecondary, fontWeight: FontWeight.w600),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: result.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final c = result[index];
+                            final dueColor = c.totalDue > 0 ? _due : _clear;
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [_surface, _surfaceAlt],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _borderColor),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 26,
+                                    height: 26,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: _accent.withOpacity(0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      "${index + 1}",
+                                      style: const TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.w800),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          c.name,
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          _resolveAddress(c, fallback: c.phone),
+                                          style: const TextStyle(color: _textSecondary, fontSize: 11),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    c.totalDue.toStringAsFixed(2),
+                                    style: TextStyle(color: dueColor, fontWeight: FontWeight.w800, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+
+                // ✅ Bottom action buttons
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  decoration: const BoxDecoration(
+                    color: _surface,
+                    border: Border(top: BorderSide(color: _borderColor)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _generating || result.isEmpty ? null : _sharePdf,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _textPrimary,
+                            side: const BorderSide(color: _borderColor),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.share_rounded, size: 18),
+                          label: const Text("Share", style: TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: const LinearGradient(colors: [_accent, _accentAlt]),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: _generating || result.isEmpty ? null : _previewAndPrint,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                child: Center(
+                                  child: _generating
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                        )
+                                      : const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.print_rounded, color: Colors.white, size: 18),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "Print / Preview",
+                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  static const Color _surface = Color(0xFF1B1B24);
+  static const Color _borderColor = Color(0xFF2C2C3A);
+  static const Color _textSecondary = Color(0xFF9A9AAE);
+  static const Color _accent = Color(0xFF6366F1);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? _accent.withOpacity(0.16) : _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: selected ? _accent : _borderColor),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? _accent : _textSecondary,
+            fontWeight: FontWeight.w700,
+            fontSize: 12.5,
+          ),
+        ),
+      ),
+    );
+  }
+}

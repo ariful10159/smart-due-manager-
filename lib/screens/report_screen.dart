@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../models/payment.dart';
+import 'customer_pdf_report_screen.dart';
 
 enum ReportPeriod { daily, weekly, monthly }
 
@@ -39,7 +40,7 @@ class _ReportScreenState extends State<ReportScreen> {
       // ১. প্যারালালি কাস্টমার লিস্ট লোড করা
       final customers = await _repo.fetchCustomersOnce();
       
-      // কাস্টমার আইডিগুলো একটা সেট-এ রাখা যেন সহজে ফিল্টার করা যায়
+      // কাস্টমার আইডিগুলো একটা সেট-এ রাখা যেন সহজে ফিল্টার করা যায়
       final myCustomerIds = customers.map((c) => c.id).toSet();
       final List<Payment> allPayments = [];
 
@@ -52,7 +53,7 @@ class _ReportScreenState extends State<ReportScreen> {
         final data = doc.data();
         final cId = data['customerId']?.toString() ?? '';
         
-        // শুধু বর্তমান ইউজারের আওতাভুক্ত কাস্টমারদের পেমেন্টগুলোই ফিল্টার করে নেওয়া
+        // শুধু বর্তমান ইউজারের আওতাভুক্ত কাস্টমারদের পেমেন্টগুলোই ফিল্টার করে নেওয়া
         if (myCustomerIds.contains(cId)) {
           try {
             final payment = Payment.fromMap({...data, 'id': doc.id});
@@ -199,6 +200,17 @@ class _ReportScreenState extends State<ReportScreen> {
         title: const Text("Collection Reports"),
         centerTitle: true,
         actions: [
+          // কাস্টম পিডিএফ স্ক্রিন বাটন
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_rounded),
+            tooltip: "Customer PDF Report",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CustomerPdfReportScreen()),
+              );
+            },
+          ),
+          // ডাইরেক্ট এক্সপোর্ট পিডিএফ বাটন
           IconButton(
             icon: const Icon(Icons.download_rounded),
             tooltip: "Download PDF",
