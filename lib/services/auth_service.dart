@@ -59,7 +59,6 @@ class AuthService {
 
       // ✅ Race-condition ফিক্স: signIn() সফল হলেও Android প্লাগিনে
       // currentUser getter কখনো কখনো native সাইড থেকে সিঙ্ক হতে দেরি করে।
-      // তাই সরাসরি এগিয়ে যাওয়ার আগে নিশ্চিত হচ্ছি যে currentUser আসলেই সেট হয়েছে।
       if (_auth.currentUser == null) {
         await _auth.authStateChanges().firstWhere(
           (user) => user != null,
@@ -69,7 +68,6 @@ class AuthService {
         );
       }
 
-      // ✅ তারপরও যদি null থাকে (অত্যন্ত বিরল), স্পষ্ট এরর দেখানো হচ্ছে
       if (_auth.currentUser == null && credential.user == null) {
         return 'লগইন সম্পন্ন হয়নি, আবার চেষ্টা করুন';
       }
@@ -84,8 +82,17 @@ class AuthService {
     }
   }
 
+  // ✅ Logout — timeout সহ, যাতে কখনো চিরকাল আটকে না থাকে
   static Future<void> logout() async {
-    await _auth.signOut();
+    try {
+      await _auth.signOut().timeout(const Duration(seconds: 10));
+    } on TimeoutException {
+      // ✅ timeout হলেও silently এগিয়ে যাওয়া হচ্ছে,
+      // UI পরের ধাপেই সরাসরি LoginScreen এ নিয়ে যাবে
+    } catch (_) {
+      // অন্য যেকোনো এরর হলেও silently এগিয়ে যাওয়া হচ্ছে,
+      // কারণ লোকাল সেশন সাধারণত signOut() কল হওয়ার সাথে সাথেই ক্লিয়ার হয়ে যায়
+    }
   }
 
   static String _mapAuthError(FirebaseAuthException e) {

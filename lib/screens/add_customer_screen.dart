@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/customer.dart';
+import '../theme/app_colors.dart';
 import 'all_customers_screen.dart';
 import 'home_screen.dart';
 import 'reminder_screen.dart';
@@ -23,7 +24,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   int _selectedIndex = 1;
 
   final _nameController = TextEditingController();
-  final _addressController = TextEditingController(); 
+  final _addressController = TextEditingController();
   final _dueAmountController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dateController = TextEditingController();
@@ -35,7 +36,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _addressController.dispose(); 
+    _addressController.dispose();
     _dueAmountController.dispose();
     _phoneController.dispose();
     _dateController.dispose();
@@ -43,12 +44,33 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
+  Future<void> _selectDate(AppColors colors) async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme(
+              brightness: colors.scaffoldBg.computeLuminance() < 0.5
+                  ? Brightness.dark
+                  : Brightness.light,
+              primary: colors.accent,
+              onPrimary: Colors.white,
+              secondary: colors.accentAlt,
+              onSecondary: Colors.white,
+              error: colors.due,
+              onError: Colors.white,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
+            ),
+            dialogBackgroundColor: colors.surface,
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (pickedDate != null) {
@@ -123,14 +145,14 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       name: _nameController.text.trim(),
       address: _addressController.text.trim().isEmpty
           ? null
-          : _addressController.text.trim(), 
+          : _addressController.text.trim(),
       phone: _phoneController.text.trim(),
       totalDue: totalDue,
       lastPaymentDate: lastPaymentDate ?? DateTime.now(),
       createdAt: DateTime.now(),
       note: _noteController.text.trim().isEmpty
           ? null
-          : _noteController.text.trim(), 
+          : _noteController.text.trim(),
       ownerId: currentUserId,
     );
 
@@ -179,10 +201,10 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         ),
       );
 
-      // ✅ হোম স্ক্রিনে যাওয়ার কোডটি বাদ দিয়ে ফর্মটি রিসেট করা হয়েছে যাতে ইউজার এই স্ক্রিনেই থাকেন
+      // ✅ হোম স্ক্রিনে যাওয়ার কোডটি বাদ দিয়ে ফর্মটি রিসেট করা হয়েছে যাতে ইউজার এই স্ক্রিনেই থাকেন
       _resetForm();
-
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to save: $e'),
@@ -226,54 +248,60 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   }
 
   InputDecoration _buildInputDecoration({
+    required AppColors colors,
     required String labelText,
     required IconData prefixIcon,
-    ThemeData? theme,
   }) {
     return InputDecoration(
       labelText: labelText,
       labelStyle: TextStyle(
-        color: Colors.grey[600],
+        color: colors.textSecondary,
         fontSize: 14,
         fontWeight: FontWeight.w500,
       ),
-      prefixIcon: Icon(prefixIcon, color: theme?.colorScheme.primary.withOpacity(0.7), size: 22),
+      prefixIcon: Icon(prefixIcon, color: colors.accent, size: 22),
       filled: true,
-      fillColor: theme?.cardColor.withOpacity(0.6) ?? Colors.grey[50],
+      fillColor: colors.surfaceAlt,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.15), width: 1.5),
+        borderSide: BorderSide(color: colors.borderColor, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme?.colorScheme.primary ?? Colors.blue, width: 2),
+        borderSide: BorderSide(color: colors.accent, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        borderSide: BorderSide(color: colors.due, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
+        borderSide: BorderSide(color: colors.due, width: 2),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.98),
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Create Customer',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20, letterSpacing: 0.5),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 20,
+            letterSpacing: 0.5,
+            color: colors.textPrimary,
+          ),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -295,15 +323,15 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                           borderRadius: BorderRadius.circular(28),
                           gradient: LinearGradient(
                             colors: [
-                              theme.colorScheme.primary.withOpacity(0.4),
-                              theme.colorScheme.secondary.withOpacity(0.1),
+                              colors.accent.withOpacity(0.35),
+                              colors.accentAlt.withOpacity(0.15),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.1),
+                              color: colors.accent.withOpacity(0.2),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             )
@@ -312,14 +340,14 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         padding: const EdgeInsets.all(3),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: theme.cardColor,
+                            color: colors.surface,
                             borderRadius: BorderRadius.circular(25),
                             image: _selectedImage != null
                                 ? DecorationImage(image: FileImage(_selectedImage!), fit: BoxFit.cover)
                                 : null,
                           ),
                           child: _selectedImage == null
-                              ? Icon(Icons.blur_on_rounded, size: 48, color: theme.colorScheme.primary)
+                              ? Icon(Icons.blur_on_rounded, size: 48, color: colors.accent)
                               : null,
                         ),
                       ),
@@ -331,11 +359,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary,
+                              color: colors.accent,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: theme.colorScheme.primary.withOpacity(0.3),
+                                  color: colors.accent.withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 )
@@ -353,11 +381,16 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: theme.cardColor,
+                    gradient: LinearGradient(
+                      colors: [colors.surface, colors.surfaceAlt],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: colors.borderColor),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: Colors.black.withOpacity(0.15),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       )
@@ -367,11 +400,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                     children: [
                       TextFormField(
                         controller: _nameController,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
+                          colors: colors,
                           labelText: 'Full Name',
                           prefixIcon: Icons.badge_outlined,
-                          theme: theme,
                         ),
                         validator: (value) =>
                             value == null || value.trim().isEmpty ? 'Please enter name' : null,
@@ -380,11 +413,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
                       TextFormField(
                         controller: _phoneController,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
+                          colors: colors,
                           labelText: 'Phone Number',
                           prefixIcon: Icons.phone_android_rounded,
-                          theme: theme,
                         ),
                         keyboardType: TextInputType.phone,
                       ),
@@ -392,11 +425,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
                       TextFormField(
                         controller: _addressController,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
+                          colors: colors,
                           labelText: 'Address Location',
                           prefixIcon: Icons.map_outlined,
-                          theme: theme,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -406,12 +439,12 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: theme.colorScheme.error,
+                          color: colors.due,
                         ),
                         decoration: _buildInputDecoration(
+                          colors: colors,
                           labelText: 'Initial Due Amount',
                           prefixIcon: Icons.monetization_on_outlined,
-                          theme: theme,
                         ),
                         keyboardType: TextInputType.number,
                       ),
@@ -420,12 +453,12 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                       TextFormField(
                         controller: _dateController,
                         readOnly: true,
-                        onTap: _selectDate,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        onTap: () => _selectDate(colors),
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
+                          colors: colors,
                           labelText: 'Select Date',
                           prefixIcon: Icons.calendar_today_rounded,
-                          theme: theme,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -433,11 +466,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                       TextFormField(
                         controller: _noteController,
                         maxLines: 3,
-                        style: const TextStyle(fontSize: 14),
+                        style: TextStyle(fontSize: 14, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
+                          colors: colors,
                           labelText: 'Additional Notes',
                           prefixIcon: Icons.description_outlined,
-                          theme: theme,
                         ),
                       ),
                     ],
@@ -446,35 +479,43 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                 const SizedBox(height: 32),
 
                 _isSaving
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(child: CircularProgressIndicator(color: colors.accent))
                     : Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(colors: [colors.accent, colors.accentAlt]),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.25),
+                              color: colors.accent.withOpacity(0.35),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             )
                           ],
                         ),
-                        child: FilledButton(
-                          onPressed: _save,
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            elevation: 0,
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.person_add_alt_1_rounded, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                'Save Customer Account',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.3),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: _save,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 18),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.person_add_alt_1_rounded, size: 20, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Save Customer Account',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.3,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -486,40 +527,54 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            )
-          ],
+          color: colors.surface,
+          border: Border(top: BorderSide(color: colors.borderColor)),
         ),
-        child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _onDestinationSelected,
-          elevation: 0,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home_rounded),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_add_alt_1_outlined),
-              selectedIcon: Icon(Icons.person_add_alt_1_rounded),
-              label: 'Add Customer',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.people_outline_rounded),
-              selectedIcon: Icon(Icons.people_rounded),
-              label: 'All Customers',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.notifications_outlined),
-              selectedIcon: Icon(Icons.notifications_active_rounded),
-              label: 'Reminders',
-            ),
-          ],
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            backgroundColor: Colors.transparent,
+            indicatorColor: colors.accent.withOpacity(0.18),
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              final selected = states.contains(WidgetState.selected);
+              return TextStyle(
+                fontSize: 11.5,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                color: selected ? colors.accent : colors.textSecondary,
+              );
+            }),
+            iconTheme: WidgetStateProperty.resolveWith((states) {
+              final selected = states.contains(WidgetState.selected);
+              return IconThemeData(color: selected ? colors.accent : colors.textSecondary);
+            }),
+          ),
+          child: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onDestinationSelected,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_add_alt_1_outlined),
+                selectedIcon: Icon(Icons.person_add_alt_1_rounded),
+                label: 'Add Customer',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.people_outline_rounded),
+                selectedIcon: Icon(Icons.people_rounded),
+                label: 'All Customers',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.notifications_outlined),
+                selectedIcon: Icon(Icons.notifications_active_rounded),
+                label: 'Reminders',
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
+import '../theme/app_colors.dart';
 import 'add_customer_screen.dart';
 import 'archived_customers_screen.dart';
 import 'customer_detail_screen.dart';
@@ -37,18 +38,6 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   String? _reminderFilter;
   String _searchQuery = '';
   CustomerSortOption _sortOption = CustomerSortOption.none;
-
-  // 🎨 Dark navy palette — matches the rest of the app
-  static const Color _scaffoldBg = Color(0xFF0F0F14);
-  static const Color _surface = Color(0xFF1B1B24);
-  static const Color _surfaceAlt = Color(0xFF20202B);
-  static const Color _borderColor = Color(0xFF2C2C3A);
-  static const Color _textPrimary = Colors.white;
-  static const Color _textSecondary = Color(0xFF9A9AAE);
-  static const Color _hintColor = Color(0xFF5C5C6E);
-  static const Color _accent = Color(0xFF6366F1); // Indigo accent
-  static const Color _due = Color(0xFFEF4444);
-  static const Color _clear = Color(0xFF10B981);
 
   @override
   void dispose() {
@@ -242,63 +231,64 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     });
   }
 
-  InputDecoration _dropdownDecoration({Widget? suffixIcon}) {
+  InputDecoration _dropdownDecoration(AppColors colors, {Widget? suffixIcon}) {
     return InputDecoration(
       suffixIcon: suffixIcon,
       suffixIconConstraints: const BoxConstraints(
-        // 👈 add this
         minWidth: 28,
         minHeight: 28,
       ),
       filled: true,
-      fillColor: _surface,
+      fillColor: colors.surface,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 10,
         vertical: 12,
-      ), // slightly tighter
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _borderColor),
+        borderSide: BorderSide(color: colors.borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _borderColor),
+        borderSide: BorderSide(color: colors.borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _accent, width: 1.4),
+        borderSide: BorderSide(color: colors.accent, width: 1.4),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+
     return Scaffold(
-      backgroundColor: _scaffoldBg,
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "All Customers",
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 20,
             letterSpacing: 0.3,
-            color: _textPrimary,
+            color: colors.textPrimary,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: _textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           // ✅ Sort menu
           PopupMenuButton<CustomerSortOption>(
-            icon: const Icon(Icons.sort_rounded, color: _textPrimary),
+            icon: Icon(Icons.sort_rounded, color: colors.textPrimary),
             tooltip: "Sort",
-            color: _surface,
+            color: colors.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(color: _borderColor),
+              side: BorderSide(color: colors.borderColor),
             ),
             onSelected: (value) {
               setState(() => _sortOption = value);
@@ -310,14 +300,14 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                 child: Row(
                   children: [
                     if (isSelected)
-                      const Icon(Icons.check, size: 18, color: _accent)
+                      Icon(Icons.check, size: 18, color: colors.accent)
                     else
                       const SizedBox(width: 18),
                     const SizedBox(width: 8),
                     Text(
                       _sortLabel(option),
                       style: TextStyle(
-                        color: isSelected ? _accent : _textPrimary,
+                        color: isSelected ? colors.accent : colors.textPrimary,
                         fontWeight: isSelected
                             ? FontWeight.w700
                             : FontWeight.w500,
@@ -329,7 +319,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
             }).toList(),
           ),
           IconButton(
-            icon: const Icon(Icons.archive_outlined, color: _textPrimary),
+            icon: Icon(Icons.archive_outlined, color: colors.textPrimary),
             tooltip: "Archived Customers",
             onPressed: () {
               Navigator.push(
@@ -346,8 +336,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
         stream: _repo.streamCustomers(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: _accent),
+            return Center(
+              child: CircularProgressIndicator(color: colors.accent),
             );
           }
 
@@ -395,22 +385,22 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: TextField(
                   controller: _searchController,
-                  style: const TextStyle(color: _textPrimary, fontSize: 14),
+                  style: TextStyle(color: colors.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: "নাম বা ফোন নাম্বার দিয়ে খুঁজুন...",
-                    hintStyle: const TextStyle(
-                      color: _hintColor,
+                    hintStyle: TextStyle(
+                      color: colors.hintColor,
                       fontSize: 13.5,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: _textSecondary,
+                      color: colors.textSecondary,
                     ),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.clear_rounded,
-                              color: _textSecondary,
+                              color: colors.textSecondary,
                             ),
                             onPressed: () {
                               setState(() {
@@ -421,18 +411,18 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                           )
                         : null,
                     filled: true,
-                    fillColor: _surface,
+                    fillColor: colors.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: _borderColor),
+                      borderSide: BorderSide(color: colors.borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: _borderColor),
+                      borderSide: BorderSide(color: colors.borderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: _accent, width: 1.4),
+                      borderSide: BorderSide(color: colors.accent, width: 1.4),
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
@@ -457,27 +447,31 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                             value: availableYears.contains(_selectedYear)
                                 ? _selectedYear
                                 : null,
-                            hint: const Text(
+                            hint: Text(
                               "Year",
-                              style: TextStyle(color: _hintColor, fontSize: 13),
+                              style: TextStyle(color: colors.hintColor, fontSize: 13),
                             ),
-                            dropdownColor: _surface,
-                            style: const TextStyle(
-                              color: _textPrimary,
+                            dropdownColor: colors.surface,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 13,
                             ),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: _textSecondary,
+                              color: colors.textSecondary,
                             ),
                             decoration: _dropdownDecoration(
+                              colors,
                               suffixIcon: _selectedYear != null
                                   ? IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.clear,
                                         size: 16,
-                                        color: _textSecondary,
+                                        color: colors.textSecondary,
                                       ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      visualDensity: VisualDensity.compact,
                                       onPressed: () {
                                         setState(() => _selectedYear = null);
                                       },
@@ -508,35 +502,33 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                             value: availableMonths.contains(_selectedMonth)
                                 ? _selectedMonth
                                 : null,
-                            hint: const Text(
+                            hint: Text(
                               "Month",
-                              style: TextStyle(color: _hintColor, fontSize: 13),
+                              style: TextStyle(color: colors.hintColor, fontSize: 13),
                             ),
-                            dropdownColor: _surface,
-                            style: const TextStyle(
-                              color: _textPrimary,
+                            dropdownColor: colors.surface,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 13,
                             ),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: _textSecondary,
+                              color: colors.textSecondary,
                             ),
                             decoration: _dropdownDecoration(
-                              suffixIcon: _selectedYear != null
+                              colors,
+                              suffixIcon: _selectedMonth != null
                                   ? IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.clear,
                                         size: 16,
-                                        color: _textSecondary,
+                                        color: colors.textSecondary,
                                       ),
-                                      padding: EdgeInsets
-                                          .zero, // 👈 remove default padding
-                                      constraints:
-                                          const BoxConstraints(), // 👈 remove 48x48 min size
-                                      visualDensity: VisualDensity
-                                          .compact, // 👈 extra safety
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      visualDensity: VisualDensity.compact,
                                       onPressed: () {
-                                        setState(() => _selectedYear = null);
+                                        setState(() => _selectedMonth = null);
                                       },
                                     )
                                   : null,
@@ -569,27 +561,31 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                 )
                                 ? _reminderFilter
                                 : null,
-                            hint: const Text(
+                            hint: Text(
                               "Reminder",
-                              style: TextStyle(color: _hintColor, fontSize: 13),
+                              style: TextStyle(color: colors.hintColor, fontSize: 13),
                             ),
-                            dropdownColor: _surface,
-                            style: const TextStyle(
-                              color: _textPrimary,
+                            dropdownColor: colors.surface,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 13,
                             ),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: _textSecondary,
+                              color: colors.textSecondary,
                             ),
                             decoration: _dropdownDecoration(
+                              colors,
                               suffixIcon: _reminderFilter != null
                                   ? IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.clear,
                                         size: 16,
-                                        color: _textSecondary,
+                                        color: colors.textSecondary,
                                       ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      visualDensity: VisualDensity.compact,
                                       onPressed: () {
                                         setState(() => _reminderFilter = null);
                                       },
@@ -622,7 +618,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton.icon(
                           onPressed: _clearAllFilters,
-                          style: TextButton.styleFrom(foregroundColor: _due),
+                          style: TextButton.styleFrom(foregroundColor: colors.due),
                           icon: const Icon(
                             Icons.filter_alt_off_rounded,
                             size: 17,
@@ -650,31 +646,31 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [_surface, _surfaceAlt],
+                    gradient: LinearGradient(
+                      colors: [colors.surface, colors.surfaceAlt],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _borderColor),
+                    border: Border.all(color: colors.borderColor),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.groups_rounded,
                             size: 16,
-                            color: _textSecondary,
+                            color: colors.textSecondary,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             "${result.length} customer(s) found",
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: _textSecondary,
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -684,7 +680,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: totalDueInView > 0 ? _due : _clear,
+                          color: totalDueInView > 0 ? colors.due : colors.clear,
                         ),
                       ),
                     ],
@@ -701,7 +697,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                             Container(
                               padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
-                                color: _surface,
+                                color: colors.surface,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -709,7 +705,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                     ? Icons.search_off_rounded
                                     : Icons.people_outline_rounded,
                                 size: 40,
-                                color: _textSecondary,
+                                color: colors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -717,8 +713,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                               _searchQuery.isNotEmpty
                                   ? "'$_searchQuery' এর সাথে মিলে এমন কেউ নেই"
                                   : "No customers found",
-                              style: const TextStyle(
-                                color: _textSecondary,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13.5,
                               ),
@@ -738,8 +734,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                 DateTime.now(),
                               );
                           final dueColor = customer.totalDue > 0
-                              ? _due
-                              : _clear;
+                              ? colors.due
+                              : colors.clear;
 
                           return Material(
                             color: Colors.transparent,
@@ -757,13 +753,13 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [_surface, _surfaceAlt],
+                                  gradient: LinearGradient(
+                                    colors: [colors.surface, colors.surfaceAlt],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: _borderColor),
+                                  border: Border.all(color: colors.borderColor),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.2),
@@ -777,12 +773,12 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: _accent.withOpacity(0.16),
+                                        color: colors.accent.withOpacity(0.16),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.person_rounded,
-                                        color: _accent,
+                                        color: colors.accent,
                                         size: 24,
                                       ),
                                     ),
@@ -799,19 +795,19 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                                   customer.name,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontWeight: FontWeight.w800,
                                                     fontSize: 15.5,
-                                                    color: _textPrimary,
+                                                    color: colors.textPrimary,
                                                   ),
                                                 ),
                                               ),
                                               if (hasActiveReminder) ...[
                                                 const SizedBox(width: 6),
-                                                const Icon(
+                                                Icon(
                                                   Icons
                                                       .notifications_active_rounded,
-                                                  color: Color(0xFFF59E0B),
+                                                  color: colors.warn,
                                                   size: 17,
                                                 ),
                                               ],
@@ -820,18 +816,18 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                           const SizedBox(height: 5),
                                           Text(
                                             customer.phone,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12.5,
-                                              color: _textSecondary,
+                                              color: colors.textSecondary,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           const SizedBox(height: 3),
                                           Text(
                                             "Due date: ${_formatDate(customer.lastPaymentDate)}",
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 11.5,
-                                              color: _hintColor,
+                                              color: colors.hintColor,
                                             ),
                                           ),
                                         ],
@@ -875,12 +871,12 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                           child: Container(
                                             padding: const EdgeInsets.all(7),
                                             decoration: BoxDecoration(
-                                              color: _clear.withOpacity(0.14),
+                                              color: colors.clear.withOpacity(0.14),
                                               shape: BoxShape.circle,
                                             ),
-                                            child: const Icon(
+                                            child: Icon(
                                               Icons.call_rounded,
-                                              color: _clear,
+                                              color: colors.clear,
                                               size: 17,
                                             ),
                                           ),
@@ -902,24 +898,24 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
 
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: _surface,
-          border: const Border(top: BorderSide(color: _borderColor)),
+          color: colors.surface,
+          border: Border(top: BorderSide(color: colors.borderColor)),
         ),
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
             backgroundColor: Colors.transparent,
-            indicatorColor: _accent.withOpacity(0.18),
+            indicatorColor: colors.accent.withOpacity(0.18),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return TextStyle(
                 fontSize: 11.5,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                color: selected ? _accent : _textSecondary,
+                color: selected ? colors.accent : colors.textSecondary,
               );
             }),
             iconTheme: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
-              return IconThemeData(color: selected ? _accent : _textSecondary);
+              return IconThemeData(color: selected ? colors.accent : colors.textSecondary);
             }),
           ),
           child: NavigationBar(

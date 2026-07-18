@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/customer.dart';
 import '../models/payment.dart';
+import '../theme/app_colors.dart';
 
 class AddPaymentScreen extends StatefulWidget {
   const AddPaymentScreen({
@@ -32,15 +33,6 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
   File? _selectedImage;
   bool _isSaving = false;
 
-  // 🎨 Dark navy theme palette (matches rest of the app)
-  static const Color _scaffoldBg = Color(0xFF0F0F14);
-  static const Color _surface = Color(0xFF1B1B24);
-  static const Color _surfaceAlt = Color(0xFF20202B);
-  static const Color _borderColor = Color(0xFF2C2C3A);
-  static const Color _textPrimary = Colors.white;
-  static const Color _textSecondary = Color(0xFF9A9AAE);
-  static const Color _hintColor = Color(0xFF5C5C6E);
-
   @override
   void initState() {
     super.initState();
@@ -56,7 +48,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
+  Future<void> _selectDate(AppColors colors) async {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -65,12 +57,20 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF10B981),
-              surface: _surface,
-              onSurface: _textPrimary,
+            colorScheme: ColorScheme(
+              brightness: colors.scaffoldBg.computeLuminance() < 0.5
+                  ? Brightness.dark
+                  : Brightness.light,
+              primary: const Color(0xFF10B981),
+              onPrimary: Colors.white,
+              secondary: colors.accent,
+              onSecondary: Colors.white,
+              error: colors.due,
+              onError: Colors.white,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
             ),
-            dialogBackgroundColor: _surface,
+            dialogBackgroundColor: colors.surface,
           ),
           child: child!,
         );
@@ -165,68 +165,79 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
   }
 
   // পেমেন্ট মেথড সিলেকশনের জন্য কাস্টম উইজেট মেকার
-  Widget _buildMethodChip(PaymentMethod method, String label, IconData icon, Color activeColor) {
+  Widget _buildMethodChip(
+    AppColors colors,
+    PaymentMethod method,
+    String label,
+    IconData icon,
+    Color activeColor,
+  ) {
     final isSelected = _selectedMethod == method;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
       child: ChoiceChip(
         avatar: Icon(
-          icon, 
-          size: 16, 
-          color: isSelected ? Colors.white : _textSecondary,
+          icon,
+          size: 16,
+          color: isSelected ? Colors.white : colors.textSecondary,
         ),
         label: Text(
           label,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : _textPrimary,
+            color: isSelected ? Colors.white : colors.textPrimary,
           ),
         ),
         selected: isSelected,
         selectedColor: activeColor,
-        backgroundColor: _surfaceAlt,
+        backgroundColor: colors.surfaceAlt,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(
-            color: isSelected ? activeColor : _borderColor,
+            color: isSelected ? activeColor : colors.borderColor,
             width: 1,
           ),
         ),
-        onSelected: _isSaving ? null : (selected) {
-          setState(() {
-            _selectedMethod = selected ? method : null;
-          });
-        },
+        onSelected: _isSaving
+            ? null
+            : (selected) {
+                setState(() {
+                  _selectedMethod = selected ? method : null;
+                });
+              },
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+
     final isPayment = widget.type == PaymentType.payment;
-    final themeColor = isPayment ? const Color(0xFF10B981) : const Color(0xFFEF4444); // Emerald Green vs Crimson Red
+    final themeColor = isPayment
+        ? const Color(0xFF10B981)
+        : const Color(0xFFEF4444); // Emerald Green vs Crimson Red
     final title = isPayment ? 'Record Payment' : 'Add Charge';
-    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: _scaffoldBg,
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 20,
             letterSpacing: 0.5,
-            color: _textPrimary,
+            color: colors.textPrimary,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: _textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: _textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: colors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -240,13 +251,13 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 👤 Customer Card (Dark Glassmorphic Look)
+                // 👤 Customer Card (Glassmorphic Look)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [_surface, _surfaceAlt],
+                    gradient: LinearGradient(
+                      colors: [colors.surface, colors.surfaceAlt],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -259,7 +270,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                       ),
                     ],
                     border: Border.all(
-                      color: _borderColor,
+                      color: colors.borderColor,
                       width: 1,
                     ),
                   ),
@@ -280,10 +291,10 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                           children: [
                             Text(
                               widget.customer.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: _textPrimary,
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -291,7 +302,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                               "Current Due: ৳${widget.customer.totalDue.toStringAsFixed(2)}",
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.red.shade300,
+                                color: colors.due,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -313,12 +324,11 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                           fontSize: 12,
                           letterSpacing: 1.5,
                           fontWeight: FontWeight.w900,
-                          color: _textSecondary,
+                          color: colors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        // ✅ ফিক্সড: maxWidth দিতে Container-এর ভেতর constraints ব্যবহার করা হয়েছে
                         constraints: const BoxConstraints(maxWidth: 260),
                         alignment: Alignment.center,
                         child: TextFormField(
@@ -338,10 +348,10 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                               color: themeColor,
                             ),
                             hintText: '0.00',
-                            hintStyle: const TextStyle(
+                            hintStyle: TextStyle(
                               fontSize: 38,
                               fontWeight: FontWeight.w900,
-                              color: _hintColor,
+                              color: colors.hintColor,
                             ),
                             border: InputBorder.none,
                             errorStyle: const TextStyle(fontSize: 12),
@@ -368,21 +378,21 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 ),
                 const SizedBox(height: 36),
 
-                // 📅 Date Selection Field (Custom Rounded Field)
-                const Text(
+                // 📅 Date Selection Field
+                Text(
                   'Transaction Date',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _textPrimary),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 8),
                 InkWell(
-                  onTap: _selectDate,
+                  onTap: () => _selectDate(colors),
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: _surface,
+                      color: colors.surface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _borderColor),
+                      border: Border.all(color: colors.borderColor),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -393,11 +403,11 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                             const SizedBox(width: 12),
                             Text(
                               _dateController.text,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: _textPrimary),
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: colors.textPrimary),
                             ),
                           ],
                         ),
-                        const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary),
+                        Icon(Icons.keyboard_arrow_down_rounded, color: colors.textSecondary),
                       ],
                     ),
                   ),
@@ -405,46 +415,46 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 const SizedBox(height: 20),
 
                 // 💳 Dynamic Selector Chips for Payment Method
-                const Text(
+                Text(
                   'Payment Method',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _textPrimary),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
                   runSpacing: 6,
                   children: [
-                    _buildMethodChip(PaymentMethod.handCash, 'Cash', Icons.payments_rounded, themeColor),
-                    _buildMethodChip(PaymentMethod.bKash, 'bKash', Icons.account_balance_wallet, themeColor),
-                    _buildMethodChip(PaymentMethod.nagad, 'Nagad', Icons.phonelink_ring_rounded, themeColor),
-                    _buildMethodChip(PaymentMethod.bank, 'Bank', Icons.account_balance_rounded, themeColor),
+                    _buildMethodChip(colors, PaymentMethod.handCash, 'Cash', Icons.payments_rounded, themeColor),
+                    _buildMethodChip(colors, PaymentMethod.bKash, 'bKash', Icons.account_balance_wallet, themeColor),
+                    _buildMethodChip(colors, PaymentMethod.nagad, 'Nagad', Icons.phonelink_ring_rounded, themeColor),
+                    _buildMethodChip(colors, PaymentMethod.bank, 'Bank', Icons.account_balance_rounded, themeColor),
                   ],
                 ),
                 const SizedBox(height: 24),
 
-                // 📝 Note/Description Input Field (Sleek Material design)
-                const Text(
+                // 📝 Note/Description Input Field
+                Text(
                   'Description / Note',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _textPrimary),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 2,
-                  style: const TextStyle(color: _textPrimary),
+                  style: TextStyle(color: colors.textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Add additional details here...',
-                    hintStyle: const TextStyle(color: _hintColor, fontSize: 14),
+                    hintStyle: TextStyle(color: colors.hintColor, fontSize: 14),
                     filled: true,
-                    fillColor: _surface,
+                    fillColor: colors.surface,
                     contentPadding: const EdgeInsets.all(16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: _borderColor),
+                      borderSide: BorderSide(color: colors.borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: _borderColor),
+                      borderSide: BorderSide(color: colors.borderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -454,10 +464,10 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // 📸 Receipt Upload Frame (Modern Dotted Area Style)
-                const Text(
+                // 📸 Receipt Upload Frame
+                Text(
                   'Transaction Receipt (Optional)',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _textPrimary),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 8),
                 GestureDetector(
@@ -466,9 +476,9 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     height: 140,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: _surface,
+                      color: colors.surface,
                       border: Border.all(
-                        color: _borderColor,
+                        color: colors.borderColor,
                         style: BorderStyle.solid,
                         width: 1.2,
                       ),
@@ -538,7 +548,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                                 Text(
                                   'Tap to upload billing paper/slip',
                                   style: TextStyle(
-                                    color: _textSecondary,
+                                    color: colors.textSecondary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -550,7 +560,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 ),
                 const SizedBox(height: 38),
 
-                // 💾 Beautiful Neo-Brutalism/Flat Action Button
+                // 💾 Action Button
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -559,7 +569,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: themeColor,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: _surfaceAlt,
+                      disabledBackgroundColor: colors.surfaceAlt,
                       shadowColor: themeColor.withOpacity(0.4),
                       elevation: 4,
                       shape: RoundedRectangleBorder(

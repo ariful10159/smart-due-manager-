@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../services/notification_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/app_settings_scope.dart';
 import 'customer_detail_screen.dart';
 
 enum ReminderSortOption {
@@ -46,7 +48,22 @@ class _ReminderScreenState extends State<ReminderScreen> {
     super.dispose();
   }
 
+  // ✅ Settings-এ সেভ করা SMS টেমপ্লেটের placeholder গুলো আসল ডেটা দিয়ে রিপ্লেস করা হচ্ছে
+  String _buildReminderMessage(Customer customer) {
+    final settings = AppSettingsScope.of(context).settings;
+    final dateFmt = DateFormat('d MMM yyyy');
+    final currencyFmt = NumberFormat('#,##0.00');
+
+    return settings.smsReminderTemplate
+        .replaceAll('{name}', customer.name)
+        .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
+        .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
+        .replaceAll('{business_name}', settings.businessName)
+        .replaceAll('{phone}', customer.phone);
+  }
+
   Future<void> _callCustomer(Customer customer) async {
+    final colors = AppColors.of(context);
     final uri = Uri(scheme: 'tel', path: customer.phone);
 
     if (await canLaunchUrl(uri)) {
@@ -59,19 +76,25 @@ class _ReminderScreenState extends State<ReminderScreen> {
     final shouldClear = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Call Complete?"),
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("Call Complete?", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
           "'${customer.name}' কে কল করা হয়েছে। এই reminder টা কি "
           "reminder list থেকে সরিয়ে দেবেন?",
+          style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Keep Reminder"),
+            child: Text("Keep Reminder", style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Remove Reminder"),
+            child: Text("Remove Reminder", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -83,6 +106,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
   }
 
   Future<void> _clearReminder(Customer customer) async {
+    final colors = AppColors.of(context);
     try {
       await _repo.clearReminder(customer.id);
       await NotificationService.cancelScheduledSms('sms_${customer.id}');
@@ -91,7 +115,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor: colors.clear,
           content: Text("Reminder removed for ${customer.name}"),
         ),
       );
@@ -99,7 +123,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: colors.due,
           content: Text("Failed to remove reminder: $e"),
         ),
       );
@@ -107,21 +131,28 @@ class _ReminderScreenState extends State<ReminderScreen> {
   }
 
   Future<void> _confirmDelete(Customer customer) async {
+    final colors = AppColors.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Delete Reminder"),
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("Delete Reminder", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
           "'${customer.name}' এর reminder টা মুছে দিতে চান?",
+          style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            child: Text("Delete", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -133,43 +164,49 @@ class _ReminderScreenState extends State<ReminderScreen> {
   }
 
   Future<void> _snoozeReminder(Customer customer) async {
+    final colors = AppColors.of(context);
+
     final choice = await showModalBottomSheet<Duration?>(
       context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: Text(
                   "Snooze Reminder",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.snooze),
-                title: const Text("1 Hour"),
+                leading: Icon(Icons.snooze, color: colors.accent),
+                title: Text("1 Hour", style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(hours: 1)),
               ),
               ListTile(
-                leading: const Icon(Icons.snooze),
-                title: const Text("Tomorrow (same time)"),
+                leading: Icon(Icons.snooze, color: colors.accent),
+                title: Text("Tomorrow (same time)", style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(days: 1)),
               ),
               ListTile(
-                leading: const Icon(Icons.snooze),
-                title: const Text("3 Days"),
+                leading: Icon(Icons.snooze, color: colors.accent),
+                title: Text("3 Days", style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(days: 3)),
               ),
               ListTile(
-                leading: const Icon(Icons.snooze),
-                title: const Text("1 Week"),
+                leading: Icon(Icons.snooze, color: colors.accent),
+                title: Text("1 Week", style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(days: 7)),
               ),
               ListTile(
-                leading: const Icon(Icons.edit_calendar),
-                title: const Text("Custom Date & Time"),
+                leading: Icon(Icons.edit_calendar, color: colors.accent),
+                title: Text("Custom Date & Time", style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, null),
               ),
             ],
@@ -188,16 +225,21 @@ class _ReminderScreenState extends State<ReminderScreen> {
       final wantsCustom = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text("Set Custom Date"),
-          content: const Text("তারিখ ও সময় বেছে নিন?"),
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.borderColor),
+          ),
+          title: Text("Set Custom Date", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+          content: Text("তারিখ ও সময় বেছে নিন?", style: TextStyle(color: colors.textSecondary)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
+              child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text("Continue"),
+              child: Text("Continue", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -211,6 +253,25 @@ class _ReminderScreenState extends State<ReminderScreen> {
         initialDate: DateTime.now().add(const Duration(days: 1)),
         firstDate: DateTime.now(),
         lastDate: DateTime(2100),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme(
+                brightness: colors.scaffoldBg.computeLuminance() < 0.5 ? Brightness.dark : Brightness.light,
+                primary: colors.accent,
+                onPrimary: Colors.white,
+                secondary: colors.accentAlt,
+                onSecondary: Colors.white,
+                error: colors.due,
+                onError: Colors.white,
+                surface: colors.surface,
+                onSurface: colors.textPrimary,
+              ),
+              dialogBackgroundColor: colors.surface,
+            ),
+            child: child!,
+          );
+        },
       );
       if (selectedDate == null) return;
       if (!mounted) return;
@@ -218,6 +279,25 @@ class _ReminderScreenState extends State<ReminderScreen> {
       final selectedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.now(),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme(
+                brightness: colors.scaffoldBg.computeLuminance() < 0.5 ? Brightness.dark : Brightness.light,
+                primary: colors.accent,
+                onPrimary: Colors.white,
+                secondary: colors.accentAlt,
+                onSecondary: Colors.white,
+                error: colors.due,
+                onError: Colors.white,
+                surface: colors.surface,
+                onSurface: colors.textPrimary,
+              ),
+              dialogBackgroundColor: colors.surface,
+            ),
+            child: child!,
+          );
+        },
       );
       if (selectedTime == null) return;
 
@@ -236,6 +316,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
   }
 
   Future<void> _applySnooze(Customer customer, DateTime newDate) async {
+    final colors = AppColors.of(context);
     try {
       await _repo.addReminder(customerId: customer.id, reminderDate: newDate);
 
@@ -246,24 +327,22 @@ class _ReminderScreenState extends State<ReminderScreen> {
         scheduledDate: newDate,
       );
 
-      final smsMessage =
-          "প্রিয় ${customer.name}, আপনার বকেয়া পরিশোধের তারিখ। "
-          "বর্তমান বকেয়া: ${customer.totalDue.toStringAsFixed(2)} টাকা। "
-          "দয়া করে দ্রুত পরিশোধ করুন। ধন্যবাদ।";
+      // ✅ এখন Settings-এ সেভ করা টেমপ্লেট থেকে SMS মেসেজ তৈরি হচ্ছে
+      final smsMessage = _buildReminderMessage(customer);
 
       await NotificationService.scheduleSms(
         taskId: 'sms_${customer.id}',
         phoneNumber: customer.phone,
         message: smsMessage,
         scheduledDate: newDate,
-        customerId: customer.id, // ✅ NEW — SMS log এর জন্য
+        customerId: customer.id,
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor: colors.clear,
           content: Text(
             "Reminder snoozed to ${_formatDateTime(newDate)}",
           ),
@@ -273,7 +352,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: colors.due,
           content: Text("Failed to snooze: $e"),
         ),
       );
@@ -282,10 +361,16 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+
     return Scaffold(
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
-        title: const Text("Reminders"),
+        title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           PopupMenuButton<ReminderSortOption>(
             onSelected: (value) {
@@ -293,25 +378,30 @@ class _ReminderScreenState extends State<ReminderScreen> {
                 _selectedSort = value;
               });
             },
-            itemBuilder: (context) => const [
+            color: colors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: colors.borderColor),
+            ),
+            itemBuilder: (context) => [
               PopupMenuItem(
                 value: ReminderSortOption.dateAscending,
-                child: Text("Date ↑ (Nearest First)"),
+                child: Text("Date ↑ (Nearest First)", style: TextStyle(color: colors.textPrimary)),
               ),
               PopupMenuItem(
                 value: ReminderSortOption.dateDescending,
-                child: Text("Date ↓ (Latest First)"),
+                child: Text("Date ↓ (Latest First)", style: TextStyle(color: colors.textPrimary)),
               ),
               PopupMenuItem(
                 value: ReminderSortOption.overdueFirst,
-                child: Text("Overdue First"),
+                child: Text("Overdue First", style: TextStyle(color: colors.textPrimary)),
               ),
               PopupMenuItem(
                 value: ReminderSortOption.upcomingFirst,
-                child: Text("Upcoming First"),
+                child: Text("Upcoming First", style: TextStyle(color: colors.textPrimary)),
               ),
             ],
-            icon: const Icon(Icons.sort),
+            icon: Icon(Icons.sort, color: colors.textPrimary),
           ),
         ],
       ),
@@ -319,7 +409,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
         stream: _repo.streamCustomers(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator(color: colors.accent));
           }
 
           List<Customer> customers = snapshot.data!
@@ -333,7 +423,9 @@ class _ReminderScreenState extends State<ReminderScreen> {
               .length;
 
           if (customers.isEmpty) {
-            return const Center(child: Text("No reminders set"));
+            return Center(
+              child: Text("No reminders set", style: TextStyle(color: colors.textSecondary)),
+            );
           }
 
           return Column(
@@ -341,20 +433,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
               if (overdueCount > 0)
                 Container(
                   width: double.infinity,
-                  color: Colors.red.withValues(alpha: 0.15),
+                  color: colors.due.withOpacity(0.15),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber,
-                          color: Colors.red, size: 18),
+                      Icon(Icons.warning_amber, color: colors.due, size: 18),
                       const SizedBox(width: 6),
                       Text(
                         "$overdueCount reminder(s) overdue",
-                        style: const TextStyle(
-                          color: Colors.red,
+                        style: TextStyle(
+                          color: colors.due,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -379,7 +470,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: colors.due,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(Icons.delete, color: Colors.white),
@@ -388,35 +479,45 @@ class _ReminderScreenState extends State<ReminderScreen> {
                         return await showDialog<bool>(
                           context: context,
                           builder: (_) => AlertDialog(
-                            title: const Text("Delete Reminder"),
+                            backgroundColor: colors.surface,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: colors.borderColor),
+                            ),
+                            title: Text("Delete Reminder", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
                             content: Text(
                               "'${customer.name}' এর reminder টা মুছে দিতে চান?",
+                              style: TextStyle(color: colors.textSecondary),
                             ),
                             actions: [
                               TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(context, false),
-                                child: const Text("Cancel"),
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                child: const Text(
-                                  "Delete",
-                                  style: TextStyle(color: Colors.red),
-                                ),
+                                child: Text("Delete", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
                               ),
                             ],
                           ),
                         );
                       },
                       onDismissed: (_) => _clearReminder(customer),
-                      child: Card(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colors.surface, colors.surfaceAlt],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colors.borderColor),
+                        ),
                         child: Column(
                           children: [
                             ListTile(
                               leading: CircleAvatar(
-                                backgroundColor:
-                                    isOverdue ? Colors.red : Colors.orange,
+                                backgroundColor: isOverdue ? colors.due : colors.warn,
                                 child: Icon(
                                   isOverdue ? Icons.alarm_off : Icons.alarm,
                                   color: Colors.white,
@@ -427,30 +528,23 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                   Expanded(
                                     child: Text(
                                       customer.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(
-                                      Icons.call,
-                                      color: Colors.green,
-                                    ),
+                                    icon: Icon(Icons.call, color: colors.clear),
                                     onPressed: () => _callCustomer(customer),
                                   ),
                                 ],
                               ),
                               subtitle: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
                                   Text(
                                     _formatDateTime(reminderDate),
                                     style: TextStyle(
-                                      color:
-                                          isOverdue ? Colors.red : Colors.grey,
+                                      color: isOverdue ? colors.due : colors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -458,9 +552,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                     _countdownText(reminderDate),
                                     style: TextStyle(
                                       fontWeight: FontWeight.w500,
-                                      color: isOverdue
-                                          ? Colors.red
-                                          : Colors.green,
+                                      color: isOverdue ? colors.due : colors.clear,
                                     ),
                                   ),
                                 ],
@@ -468,9 +560,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                               trailing: Text(
                                 customer.totalDue.toStringAsFixed(2),
                                 style: TextStyle(
-                                  color: customer.totalDue > 0
-                                      ? Colors.red
-                                      : Colors.green,
+                                  color: customer.totalDue > 0 ? colors.due : colors.clear,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -495,28 +585,16 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                 children: [
                                   Expanded(
                                     child: TextButton.icon(
-                                      onPressed: () =>
-                                          _snoozeReminder(customer),
-                                      icon: const Icon(
-                                        Icons.snooze,
-                                        size: 18,
-                                      ),
-                                      label: const Text("Snooze"),
+                                      onPressed: () => _snoozeReminder(customer),
+                                      icon: Icon(Icons.snooze, size: 18, color: colors.accent),
+                                      label: Text("Snooze", style: TextStyle(color: colors.accent)),
                                     ),
                                   ),
                                   Expanded(
                                     child: TextButton.icon(
-                                      onPressed: () =>
-                                          _confirmDelete(customer),
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        size: 18,
-                                        color: Colors.red,
-                                      ),
-                                      label: const Text(
-                                        "Delete",
-                                        style: TextStyle(color: Colors.red),
-                                      ),
+                                      onPressed: () => _confirmDelete(customer),
+                                      icon: Icon(Icons.delete_outline, size: 18, color: colors.due),
+                                      label: Text("Delete", style: TextStyle(color: colors.due)),
                                     ),
                                   ),
                                 ],

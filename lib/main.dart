@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -8,9 +8,12 @@ import 'package:workmanager/workmanager.dart';
 import 'package:another_telephony/telephony.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'providers/app_settings_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/notification_service.dart';
+import 'widgets/app_settings_scope.dart';
+import 'widgets/app_lock_gate.dart'; // ✅ AppLockGate ইমপোর্ট করা হলো
 
 // ✅ Background task handler
 @pragma('vm:entry-point')
@@ -94,7 +97,7 @@ void callbackDispatcher() {
                     .doc(customerId)
                     .collection('smsLogs')
                     .add({
-                      'sentAt': Timestamp.now(), 
+                      'sentAt': Timestamp.now(),
                       'type': 'reminder',
                     });
                 debugPrint('📝 SMS log saved for customer $customerId');
@@ -106,7 +109,7 @@ void callbackDispatcher() {
         } catch (e, stackTrace) {
           debugPrint('❌ SMS SEND FAILED: $e');
           debugPrint('❌ STACK TRACE: $stackTrace');
-        } finally { // ✅ এখানে টাইপো ঠিক করা হয়েছে (finally)
+        } finally {
           try {
             await WakelockPlus.disable();
             debugPrint('🔒 WakeLock disabled');
@@ -132,31 +135,62 @@ void main() async {
   await NotificationService.init();
   await Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
 
-  runApp(const SmartDueApp());
+  // ✅ App Settings controller ইনিশিয়ালাইজ করা হচ্ছে (theme, currency, business info)
+  final settingsController = AppSettingsController();
+  await settingsController.init();
+
+  runApp(SmartDueApp(settingsController: settingsController));
 }
 
 class SmartDueApp extends StatelessWidget {
-  const SmartDueApp({super.key});
+  const SmartDueApp({super.key, required this.settingsController});
+
+  final AppSettingsController settingsController;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Smart Due',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 2),
+    return AppSettingsScope(
+      controller: settingsController,
+      child: AnimatedBuilder(
+        animation: settingsController,
+        builder: (context, _) {
+          final settings = settingsController.settings;
+
+          return MaterialApp(
+            title: 'Smart Due',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.light,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: settings.accentColor,
+                brightness: Brightness.light,
+              ),
+              appBarTheme: const AppBarTheme(centerTitle: true, elevation: 2),
+            ),
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: settings.accentColor,
+                brightness: Brightness.dark,
+              ),
+            ),
+            themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            builder: (context, child) {
+              // ✅ Font scale পুরো অ্যাপে apply হচ্ছে
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  textScaler: TextScaler.linear(settings.fontScale),
+                ),
+                child: child!,
+              );
+            },
+            home: AppLockGate(child: const AuthWrapper()), // ✅ App lock wrap করা হলো
+          );
+        },
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorSchemeSeed: Colors.deepPurple,
-      ),
-      home: const AuthWrapper(),
     );
   }
 }
