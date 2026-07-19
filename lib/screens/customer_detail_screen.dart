@@ -12,6 +12,8 @@ import '../models/customer.dart';
 import '../models/payment.dart';
 import '../models/customer_repository.dart';
 import '../services/notification_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/app_settings_scope.dart';
 import '../widgets/payment_history_tile.dart';
 import 'add_payment_screen.dart';
 import 'reminder_history_screen.dart';
@@ -36,12 +38,18 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return DateFormat('d MMMM yyyy').format(date);
   }
 
+  // ✅ এখন Settings-এ সেভ করা SMS টেমপ্লেট + Business Name থেকে মেসেজ তৈরি হচ্ছে
   String _buildDueMessage(Customer customer) {
-    return " ${customer.name}, "
-        "আপনার বর্তমান বকেয়া: ${customer.totalDue.toStringAsFixed(2)} টাকা। "
-        "দয়া করে দ্রুত পরিশোধ করুন। ধন্যবাদ।\n"
-        "ভাই ভাই ট্রেডার্স\n"
-        "দেবপুর বাজার,বুড়িচং,কুমিল্লা";
+    final settings = AppSettingsScope.of(context).settings;
+    final dateFmt = DateFormat('d MMM yyyy');
+    final currencyFmt = NumberFormat('#,##0.00');
+
+    return settings.smsReminderTemplate
+        .replaceAll('{name}', customer.name)
+        .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
+        .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
+        .replaceAll('{business_name}', settings.businessName)
+        .replaceAll('{phone}', customer.phone);
   }
 
   String _daysSincePayment(DateTime lastPaymentDate) {
@@ -53,12 +61,20 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<pw.Document> _generatePdf(Customer customer) async {
     final payments = await _customerRepo.streamPayments(customer.id).first;
+    final settings = AppSettingsScope.of(context).settings;
 
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.MultiPage(
         build: (context) => [
+          pw.Text(
+            settings.businessName,
+            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+          ),
+          if (settings.businessAddress.isNotEmpty)
+            pw.Text(settings.businessAddress, style: const pw.TextStyle(fontSize: 10)),
+          pw.SizedBox(height: 12),
           pw.Text(
             'Customer Payment History',
             style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
@@ -68,7 +84,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           pw.Text('Phone: ${customer.phone}'),
           if (customer.address != null) pw.Text('Address: ${customer.address}'),
           pw.Text('Due Date: ${_formatDateOnly(customer.lastPaymentDate)}'),
-          pw.Text('Total Due: ${customer.totalDue.toStringAsFixed(2)}'),
+          pw.Text('Total Due: ${settings.currencySymbol}${customer.totalDue.toStringAsFixed(2)}'),
           if (customer.nextReminderDate != null)
             pw.Text(
               'Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}',
@@ -108,6 +124,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Future<void> _downloadPdf(Customer customer) async {
+    final colors = AppColors.of(context);
     try {
       final pdf = await _generatePdf(customer);
       final bytes = await pdf.save();
@@ -132,16 +149,16 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ], text: "${customer.name} - Payment History");
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.green,
-          content: Text("PDF saved and opened ✅"),
+        SnackBar(
+          backgroundColor: colors.clear,
+          content: const Text("PDF saved and opened ✅"),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: colors.due,
           content: Text("Download failed: $e"),
         ),
       );
@@ -164,12 +181,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     if (updatedDue < 0) updatedDue = 0;
 
     // ✅ Due Date এখন থেকে পরিবর্তন হবে না — customer এর আসল/আগের lastPaymentDate
-    // অপরিবর্তিত রাখা হচ্ছে। শুধু totalDue আপডেট হবে। Payment এর তারিখ
-    // এমনিতেই Payment History তে দেখা যায়, সেটাই যথেষ্ট।
+    // অপরিবর্তিত রাখা হচ্ছে। শুধু totalDue আপডেট হবে।
     await _customerRepo.updateCustomerDue(
       customerId: currentCustomer.id,
       newTotalDue: updatedDue,
-      lastPaymentDate: currentCustomer.lastPaymentDate, // ✅ FIXED — বদলাচ্ছে না
+      lastPaymentDate: currentCustomer.lastPaymentDate, // ✅ বদলাচ্ছে না
     );
 
     await _customerRepo.addPayment(
@@ -179,18 +195,23 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Future<void> _setReminder(Customer customer) async {
+    final colors = AppColors.of(context);
+
     final selectedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 7)),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
+      builder: (context, child) => _themedPickerWrapper(context, child, colors),
     );
 
     if (selectedDate == null) return;
+    if (!mounted) return;
 
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      builder: (context, child) => _themedPickerWrapper(context, child, colors),
     );
 
     if (selectedTime == null) return;
@@ -227,30 +248,54 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Reminder Updated ✅")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Reminder Updated ✅")),
+    );
+  }
+
+  Widget _themedPickerWrapper(BuildContext context, Widget? child, AppColors colors) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: ColorScheme(
+          brightness: colors.scaffoldBg.computeLuminance() < 0.5 ? Brightness.dark : Brightness.light,
+          primary: colors.accent,
+          onPrimary: Colors.white,
+          secondary: colors.accentAlt,
+          onSecondary: Colors.white,
+          error: colors.due,
+          onError: Colors.white,
+          surface: colors.surface,
+          onSurface: colors.textPrimary,
+        ),
+        dialogBackgroundColor: colors.surface,
+      ),
+      child: child!,
+    );
   }
 
   Future<void> _confirmClearReminder(Customer customer) async {
+    final colors = AppColors.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Cancel Reminder"),
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("Cancel Reminder", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
           "'${customer.name}' এর জন্য সেট করা reminder টা বাতিল করতে চান?",
+          style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              "Remove Reminder",
-              style: TextStyle(color: Colors.red),
-            ),
+            child: Text("Remove Reminder", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -262,6 +307,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Future<void> _clearReminder(Customer customer) async {
+    final colors = AppColors.of(context);
     try {
       await _customerRepo.clearReminder(customer.id);
       await NotificationService.cancelScheduledSms('sms_${customer.id}');
@@ -269,16 +315,16 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.green,
-          content: Text("Reminder removed ✅"),
+        SnackBar(
+          backgroundColor: colors.clear,
+          content: const Text("Reminder removed ✅"),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: colors.due,
           content: Text("Failed to remove reminder: $e"),
         ),
       );
@@ -286,24 +332,31 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Future<void> _confirmDeleteCustomer(Customer customer) async {
+    final colors = AppColors.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Hide Customer"),
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("Hide Customer", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
           "আপনি কি নিশ্চিত '${customer.name}' কে হাইড করতে চান? "
           "এটি main list থেকে সরে যাবে, কিন্তু সব তথ্য ও payment history "
           "সংরক্ষিত থাকবে। প্রয়োজনে পরে Archived section থেকে আবার "
           "ফিরিয়ে আনা যাবে।",
+          style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Hide", style: TextStyle(color: Colors.red)),
+            child: Text("Hide", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -315,6 +368,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Future<void> _hideCustomer(Customer customer) async {
+    final colors = AppColors.of(context);
     try {
       await _customerRepo.hideCustomer(customer.id);
 
@@ -324,14 +378,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor: colors.clear,
           content: Text("${customer.name} hidden successfully"),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text("Hide failed: $e")),
+        SnackBar(backgroundColor: colors.due, content: Text("Hide failed: $e")),
       );
     }
   }
@@ -355,6 +409,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Future<void> _editCustomer(Customer customer) async {
+    final colors = AppColors.of(context);
+
     final nameController = TextEditingController(text: customer.name);
     final phoneController = TextEditingController(text: customer.phone);
     final addressController = TextEditingController(
@@ -371,6 +427,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     File? newSelectedImage;
     bool isSavingEdit = false;
+
+    // ✅ Date edit unlock করার জন্য ৭ বার ট্যাপ ট্র্যাক করা হচ্ছে
+    int dateTapCount = 0;
+    bool dateUnlocked = false;
 
     await showDialog(
       context: context,
@@ -393,8 +453,40 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               }
             }
 
+            Future<void> handleDateTap() async {
+              if (!dateUnlocked) {
+                setDialogState(() {
+                  dateTapCount++;
+                  if (dateTapCount >= 7) {
+                    dateUnlocked = true;
+                  }
+                });
+                return;
+              }
+
+              final pickedDate = await showDatePicker(
+                context: dialogContext,
+                initialDate: customer.lastPaymentDate,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                builder: (ctx, child) => _themedPickerWrapper(ctx, child, colors),
+              );
+
+              if (pickedDate != null) {
+                setDialogState(() {
+                  dateController.text =
+                      "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
+                });
+              }
+            }
+
             return AlertDialog(
-              title: const Text("Edit Customer"),
+              backgroundColor: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: BorderSide(color: colors.borderColor),
+              ),
+              title: Text("Edit Customer", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
               content: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -402,6 +494,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       onTap: pickEditImage,
                       child: CircleAvatar(
                         radius: 40,
+                        backgroundColor: colors.surfaceAlt,
                         backgroundImage: newSelectedImage != null
                             ? FileImage(newSelectedImage!)
                             : (customer.photoUrl != null
@@ -413,41 +506,96 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         child:
                             newSelectedImage == null &&
                                 customer.photoUrl == null
-                            ? const Icon(Icons.add_a_photo, size: 30)
+                            ? Icon(Icons.add_a_photo, size: 30, color: colors.textSecondary)
                             : null,
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: "Name"),
+                      style: TextStyle(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: "Name",
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                      ),
                     ),
                     TextField(
                       controller: phoneController,
-                      decoration: const InputDecoration(labelText: "Phone"),
+                      style: TextStyle(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: "Phone",
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                      ),
                       keyboardType: TextInputType.phone,
                     ),
                     TextField(
                       controller: addressController,
-                      decoration: const InputDecoration(labelText: "Address"),
+                      style: TextStyle(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: "Address",
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                      ),
                     ),
                     TextField(
                       controller: dueAmountController,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: colors.textSecondary),
+                      decoration: InputDecoration(
                         labelText: "Due Amount",
+                        labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                       readOnly: true,
                       keyboardType: TextInputType.number,
                     ),
+                    const SizedBox(height: 4),
+                    // ✅ Date field — লক করা, ৭ বার ট্যাপে আনলক হয়
                     TextField(
                       controller: dateController,
                       readOnly: true,
-                      enabled: false,
-                      decoration: const InputDecoration(labelText: 'Date'),
+                      enabled: true,
+                      onTap: handleDateTap,
+                      style: TextStyle(
+                        color: dateUnlocked ? colors.textPrimary : colors.textSecondary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: dateUnlocked ? 'Due Date (এডিট করা যাবে)' : 'Due Date',
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                        suffixIcon: Icon(
+                          dateUnlocked ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                          color: dateUnlocked ? colors.clear : colors.textSecondary,
+                          size: 18,
+                        ),
+                      ),
                     ),
+                    if (!dateUnlocked && dateTapCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "আনলক করতে আরও ${7 - dateTapCount} বার ট্যাপ করুন",
+                            style: TextStyle(fontSize: 11, color: colors.warn),
+                          ),
+                        ),
+                      ),
+                    if (dateUnlocked)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "তারিখ পরিবর্তনযোগ্য — সরাসরি payment/charge এতে প্রভাব ফেলবে না",
+                            style: TextStyle(fontSize: 11, color: colors.clear),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: noteController,
-                      decoration: const InputDecoration(labelText: "Note"),
+                      style: TextStyle(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: "Note",
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                      ),
                     ),
                   ],
                 ),
@@ -457,9 +605,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   onPressed: isSavingEdit
                       ? null
                       : () => Navigator.pop(dialogContext),
-                  child: const Text("Cancel"),
+                  child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.accent,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: isSavingEdit
                       ? null
                       : () async {
@@ -501,16 +653,18 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             address: addressController.text.trim(),
                             note: noteController.text.trim(),
                             totalDue: totalDue,
-                            lastPaymentDate: lastPaymentDate,
+                            // ✅ শুধুমাত্র dateUnlocked true থাকলেই নতুন তারিখ পাঠানো হচ্ছে,
+                            // নাহলে null পাঠিয়ে আগের due date অপরিবর্তিত রাখা হচ্ছে
+                            lastPaymentDate: dateUnlocked ? lastPaymentDate : null,
                             photoUrl: photoBase64,
                           );
 
                           if (!mounted) return;
                           Navigator.pop(dialogContext);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              backgroundColor: Colors.green,
-                              content: Text("Customer details updated ✅"),
+                            SnackBar(
+                              backgroundColor: colors.clear,
+                              content: const Text("Customer details updated ✅"),
                             ),
                           );
                         },
@@ -518,7 +672,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Text("Save"),
                 ),
@@ -531,28 +685,36 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   void _showSmsHistory(Customer customer) {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("SMS Sent History"),
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("SMS Sent History", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: SizedBox(
           width: double.maxFinite,
           child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: _customerRepo.streamSmsLogs(customer.id),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
-                return const SizedBox(
-                  height: 100,
-                  child: Center(child: CircularProgressIndicator()),
+                return Center(
+                  child: SizedBox(
+                    height: 100,
+                    child: CircularProgressIndicator(color: colors.accent),
+                  ),
                 );
               }
 
               final logs = snapshot.data!;
 
               if (logs.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text("এখনো কোনো SMS পাঠানো হয়নি"),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text("এখনো কোনো SMS পাঠানো হয়নি", style: TextStyle(color: colors.textSecondary)),
                 );
               }
 
@@ -561,7 +723,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: logs.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) => Divider(height: 1, color: colors.borderColor),
                   itemBuilder: (context, index) {
                     final log = logs[index];
                     final sentAt = (log['sentAt'] as Timestamp).toDate();
@@ -572,14 +734,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       leading: Icon(
                         type == 'reminder' ? Icons.alarm : Icons.touch_app,
                         size: 18,
-                        color: Colors.blueGrey,
+                        color: colors.info,
                       ),
-                      title: Text(_formatDateTime(sentAt)),
+                      title: Text(_formatDateTime(sentAt), style: TextStyle(color: colors.textPrimary)),
                       subtitle: Text(
                         type == 'reminder'
                             ? 'Reminder এর মাধ্যমে auto-send'
                             : 'ম্যানুয়ালি পাঠানো হয়েছে',
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12, color: colors.textSecondary),
                       ),
                     );
                   },
@@ -591,7 +753,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+            child: Text("Close", style: TextStyle(color: colors.accent)),
           ),
         ],
       ),
@@ -621,13 +783,19 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+
     return Scaffold(
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
-        title: Text(widget.customer.name),
+        title: Text(widget.customer.name, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sms),
+            icon: Icon(Icons.sms, color: colors.info),
             onPressed: () async {
               await NotificationService.sendSmsNow(
                 phoneNumber: widget.customer.phone,
@@ -647,11 +815,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(Icons.edit, color: colors.accent),
             onPressed: () => _editCustomer(widget.customer),
           ),
           IconButton(
-            icon: const Icon(Icons.visibility_off, color: Colors.orange),
+            icon: Icon(Icons.visibility_off, color: colors.warn),
             onPressed: () => _confirmDeleteCustomer(widget.customer),
           ),
         ],
@@ -660,7 +828,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         stream: _customerRepo.streamCustomerById(widget.customer.id),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator(color: colors.accent));
           }
 
           final customer = snapshot.data!;
@@ -673,12 +841,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 Center(
                   child: CircleAvatar(
                     radius: 45,
+                    backgroundColor: colors.surfaceAlt,
                     backgroundImage: customer.photoUrl != null
                         ? MemoryImage(base64Decode(customer.photoUrl!))
                               as ImageProvider
                         : null,
                     child: customer.photoUrl == null
-                        ? const Icon(Icons.person, size: 40)
+                        ? Icon(Icons.person, size: 40, color: colors.textSecondary)
                         : null,
                   ),
                 ),
@@ -686,9 +855,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 Center(
                   child: Text(
                     customer.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),
@@ -699,18 +869,18 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     children: [
                       Text(
                         customer.phone,
-                        style: const TextStyle(color: Colors.grey),
+                        style: TextStyle(color: colors.textSecondary),
                       ),
                       const SizedBox(width: 8),
                       InkWell(
                         onTap: () => _openWhatsApp(customer),
                         borderRadius: BorderRadius.circular(20),
-                        child: const Padding(
-                          padding: EdgeInsets.all(4),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
                           child: Icon(
                             Icons.chat,
                             size: 18,
-                            color: Colors.green,
+                            color: colors.clear,
                           ),
                         ),
                       ),
@@ -722,7 +892,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   Center(
                     child: Text(
                       customer.address!,
-                      style: const TextStyle(color: Colors.grey),
+                      style: TextStyle(color: colors.textSecondary),
                     ),
                   ),
 
@@ -732,21 +902,19 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blueGrey.withValues(alpha: 0.1),
+                      color: colors.surfaceAlt,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.blueGrey.withValues(alpha: 0.25),
-                      ),
+                      border: Border.all(color: colors.borderColor),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.sticky_note_2_outlined, size: 18),
+                        Icon(Icons.sticky_note_2_outlined, size: 18, color: colors.textSecondary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             customer.note!,
-                            style: const TextStyle(fontSize: 13),
+                            style: TextStyle(fontSize: 13, color: colors.textPrimary),
                           ),
                         ),
                       ],
@@ -757,14 +925,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 Text(
                   "Due date: ${_formatDateOnly(customer.lastPaymentDate)} "
                   "(${_daysSincePayment(customer.lastPaymentDate)})",
-                  style: const TextStyle(color: Colors.grey),
+                  style: TextStyle(color: colors.textSecondary),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   "Total Due: ${customer.totalDue.toStringAsFixed(2)}",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: customer.totalDue > 0 ? Colors.red : Colors.green,
+                    color: customer.totalDue > 0 ? colors.due : colors.clear,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -782,32 +950,24 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.08),
+                          color: colors.info.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.sms_outlined,
-                              size: 16,
-                              color: Colors.blue,
-                            ),
+                            Icon(Icons.sms_outlined, size: 16, color: colors.info),
                             const SizedBox(width: 6),
                             Text(
                               "SMS পাঠানো হয়েছে: $count বার",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.blue,
+                                color: colors.info,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(
-                              Icons.chevron_right,
-                              size: 16,
-                              color: Colors.blue,
-                            ),
+                            Icon(Icons.chevron_right, size: 16, color: colors.info),
                           ],
                         ),
                       ),
@@ -821,15 +981,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       Expanded(
                         child: Text(
                           "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
-                          style: const TextStyle(color: Colors.orange),
+                          style: TextStyle(color: colors.warn),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(
-                          Icons.cancel,
-                          color: Colors.red,
-                          size: 20,
-                        ),
+                        icon: Icon(Icons.cancel, color: colors.due, size: 20),
                         tooltip: "Remove Reminder",
                         onPressed: () => _confirmClearReminder(customer),
                       ),
@@ -840,6 +996,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.clear,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () =>
                             _addPayment(customer, PaymentType.payment),
                         child: const Text("Record Payment"),
@@ -848,6 +1008,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.due,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () =>
                             _addPayment(customer, PaymentType.dueAdded),
                         child: const Text("Add Charge"),
@@ -859,6 +1023,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.accent,
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: () => _setReminder(customer),
                     icon: const Icon(Icons.alarm),
                     label: const Text("Set Reminder"),
@@ -868,22 +1036,22 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       "Payment History",
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
                     ),
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.print),
+                          icon: Icon(Icons.print, color: colors.textSecondary),
                           onPressed: () => _printPdf(customer),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.download),
+                          icon: Icon(Icons.download, color: colors.textSecondary),
                           onPressed: () => _downloadPdf(customer),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.history),
+                          icon: Icon(Icons.history, color: colors.textSecondary),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -905,13 +1073,15 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     stream: _customerRepo.streamPayments(customer.id),
                     builder: (context, paymentSnapshot) {
                       if (!paymentSnapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
+                        return Center(child: CircularProgressIndicator(color: colors.accent));
                       }
 
                       final payments = paymentSnapshot.data!;
 
                       if (payments.isEmpty) {
-                        return const Center(child: Text("No transactions yet"));
+                        return Center(
+                          child: Text("No transactions yet", style: TextStyle(color: colors.textSecondary)),
+                        );
                       }
 
                       return ListView.separated(

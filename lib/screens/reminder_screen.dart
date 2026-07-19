@@ -8,6 +8,7 @@ import '../models/customer_repository.dart';
 import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_settings_scope.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
 import 'customer_detail_screen.dart';
 
 enum ReminderSortOption {
@@ -26,6 +27,8 @@ class ReminderScreen extends StatefulWidget {
 
 class _ReminderScreenState extends State<ReminderScreen> {
   final _repo = CustomerRepository();
+
+  final int _selectedIndex = 3;
 
   ReminderSortOption _selectedSort = ReminderSortOption.dateAscending;
 
@@ -610,6 +613,9 @@ class _ReminderScreenState extends State<ReminderScreen> {
             ],
           );
         },
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        selectedIndex: _selectedIndex,
       ),
     );
   }

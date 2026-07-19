@@ -12,6 +12,7 @@ import 'add_customer_screen.dart';
 import 'customer_detail_screen.dart';
 import 'all_customers_screen.dart';
 import 'reminder_screen.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -91,25 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openAllCustomers() async {
     await Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const AllCustomersScreen()));
-  }
-
-  Future<void> _onDestinationSelected(int index) async {
-    setState(() => _selectedIndex = index);
-
-    switch (index) {
-      case 1:
-        await _openAddCustomer();
-        break;
-      case 2:
-        await _openAllCustomers();
-        break;
-      case 3:
-        await _openReminderScreen();
-        break;
-    }
-
-    if (!mounted) return;
-    setState(() => _selectedIndex = 0);
   }
 
   String _greeting() {
@@ -438,58 +420,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 elevation: 4,
                 child: const Icon(Icons.add_rounded),
               ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: colors.surface,
-            border: Border(top: BorderSide(color: colors.borderColor)),
-          ),
-          child: NavigationBarTheme(
-            data: NavigationBarThemeData(
-              backgroundColor: Colors.transparent,
-              indicatorColor: colors.accent.withOpacity(0.18),
-              labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                final selected = states.contains(WidgetState.selected);
-                return TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                  color: selected ? colors.accent : colors.textSecondary,
-                );
-              }),
-              iconTheme: WidgetStateProperty.resolveWith((states) {
-                final selected = states.contains(WidgetState.selected);
-                return IconThemeData(color: selected ? colors.accent : colors.textSecondary);
-              }),
-            ),
-            child: NavigationBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: _isLoggingOut ? (_) {} : _onDestinationSelected,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              height: 62,
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
-                  label: 'Home',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_add_alt_1_outlined),
-                  selectedIcon: Icon(Icons.person_add_alt_1_rounded),
-                  label: 'Add Customer',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.people_outline_rounded),
-                  selectedIcon: Icon(Icons.people_rounded),
-                  label: 'All Customers',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.notifications_outlined),
-                  selectedIcon: Icon(Icons.notifications_rounded),
-                  label: 'Reminders',
-                ),
-              ],
-            ),
-          ),
+        bottomNavigationBar: CustomBottomNavBar(
+          selectedIndex: _selectedIndex,
+          isDisabled: _isLoggingOut,
         ),
       ),
     );

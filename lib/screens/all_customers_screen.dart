@@ -5,11 +5,9 @@ import 'package:intl/intl.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
-import 'add_customer_screen.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
 import 'archived_customers_screen.dart';
 import 'customer_detail_screen.dart';
-import 'home_screen.dart';
-import 'reminder_screen.dart';
 
 enum CustomerSortOption {
   none,
@@ -31,7 +29,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   final _repo = CustomerRepository();
   final _searchController = TextEditingController();
 
-  int _selectedIndex = 2;
+  final int _selectedIndex = 2;
 
   int? _selectedYear;
   int? _selectedMonth;
@@ -49,32 +47,6 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
-    }
-  }
-
-  void _onDestinationSelected(int index) {
-    if (index == _selectedIndex) return;
-
-    switch (index) {
-      case 0:
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (route) => false,
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AddCustomerScreen()),
-        );
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ReminderScreen()),
-        );
-        break;
     }
   }
 
@@ -896,57 +868,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
         },
       ),
 
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border(top: BorderSide(color: colors.borderColor)),
-        ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            backgroundColor: Colors.transparent,
-            indicatorColor: colors.accent.withOpacity(0.18),
-            labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return TextStyle(
-                fontSize: 11.5,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                color: selected ? colors.accent : colors.textSecondary,
-              );
-            }),
-            iconTheme: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return IconThemeData(color: selected ? colors.accent : colors.textSecondary);
-            }),
-          ),
-          child: NavigationBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onDestinationSelected,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
-                label: 'Home',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_add_alt_1_outlined),
-                selectedIcon: Icon(Icons.person_add_alt_1_rounded),
-                label: 'Add Customer',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.people_outline_rounded),
-                selectedIcon: Icon(Icons.people_rounded),
-                label: 'All Customers',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.notifications_outlined),
-                selectedIcon: Icon(Icons.notifications_rounded),
-                label: 'Reminders',
-              ),
-            ],
-          ),
-        ),
+      bottomNavigationBar: CustomBottomNavBar(
+        selectedIndex: _selectedIndex,
       ),
     );
   }

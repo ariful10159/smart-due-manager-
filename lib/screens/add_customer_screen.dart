@@ -7,9 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/customer.dart';
 import '../theme/app_colors.dart';
-import 'all_customers_screen.dart';
-import 'home_screen.dart';
-import 'reminder_screen.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
 
 class AddCustomerScreen extends StatefulWidget {
   const AddCustomerScreen({super.key});
@@ -21,7 +19,7 @@ class AddCustomerScreen extends StatefulWidget {
 class _AddCustomerScreenState extends State<AddCustomerScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  int _selectedIndex = 1;
+  final int _selectedIndex = 1;
 
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -218,32 +216,6 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
           _isSaving = false;
         });
       }
-    }
-  }
-
-  void _onDestinationSelected(int index) {
-    if (index == _selectedIndex) return;
-
-    switch (index) {
-      case 0:
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (route) => false,
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AllCustomersScreen()),
-        );
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ReminderScreen()),
-        );
-        break;
     }
   }
 
@@ -525,57 +497,8 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border(top: BorderSide(color: colors.borderColor)),
-        ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            backgroundColor: Colors.transparent,
-            indicatorColor: colors.accent.withOpacity(0.18),
-            labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return TextStyle(
-                fontSize: 11.5,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                color: selected ? colors.accent : colors.textSecondary,
-              );
-            }),
-            iconTheme: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return IconThemeData(color: selected ? colors.accent : colors.textSecondary);
-            }),
-          ),
-          child: NavigationBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onDestinationSelected,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
-                label: 'Home',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_add_alt_1_outlined),
-                selectedIcon: Icon(Icons.person_add_alt_1_rounded),
-                label: 'Add Customer',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.people_outline_rounded),
-                selectedIcon: Icon(Icons.people_rounded),
-                label: 'All Customers',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.notifications_outlined),
-                selectedIcon: Icon(Icons.notifications_active_rounded),
-                label: 'Reminders',
-              ),
-            ],
-          ),
-        ),
+      bottomNavigationBar: CustomBottomNavBar(
+        selectedIndex: _selectedIndex,
       ),
     );
   }

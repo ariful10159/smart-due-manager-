@@ -27,7 +27,7 @@ class CustomerRepository {
     return _col.doc(customerId).collection('smsLogs');  
   }
 
-  // ✅ NEW — বর্তমান login করা user এর ID
+  // ✅ বর্তমান login করা user এর ID
   String get _currentUserId {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
@@ -38,12 +38,12 @@ class CustomerRepository {
 
   // ✅ সব customer এর payment একসাথে (Report এর জন্য) — শুধু বর্তমান user এর
   Future<List<Payment>> fetchAllPaymentsOnce() async {
-    // ✅ প্রথমে বর্তমান user এর customer id গুলো বের করা হচ্ছে
+    // প্রথমে বর্তমান user এর customer id গুলো বের করা হচ্ছে
     final myCustomers =
         await _col.where('ownerId', isEqualTo: _currentUserId).get();
     final myCustomerIds = myCustomers.docs.map((d) => d.id).toSet();
 
-    // ✅ collectionGroup দিয়ে সব payment এনে, শুধু নিজের customer এর payment filter করা
+    // collectionGroup দিয়ে সব payment এনে, শুধু নিজের customer এর payment filter করা
     final snapshot = await _firestore.collectionGroup('payments').get();
 
     return snapshot.docs
@@ -99,35 +99,30 @@ class CustomerRepository {
     }).toList();
   }
 
-  // ✅ Update customer basic info (EDIT SUPPORT)
+  // ✅ Update customer basic info (EDIT SUPPORT) - সুরক্ষিত ও ডাইনামিক
   Future<void> updateCustomerInfo({
     required String customerId,
-    required String name,
-    required String phone,
+    String? name,
+    String? phone,
     String? address,
     String? note,
     double? totalDue,
-    DateTime? lastPaymentDate,
+    DateTime? lastPaymentDate, // null মানে "পরিবর্তন করো না", আগের তারিখ সুরক্ষিত থাকবে
     String? photoUrl,
   }) async {
-    final data = <String, dynamic>{
-      'name': name,
-      'phone': phone,
-      'address': address,
-      'note': note,
-    };
+    final data = <String, dynamic>{};
 
-    if (totalDue != null) {
-      data['totalDue'] = totalDue;
-    }
+    // শুধু যে ফিল্ডগুলোতে নতুন ডেটা পাঠানো হয়েছে, সেগুলোই আপডেট হবে
+    if (name != null) data['name'] = name;
+    if (phone != null) data['phone'] = phone;
+    if (address != null) data['address'] = address;
+    if (note != null) data['note'] = note;
+    if (totalDue != null) data['totalDue'] = totalDue;
+    if (lastPaymentDate != null) data['lastPaymentDate'] = Timestamp.fromDate(lastPaymentDate);
+    if (photoUrl != null) data['photoUrl'] = photoUrl;
 
-    if (lastPaymentDate != null) {
-      data['lastPaymentDate'] = Timestamp.fromDate(lastPaymentDate);
-    }
-
-    if (photoUrl != null) {
-      data['photoUrl'] = photoUrl;
-    }
+    // যদি আপডেট করার মতো কোনো ফিল্ড না থাকে, তবে ফাংশন এখানেই শেষ হবে
+    if (data.isEmpty) return;
 
     await _col.doc(customerId).update(data);
   }
@@ -167,7 +162,7 @@ class CustomerRepository {
     await _paymentsCol(customerId).doc(payment.id).set(payment.toMap());
   }
 
-  // ✅ প্রতিবার SMS পাঠানোর পর একটা log entry যোগ করা (manual বা reminder — দুই ক্ষেত্রেই)  
+  // ✅ প্রতিবার SMS পাঠানোর পর একটা log entry যোগ করা  
   Future<void> logSmsSent({    
     required String customerId,    
     required String type, // 'manual' অথবা 'reminder'  
@@ -195,7 +190,6 @@ class CustomerRepository {
 
     // 1️⃣ Save old active reminder to history (if exists)
     final customerDoc = await _col.doc(customerId).get();
-
     final oldReminder = customerDoc.data()?['nextReminderDate'];
 
     if (oldReminder != null) {
@@ -240,7 +234,7 @@ class CustomerRepository {
     });
   }
 
-  // ✅ Hide customer (SOFT DELETE — ডেটা থেকে যাবে, শুধু main list এ দেখাবে না)
+  // ✅ Hide customer (SOFT DELETE)
   Future<void> hideCustomer(String customerId) async {
     await _col.doc(customerId).update({'isHidden': true});
   }
@@ -251,7 +245,6 @@ class CustomerRepository {
   }
 
   // ✅ Permanently delete customer (with all subcollections)
-  // ⚠️ এটা ব্যবহার করলে ডেটা সম্পূর্ণ মুছে যাবে, ফেরত পাওয়া যাবে না
   Future<void> deleteCustomerPermanently(String customerId) async {
     final paymentsSnapshot = await _paymentsCol(customerId).get();
     for (final doc in paymentsSnapshot.docs) {
