@@ -64,7 +64,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
               surface: colors.surface,
               onSurface: colors.textPrimary,
             ),
-            dialogBackgroundColor: colors.surface,
+            dialogTheme: DialogThemeData(backgroundColor: colors.surface),
           ),
           child: child!,
         );
@@ -184,7 +184,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                     ),
                     Text(
                       '${customer.name} has been added successfully.',
-                      style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.9)),
+                      style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9)),
                     ),
                   ],
                 ),
@@ -201,11 +201,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
       // ✅ হোম স্ক্রিনে যাওয়ার কোডটি বাদ দিয়ে ফর্মটি রিসেট করা হয়েছে যাতে ইউজার এই স্ক্রিনেই থাকেন
       _resetForm();
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to save: $e'),
+          content: const Text('Failed to save, please try again'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -295,15 +295,15 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                           borderRadius: BorderRadius.circular(28),
                           gradient: LinearGradient(
                             colors: [
-                              colors.accent.withOpacity(0.35),
-                              colors.accentAlt.withOpacity(0.15),
+                              colors.accent.withValues(alpha: 0.35),
+                              colors.accentAlt.withValues(alpha: 0.15),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: colors.accent.withOpacity(0.2),
+                              color: colors.accent.withValues(alpha: 0.2),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             )
@@ -335,7 +335,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.accent.withOpacity(0.3),
+                                  color: colors.accent.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 )
@@ -362,7 +362,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                     border: Border.all(color: colors.borderColor),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Colors.black.withValues(alpha: 0.15),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       )
@@ -458,7 +458,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                           gradient: LinearGradient(colors: [colors.accent, colors.accentAlt]),
                           boxShadow: [
                             BoxShadow(
-                              color: colors.accent.withOpacity(0.35),
+                              color: colors.accent.withValues(alpha: 0.35),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             )

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../models/app_settings.dart';
 import '../models/customer_repository.dart';
 import '../services/auth_service.dart';
@@ -10,6 +9,8 @@ import '../services/backup_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_settings_scope.dart';
 import 'app_lock_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -23,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _addressController;
   bool _uploadingLogo = false;
   bool _exportingBackup = false;
+  bool _importingBackup = false;
   bool _initialized = false;
 
   @override
@@ -57,10 +59,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('লোগো আপডেট হয়েছে')),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('লোগো আপলোড ব্যর্থ: $e')),
+        const SnackBar(content: Text('লোগো আপলোড ব্যর্থ, আবার চেষ্টা করুন')),
       );
     } finally {
       if (mounted) setState(() => _uploadingLogo = false);
@@ -85,13 +87,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final customers = await CustomerRepository().fetchCustomersOnce();
       await BackupService.exportCustomersToCsv(customers);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('এক্সপোর্ট ব্যর্থ: $e')),
+        const SnackBar(content: Text('এক্সপোর্ট ব্যর্থ, আবার চেষ্টা করুন')),
       );
     } finally {
       if (mounted) setState(() => _exportingBackup = false);
+    }
+  }
+
+  Future<void> _importBackup() async {
+    final csvContent = await BackupService.pickCsvFileContent();
+    if (csvContent == null) return; // ইউজার বাতিল করেছে
+
+    final parsed = BackupService.parseCustomersFromCsv(csvContent);
+    if (parsed.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ফাইলে কোনো বৈধ কাস্টমার পাওয়া যায়নি')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Import নিশ্চিত করুন'),
+        content: Text(
+          '${parsed.length} জন কাস্টমার পাওয়া গেছে। এগুলো আপনার অ্যাকাউন্টে যোগ করা হবে '
+          '(যাদের ফোন নাম্বার ইতিমধ্যে আছে, তারা duplicate হিসেবে বাদ যাবে)। এগিয়ে যাবেন?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('বাতিল'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Import করুন'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _importingBackup = true);
+    try {
+      final result = await CustomerRepository().importCustomers(parsed);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${result.imported} জন import হয়েছে'
+            '${result.skipped > 0 ? ', ${result.skipped} জন duplicate হিসেবে বাদ গেছে' : ''}',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Import ব্যর্থ, আবার চেষ্টা করুন')),
+      );
+    } finally {
+      if (mounted) setState(() => _importingBackup = false);
     }
   }
 
@@ -122,6 +182,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _GroupHeader(label: "অ্যাপিয়ারেন্স", colors: colors),
+
           _SectionCard(
             title: "থিম কালার",
             icon: Icons.palette_rounded,
@@ -145,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 3,
                       ),
                       boxShadow: isSelected
-                          ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 12, spreadRadius: 1)]
+                          ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 12, spreadRadius: 1)]
                           : [],
                     ),
                     child: isSelected
@@ -190,6 +252,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 14),
 
+          // ✅ Font Size
+          _SectionCard(
+            title: "Font Size",
+            icon: Icons.text_fields_rounded,
+            colors: colors,
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: AppSettings.fontScaleOptions.map((scale) {
+                final isSelected = settings.fontScale == scale;
+                final label = scale == 0.9
+                    ? "ছোট"
+                    : scale == 1.0
+                        ? "নরমাল"
+                        : scale == 1.1
+                            ? "মাঝারি"
+                            : scale == 1.2
+                                ? "বড়"
+                                : "অতি বড়";
+                return GestureDetector(
+                  onTap: () => controller.update(settings.copyWith(fontScale: scale)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected ? settings.accentColor.withValues(alpha: 0.16) : colors.surfaceAlt,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: isSelected ? settings.accentColor : colors.borderColor),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13 * scale,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? settings.accentColor : colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          _GroupHeader(label: "বিজনেস", colors: colors, topPadding: 24),
+
           _SectionCard(
             title: "কারেন্সি",
             icon: Icons.currency_exchange_rounded,
@@ -206,7 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     height: 44,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: isSelected ? settings.accentColor.withOpacity(0.16) : colors.surfaceAlt,
+                      color: isSelected ? settings.accentColor.withValues(alpha: 0.16) : colors.surfaceAlt,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected ? settings.accentColor : colors.borderColor,
@@ -344,51 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: _SmsTemplateEditor(colors: colors, settings: settings, controller: controller),
           ),
 
-          const SizedBox(height: 14),
-
-          // ✅ Font Size
-          _SectionCard(
-            title: "Font Size",
-            icon: Icons.text_fields_rounded,
-            colors: colors,
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: AppSettings.fontScaleOptions.map((scale) {
-                final isSelected = settings.fontScale == scale;
-                final label = scale == 0.9
-                    ? "ছোট"
-                    : scale == 1.0
-                        ? "নরমাল"
-                        : scale == 1.1
-                            ? "মাঝারি"
-                            : scale == 1.2
-                                ? "বড়"
-                                : "অতি বড়";
-                return GestureDetector(
-                  onTap: () => controller.update(settings.copyWith(fontScale: scale)),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected ? settings.accentColor.withOpacity(0.16) : colors.surfaceAlt,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: isSelected ? settings.accentColor : colors.borderColor),
-                    ),
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 13 * scale,
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? settings.accentColor : colors.textPrimary,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 14),
+          _GroupHeader(label: "নিরাপত্তা ও ডেটা", colors: colors, topPadding: 24),
 
           // ✅ App Lock
           _SectionCard(
@@ -407,7 +469,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     Switch(
                       value: settings.appLockEnabled,
-                      activeColor: settings.accentColor,
+                      activeThumbColor: settings.accentColor,
                       onChanged: (value) async {
                         if (value) {
                           final result = await Navigator.of(context).push<bool>(
@@ -415,6 +477,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                           if (result != true) return; // সেটআপ বাতিল করলে টগল অন হবে না
                         } else {
+                          // ✅ App Lock বন্ধ করার আগেও PIN/বায়োমেট্রিক দিয়ে যাচাই
+                          // বাধ্যতামূলক — নাহলে ফোন খোলা অবস্থায় পেলেই কেউ চুপচাপ
+                          // লক অফ করে দিতে পারত, "PIN পরিবর্তন করুন"-এর মতোই।
+                          final settingsNavigator = Navigator.of(context);
+                          final verified = await settingsNavigator.push<bool>(
+                            MaterialPageRoute(
+                              builder: (lockContext) => AppLockScreen(
+                                mode: AppLockMode.unlock,
+                                onUnlocked: () => Navigator.of(lockContext).pop(true),
+                              ),
+                            ),
+                          );
+                          if (verified != true) return;
+
                           await controller.update(settings.copyWith(appLockEnabled: false, clearPin: true));
                         }
                       },
@@ -427,7 +503,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       onPressed: () async {
-                        await Navigator.of(context).push(
+                        // ✅ নতুন PIN সেট করার আগে বর্তমান PIN/বায়োমেট্রিক দিয়ে
+                        // যাচাই করা বাধ্যতামূলক — যাতে ফোন খোলা অবস্থায় পেলেই কেউ
+                        // চুপচাপ PIN পাল্টে দিতে না পারে।
+                        // ✅ async gap-এর আগেই এই স্ক্রিনের Navigator ক্যাপচার করা হচ্ছে
+                        final settingsNavigator = Navigator.of(context);
+
+                        final verified = await settingsNavigator.push<bool>(
+                          MaterialPageRoute(
+                            builder: (lockContext) => AppLockScreen(
+                              mode: AppLockMode.unlock,
+                              // ✅ pushed স্ক্রিনের নিজের context দিয়ে pop করা হচ্ছে,
+                              // তাই বাইরের widget-এর context আর ব্যবহার করা লাগছে না
+                              onUnlocked: () => Navigator.of(lockContext).pop(true),
+                            ),
+                          ),
+                        );
+                        if (verified != true) return;
+
+                        await settingsNavigator.push(
                           MaterialPageRoute(builder: (_) => const AppLockScreen(mode: AppLockMode.setup)),
                         );
                       },
@@ -442,7 +536,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 14),
 
-          // ✅ Backup / Export
+          // ✅ Backup / Export / Restore
           _SectionCard(
             title: "Data Backup",
             icon: Icons.backup_rounded,
@@ -450,7 +544,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 Text(
-                  "সব কাস্টমারের তথ্য CSV ফাইল হিসেবে এক্সপোর্ট করুন — Excel/Google Sheets এ খোলা যাবে।",
+                  "সব কাস্টমারের তথ্য CSV ফাইল হিসেবে এক্সপোর্ট করুন — Excel/Google Sheets এ খোলা যাবে। "
+                  "আগে এক্সপোর্ট করা CSV ফাইল থেকে কাস্টমার ফিরিয়ে আনতেও (Restore) পারবেন।",
                   style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 12),
@@ -468,6 +563,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: colors.accent))
                         : const Icon(Icons.file_download_rounded, size: 18),
                     label: Text(_exportingBackup ? "এক্সপোর্ট হচ্ছে..." : "CSV এক্সপোর্ট করুন", style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _importingBackup ? null : _importBackup,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.textPrimary,
+                      side: BorderSide(color: colors.borderColor),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: _importingBackup
+                        ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: colors.accent))
+                        : const Icon(Icons.file_upload_rounded, size: 18),
+                    label: Text(_importingBackup ? "Import হচ্ছে..." : "CSV থেকে Restore করুন", style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          _GroupHeader(label: "আইনি তথ্য", colors: colors, topPadding: 24),
+
+          _SectionCard(
+            title: "আইনি তথ্য",
+            icon: Icons.privacy_tip_rounded,
+            colors: colors,
+            child: Column(
+              children: [
+                _LegalLinkRow(
+                  label: "Privacy Policy",
+                  colors: colors,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                  ),
+                ),
+                Divider(color: colors.borderColor, height: 20),
+                _LegalLinkRow(
+                  label: "Terms of Service",
+                  colors: colors,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TermsOfServiceScreen()),
                   ),
                 ),
               ],
@@ -527,6 +666,60 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({required this.label, required this.colors, this.topPadding = 0});
+
+  final String label;
+  final AppColors colors;
+  final double topPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(4, topPadding, 4, 10),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w800,
+          fontSize: 11.5,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalLinkRow extends StatelessWidget {
+  const _LegalLinkRow({required this.label, required this.colors, required this.onTap});
+
+  final String label;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13.5),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: colors.textSecondary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ModeButton extends StatelessWidget {
   const _ModeButton({
     required this.label,
@@ -551,7 +744,7 @@ class _ModeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 13),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? colors.accent.withOpacity(0.16) : colors.surfaceAlt,
+          color: selected ? colors.accent.withValues(alpha: 0.16) : colors.surfaceAlt,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: selected ? colors.accent : colors.borderColor),
         ),
@@ -658,9 +851,9 @@ class _SmsTemplateEditorState extends State<_SmsTemplateEditor> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: colors.accent.withOpacity(0.12),
+                  color: colors.accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: colors.accent.withOpacity(0.3)),
+                  border: Border.all(color: colors.accent.withValues(alpha: 0.3)),
                 ),
                 child: Text(tag, style: TextStyle(color: colors.accent, fontSize: 11.5, fontWeight: FontWeight.w700)),
               ),

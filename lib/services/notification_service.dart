@@ -6,6 +6,8 @@ import 'package:timezone/data/latest.dart' as tzData;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
 
+import '../utils/helpers.dart';
+
 class NotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
   static final Telephony _telephony = Telephony.instance;
@@ -97,13 +99,13 @@ class NotificationService {
         // silently fail করে (কোনো status callback ই আসে না)
         isMultipart: true,
         statusListener: (status) {
-          debugPrint('📊 SMS STATUS ($cleanPhone): $status');
+          debugPrint('📊 SMS STATUS (${maskPhone(cleanPhone)}): $status');
         },
       );
     } catch (e) {
       // ✅ platform exception (যেমন failed_to_fetch_sms) এলে যাতে পুরো অ্যাপ
       // crash না করে, সেটা এখানে ধরে ফেলা হচ্ছে
-      debugPrint('❌ SMS SEND FAILED ($cleanPhone): $e');
+      debugPrint('❌ SMS SEND FAILED (${maskPhone(cleanPhone)}): $e');
     }
   }
 
@@ -119,7 +121,7 @@ class NotificationService {
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-]'), '');    
     
     debugPrint(
-      '📱 [REMINDER FLOW] SMS SCHEDULE: taskId=$taskId, phone=$cleanPhone, '
+      '📱 [REMINDER FLOW] SMS SCHEDULE: taskId=$taskId, phone=${maskPhone(cleanPhone)}, '
       'scheduledDate=$scheduledDate, delay=$delay, customerId=$customerId',
     );
 

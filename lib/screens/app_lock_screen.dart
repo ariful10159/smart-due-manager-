@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
+import '../services/pin_lockout_service.dart';
 import '../services/pin_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_settings_scope.dart';
@@ -28,14 +31,55 @@ class _AppLockScreenState extends State<AppLockScreen> {
   String? _errorText;
   bool _checkingBiometric = false;
 
+  DateTime? _lockoutUntil;
+  Duration _lockoutRemaining = Duration.zero;
+  Timer? _lockoutTicker;
+
   final LocalAuthentication _localAuth = LocalAuthentication();
+
+  bool get _isLockedOut => _lockoutRemaining > Duration.zero;
 
   @override
   void initState() {
     super.initState();
     if (widget.mode == AppLockMode.unlock) {
-      _tryBiometricUnlock();
+      _refreshLockoutState().then((_) {
+        if (mounted && !_isLockedOut) _tryBiometricUnlock();
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    _lockoutTicker?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshLockoutState() async {
+    final until = await PinLockoutService.getLockoutUntil();
+    _lockoutUntil = until;
+    _updateLockoutRemaining();
+    if (until != null) _startLockoutTicker();
+  }
+
+  void _updateLockoutRemaining() {
+    final until = _lockoutUntil;
+    final remaining = until == null
+        ? Duration.zero
+        : until.difference(DateTime.now());
+    if (mounted) {
+      setState(() {
+        _lockoutRemaining = remaining.isNegative ? Duration.zero : remaining;
+      });
+    }
+  }
+
+  void _startLockoutTicker() {
+    _lockoutTicker?.cancel();
+    _lockoutTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      _updateLockoutRemaining();
+      if (!_isLockedOut) _lockoutTicker?.cancel();
+    });
   }
 
   Future<void> _tryBiometricUnlock() async {
@@ -60,6 +104,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
   }
 
   void _onDigit(String digit) {
+    if (_isLockedOut) return;
     if (_enteredPin.length >= 4) return;
     HapticFeedback.lightImpact();
     setState(() {
@@ -86,10 +131,27 @@ class _AppLockScreenState extends State<AppLockScreen> {
     if (widget.mode == AppLockMode.unlock) {
       final storedHash = settings.appLockPinHash;
       if (storedHash != null && PinService.verifyPin(_enteredPin, storedHash)) {
+        await PinLockoutService.reset();
+        // ✅ পুরনো ফরম্যাটের হ্যাশ হলে, সঠিক PIN verify হওয়ার পরই নিরাপদে নতুন
+        // (salted + PBKDF2) ফরম্যাটে migrate করে দেওয়া হচ্ছে। ব্যাকগ্রাউন্ডে সেভ হয়
+        // বলে unlock experience-এ কোনো বাড়তি দেরি হয় না।
+        if (PinService.isLegacyFormat(storedHash)) {
+          final upgradedHash = PinService.hashPin(_enteredPin);
+          unawaited(
+            controller.update(settings.copyWith(appLockPinHash: upgradedHash)),
+          );
+        }
         widget.onUnlocked?.call();
       } else {
+        final lockoutUntil = await PinLockoutService.recordFailedAttempt();
+        if (!mounted) return;
+        _lockoutUntil = lockoutUntil;
+        _updateLockoutRemaining();
+        if (lockoutUntil != null) _startLockoutTicker();
         setState(() {
-          _errorText = 'ভুল PIN, আবার চেষ্টা করুন';
+          _errorText = lockoutUntil != null
+              ? 'অনেকবার ভুল PIN দেওয়া হয়েছে, কিছুক্ষণ পর আবার চেষ্টা করুন'
+              : 'ভুল PIN, আবার চেষ্টা করুন';
           _enteredPin = '';
         });
       }
@@ -118,6 +180,16 @@ class _AppLockScreenState extends State<AppLockScreen> {
         _enteredPin = '';
       });
     }
+  }
+
+  String _formatLockoutRemaining() {
+    final total = _lockoutRemaining.inSeconds;
+    if (total < 60) return '$total সেকেন্ড';
+    final minutes = total ~/ 60;
+    final seconds = total % 60;
+    return seconds == 0
+        ? '$minutes মিনিট'
+        : '$minutes মিনিট $seconds সেকেন্ড';
   }
 
   @override
@@ -169,7 +241,14 @@ class _AppLockScreenState extends State<AppLockScreen> {
                 }),
               ),
 
-              if (_errorText != null) ...[
+              if (_isLockedOut) ...[
+                const SizedBox(height: 14),
+                Text(
+                  'অনেকবার ভুল PIN — ${_formatLockoutRemaining()} পর আবার চেষ্টা করুন',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: colors.due, fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ] else if (_errorText != null) ...[
                 const SizedBox(height: 14),
                 Text(_errorText!, style: TextStyle(color: colors.due, fontSize: 12.5, fontWeight: FontWeight.w600)),
               ],
@@ -181,11 +260,17 @@ class _AppLockScreenState extends State<AppLockScreen> {
 
               const Spacer(),
 
-              // ✅ Numeric keypad
-              _NumPad(
-                colors: colors,
-                onDigit: _onDigit,
-                onBackspace: _onBackspace,
+              // ✅ Numeric keypad — লকআউট চলাকালীন disabled
+              IgnorePointer(
+                ignoring: _isLockedOut,
+                child: Opacity(
+                  opacity: _isLockedOut ? 0.4 : 1,
+                  child: _NumPad(
+                    colors: colors,
+                    onDigit: _onDigit,
+                    onBackspace: _onBackspace,
+                  ),
+                ),
               ),
 
               if (!isSetup) ...[

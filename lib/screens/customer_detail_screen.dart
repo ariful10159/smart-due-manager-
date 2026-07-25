@@ -304,12 +304,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           content: const Text("PDF saved and opened ✅"),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: Text("Download failed: $e"),
+          content: const Text("Download failed, please try again"),
         ),
       );
     }
@@ -415,7 +415,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           surface: colors.surface,
           onSurface: colors.textPrimary,
         ),
-        dialogBackgroundColor: colors.surface,
+        dialogTheme: DialogThemeData(backgroundColor: colors.surface),
       ),
       child: child!,
     );
@@ -468,12 +468,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           content: const Text("Reminder removed ✅"),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: Text("Failed to remove reminder: $e"),
+          content: const Text("Failed to remove reminder, please try again"),
         ),
       );
     }
@@ -530,10 +530,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           content: Text("${customer.name} hidden successfully"),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: colors.due, content: Text("Hide failed: $e")),
+        SnackBar(backgroundColor: colors.due, content: const Text("Hide failed, please try again")),
       );
     }
   }
@@ -1094,7 +1094,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.info.withOpacity(0.12),
+                          color: colors.info.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(

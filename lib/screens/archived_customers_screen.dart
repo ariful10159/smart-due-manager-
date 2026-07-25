@@ -52,12 +52,12 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
           content: Text("${customer.name} restored successfully"),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text("Restore failed: $e"),
+          content: const Text("Restore failed, please try again"),
         ),
       );
     }
@@ -134,12 +134,12 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
           content: Text("${customer.name} permanently deleted"),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text("Delete failed: $e"),
+          content: const Text("Delete failed, please try again"),
         ),
       );
     }

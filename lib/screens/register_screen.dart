@@ -86,7 +86,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryColor.withOpacity(0.18),
+                color: primaryColor.withValues(alpha: 0.18),
               ),
             ),
           ),
@@ -98,7 +98,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryColor.withOpacity(0.08),
+                color: primaryColor.withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -124,12 +124,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: primaryColor.withOpacity(0.12),
+                                color: primaryColor.withValues(alpha: 0.12),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               )
                             ],
-                            border: Border.all(color: primaryColor.withOpacity(0.2), width: 1.5),
+                            border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1.5),
                           ),
                           child: Icon(
                             Icons.person_add_alt_1_rounded,
@@ -146,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         textAlign: TextAlign.center,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.onBackground,
+                          color: theme.colorScheme.onSurface,
                           letterSpacing: -0.5,
                           fontSize: 28,
                         ),
@@ -169,12 +169,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 32,
                               offset: const Offset(0, 16),
                             ),
                           ],
-                          border: Border.all(color: Colors.grey.shade200.withOpacity(0.6), width: 1),
+                          border: Border.all(color: Colors.grey.shade200.withValues(alpha: 0.6), width: 1),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(24),
@@ -188,7 +188,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 decoration: InputDecoration(
                                   labelText: "Full Name",
                                   labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.person_outline_rounded, color: primaryColor.withOpacity(0.7)),
+                                  prefixIcon: Icon(Icons.person_outline_rounded, color: primaryColor.withValues(alpha: 0.7)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                                   enabledBorder: OutlineInputBorder(
@@ -215,7 +215,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   hintText: "01XXXXXXXXX",
                                   hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                                   labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.phone_outlined, color: primaryColor.withOpacity(0.7)),
+                                  prefixIcon: Icon(Icons.phone_outlined, color: primaryColor.withValues(alpha: 0.7)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                                   enabledBorder: OutlineInputBorder(
@@ -244,7 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 decoration: InputDecoration(
                                   labelText: "Password",
                                   labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.lock_outline_rounded, color: primaryColor.withOpacity(0.7)),
+                                  prefixIcon: Icon(Icons.lock_outline_rounded, color: primaryColor.withValues(alpha: 0.7)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                                   enabledBorder: OutlineInputBorder(
@@ -284,7 +284,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 decoration: InputDecoration(
                                   labelText: "Confirm Password",
                                   labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.lock_reset_rounded, color: primaryColor.withOpacity(0.7)),
+                                  prefixIcon: Icon(Icons.lock_reset_rounded, color: primaryColor.withValues(alpha: 0.7)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                                   enabledBorder: OutlineInputBorder(
@@ -335,7 +335,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: primaryColor.withOpacity(0.35),
+                              color: primaryColor.withValues(alpha: 0.35),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),

@@ -36,26 +36,6 @@ class CustomerRepository {
     return uid;
   }
 
-  // ✅ সব customer এর payment একসাথে (Report এর জন্য) — শুধু বর্তমান user এর
-  Future<List<Payment>> fetchAllPaymentsOnce() async {
-    // প্রথমে বর্তমান user এর customer id গুলো বের করা হচ্ছে
-    final myCustomers =
-        await _col.where('ownerId', isEqualTo: _currentUserId).get();
-    final myCustomerIds = myCustomers.docs.map((d) => d.id).toSet();
-
-    // collectionGroup দিয়ে সব payment এনে, শুধু নিজের customer এর payment filter করা
-    final snapshot = await _firestore.collectionGroup('payments').get();
-
-    return snapshot.docs
-        .where((doc) {
-          final parentCustomerId = doc.reference.parent.parent?.id;
-          return parentCustomerId != null &&
-              myCustomerIds.contains(parentCustomerId);
-        })
-        .map((doc) => Payment.fromMap({...doc.data(), 'id': doc.id}))
-        .toList();
-  }
-
   // ✅ Stream all VISIBLE customers — শুধু বর্তমান user এর নিজের customer
   Stream<List<Customer>> streamCustomers() {
     return _col
@@ -242,6 +222,51 @@ class CustomerRepository {
   // ✅ Restore customer (Hidden থেকে আবার Visible করা)
   Future<void> restoreCustomer(String customerId) async {
     await _col.doc(customerId).update({'isHidden': false});
+  }
+
+  // ✅ CSV থেকে parse করা customer গুলো import করা — ফোন নাম্বার দিয়ে duplicate
+  // detect করে skip করে (বর্তমান user এর existing customer দের সাথে, এবং একই CSV
+  // এর মধ্যেও), বাকিদের fresh doc id ও বর্তমান user এর ownerId দিয়ে ব্যাচে লেখে।
+  Future<({int imported, int skipped})> importCustomers(
+    List<Customer> parsedRows,
+  ) async {
+    final existing = await fetchCustomersOnce();
+    final seenPhones = existing
+        .map((c) => c.phone.trim())
+        .where((p) => p.isNotEmpty)
+        .toSet();
+
+    final toImport = <Customer>[];
+    var skipped = 0;
+
+    for (final row in parsedRows) {
+      final phone = row.phone.trim();
+      if (phone.isNotEmpty && seenPhones.contains(phone)) {
+        skipped++;
+        continue;
+      }
+      if (phone.isNotEmpty) seenPhones.add(phone);
+      toImport.add(row);
+    }
+
+    const chunkSize = 450; // Firestore batch limit ৫০০ অপারেশন, buffer রাখা হলো
+    for (var i = 0; i < toImport.length; i += chunkSize) {
+      final chunk = toImport.sublist(
+        i,
+        (i + chunkSize) > toImport.length ? toImport.length : i + chunkSize,
+      );
+      final batch = _firestore.batch();
+      for (final row in chunk) {
+        final docRef = _col.doc();
+        batch.set(
+          docRef,
+          row.copyWith(id: docRef.id, ownerId: _currentUserId).toMap(),
+        );
+      }
+      await batch.commit();
+    }
+
+    return (imported: toImport.length, skipped: skipped);
   }
 
   // ✅ Permanently delete customer (with all subcollections)

@@ -18,7 +18,7 @@ class ReminderHistoryScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reminder History"),
+        title: const Text("রিমাইন্ডার হিস্ট্রি"),
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: repo.streamReminderHistory(customerId),
@@ -32,7 +32,7 @@ class ReminderHistoryScreen extends StatelessWidget {
 
           if (reminders.isEmpty) {
             return const Center(
-              child: Text("No reminder history"),
+              child: Text("কোনো রিমাইন্ডার হিস্ট্রি নেই"),
             );
           }
 
@@ -54,10 +54,15 @@ class ReminderHistoryScreen extends StatelessWidget {
                           'd MMM yyyy • hh:mm a')
                       .format(dateTime);
 
+              final status = reminder['status'] == 'active'
+                  ? 'সক্রিয়'
+                  : reminder['status'] == 'expired'
+                      ? 'মেয়াদোত্তীর্ণ'
+                      : reminder['status'];
+
               return ListTile(
                 title: Text(formattedDate),
-                subtitle: Text(
-                    "Status: ${reminder['status']}"),
+                subtitle: Text("স্ট্যাটাস: $status"),
               );
             },
           );

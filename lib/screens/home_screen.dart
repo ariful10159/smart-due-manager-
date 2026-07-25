@@ -491,7 +491,7 @@ class _GreetingHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colors.accent.withOpacity(0.3),
+            color: colors.accent.withValues(alpha: 0.3),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -516,7 +516,7 @@ class _GreetingHeader extends StatelessWidget {
                 Text(
                   today,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                   ),
@@ -527,7 +527,7 @@ class _GreetingHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.waving_hand_rounded, color: Colors.white, size: 20),
@@ -571,7 +571,7 @@ class _CollectionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 15),
@@ -634,7 +634,7 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(9),
             ),
             child: Icon(icon, color: color, size: 16),
@@ -701,7 +701,7 @@ class _MiniStat extends StatelessWidget {
               color: color,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: color.withOpacity(0.5), blurRadius: 4, spreadRadius: 0.5),
+                BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 4, spreadRadius: 0.5),
               ],
             ),
           ),
@@ -804,7 +804,7 @@ class _CustomerDueTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: colors.accent.withOpacity(0.16),
+                    color: colors.accent.withValues(alpha: 0.16),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.person_rounded, color: colors.accent, size: 16),
@@ -835,7 +835,7 @@ class _CustomerDueTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
-                    color: colors.due.withOpacity(0.14),
+                    color: colors.due.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Text(
@@ -892,7 +892,7 @@ class _ReminderTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: colors.warn.withOpacity(0.16),
+                    color: colors.warn.withValues(alpha: 0.16),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.alarm_rounded, color: colors.warn, size: 16),
@@ -923,7 +923,7 @@ class _ReminderTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
-                    color: dueColor.withOpacity(0.14),
+                    color: dueColor.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Text(
@@ -971,7 +971,7 @@ class _EmptyCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.14),
+              color: color.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 22, color: color),

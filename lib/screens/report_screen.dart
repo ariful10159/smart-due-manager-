@@ -33,30 +33,32 @@ class _ReportScreenState extends State<ReportScreen> {
     _loadData();
   }
 
-  // ✅ লুপ বর্জন করে collectionGroup এর মাধ্যমে সুপার-ফাস্ট ডাটা লোডিং লজিক
+  // ✅ প্রতিটা কাস্টমারের payments subcollection আলাদাভাবে query করা হয় — Firestore
+  // rule প্রতিটা read কে ownerId দিয়ে যাচাই করতে পারে বলেই এই approach নিরাপদ।
+  // অনফিল্টার্ড collectionGroup('payments') query ব্যবহার করলে rule-level এ
+  // filter করা যায় না (Firestore পুরো query-টাই প্রমাণযোগ্য হতে হয়), তাই সেই
+  // rule শুধু `request.auth != null` চেক করত — যেকোনো লগইন করা ইউজার সব
+  // ইউজারের পেমেন্ট ডেটা ডাউনলোড করতে পারত।
   Future<void> _loadData() async {
     setState(() => _loading = true);
     try {
-      // ১. প্যারালালি কাস্টমার লিস্ট লোড করা
       final customers = await _repo.fetchCustomersOnce();
-      
-      // কাস্টমার আইডিগুলো একটা সেট-এ রাখা যেন সহজে ফিল্টার করা যায়
-      final myCustomerIds = customers.map((c) => c.id).toSet();
       final List<Payment> allPayments = [];
 
-      // ২. ⚡ collectionGroup ব্যবহার করে এক ক্লিকে সব কাস্টমারের পেমেন্ট একসাথে আনা
-      final snapshot = await FirebaseFirestore.instance
-          .collectionGroup('payments')
-          .get();
+      final snapshots = await Future.wait(
+        customers.map(
+          (c) => FirebaseFirestore.instance
+              .collection('customers')
+              .doc(c.id)
+              .collection('payments')
+              .get(),
+        ),
+      );
 
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final cId = data['customerId']?.toString() ?? '';
-        
-        // শুধু বর্তমান ইউজারের আওতাভুক্ত কাস্টমারদের পেমেন্টগুলোই ফিল্টার করে নেওয়া
-        if (myCustomerIds.contains(cId)) {
+      for (final snapshot in snapshots) {
+        for (final doc in snapshot.docs) {
           try {
-            final payment = Payment.fromMap({...data, 'id': doc.id});
+            final payment = Payment.fromMap({...doc.data(), 'id': doc.id});
             allPayments.add(payment);
           } catch (e) {
             debugPrint("Error parsing payment ID ${doc.id}: $e");
@@ -70,11 +72,11 @@ class _ReportScreenState extends State<ReportScreen> {
         _payments = allPayments;
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load report: $e')),
+        const SnackBar(content: Text('Failed to load report, please try again')),
       );
     }
   }
@@ -277,9 +279,9 @@ class _ReportScreenState extends State<ReportScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [

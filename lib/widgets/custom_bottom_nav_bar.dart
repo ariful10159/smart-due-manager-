@@ -217,7 +217,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colors.accent.withOpacity(0.45),
+                                      color: colors.accent.withValues(alpha: 0.45),
                                       blurRadius: 14,
                                       offset: const Offset(0, 5),
                                     ),
@@ -351,7 +351,7 @@ class _NotchedBarPainter extends CustomPainter {
 
     // soft blurred drop shadow beneath the whole bar
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.20)
+      ..color = Colors.black.withValues(alpha: 0.20)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
     canvas.drawPath(path.shift(const Offset(0, 6)), shadowPaint);
 

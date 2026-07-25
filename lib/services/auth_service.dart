@@ -40,8 +40,8 @@ class AuthService {
       return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
     } on FirebaseAuthException catch (e) {
       return _mapAuthError(e);
-    } catch (e) {
-      return 'রেজিস্ট্রেশন ব্যর্থ হয়েছে: $e';
+    } catch (_) {
+      return 'রেজিস্ট্রেশন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
     }
   }
 
@@ -77,8 +77,8 @@ class AuthService {
       return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
     } on FirebaseAuthException catch (e) {
       return _mapAuthError(e);
-    } catch (e) {
-      return 'লগইন ব্যর্থ হয়েছে: $e';
+    } catch (_) {
+      return 'লগইন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
     }
   }
 
@@ -102,10 +102,9 @@ class AuthService {
       case 'weak-password':
         return 'পাসওয়ার্ড খুব দুর্বল, কমপক্ষে ৬ ক্যারেক্টার দিন';
       case 'user-not-found':
-        return 'এই ফোন নাম্বারে কোনো অ্যাকাউন্ট নেই, আগে Register করুন';
       case 'wrong-password':
       case 'invalid-credential':
-        return 'ভুল পাসওয়ার্ড';
+        return 'ফোন নাম্বার অথবা পাসওয়ার্ড সঠিক নয়';
       case 'invalid-email':
         return 'ফোন নাম্বার সঠিক ফরম্যাটে দিন';
       case 'network-request-failed':
@@ -113,7 +112,7 @@ class AuthService {
       case 'too-many-requests':
         return 'অনেকবার চেষ্টা করা হয়েছে, কিছুক্ষণ পর আবার চেষ্টা করুন';
       default:
-        return e.message ?? 'কিছু একটা ভুল হয়েছে';
+        return 'কিছু একটা ভুল হয়েছে, আবার চেষ্টা করুন';
     }
   }
 }

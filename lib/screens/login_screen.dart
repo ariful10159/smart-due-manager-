@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Container(
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.15),
+            color: iconColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(9),
           ),
           child: Icon(icon, color: iconColor, size: 16),
@@ -141,12 +141,12 @@ class _LoginScreenState extends State<LoginScreen> {
           Positioned(
             top: -90,
             right: -70,
-            child: _GlowBlob(size: 240, color: _accent.withOpacity(0.22)),
+            child: _GlowBlob(size: 240, color: _accent.withValues(alpha: 0.22)),
           ),
           Positioned(
             top: 120,
             left: -100,
-            child: _GlowBlob(size: 200, color: _accentAlt.withOpacity(0.16)),
+            child: _GlowBlob(size: 200, color: _accentAlt.withValues(alpha: 0.16)),
           ),
 
           SafeArea(
@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: _accent.withOpacity(0.25),
+                                    color: _accent.withValues(alpha: 0.25),
                                     width: 1.4,
                                   ),
                                 ),
@@ -187,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: _accent.withOpacity(0.45),
+                                      color: _accent.withValues(alpha: 0.45),
                                       blurRadius: 34,
                                       spreadRadius: 2,
                                     ),
@@ -245,12 +245,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 border: Border.all(color: _borderColor),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.35),
+                                    color: Colors.black.withValues(alpha: 0.35),
                                     blurRadius: 28,
                                     offset: const Offset(0, 16),
                                   ),
                                   BoxShadow(
-                                    color: _accent.withOpacity(0.06),
+                                    color: _accent.withValues(alpha: 0.06),
                                     blurRadius: 40,
                                     offset: const Offset(0, -6),
                                   ),
@@ -367,8 +367,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           gradient: LinearGradient(
                                             colors: _isLoading
                                                 ? [
-                                                    _accent.withOpacity(0.5),
-                                                    _accentAlt.withOpacity(0.5),
+                                                    _accent.withValues(alpha: 0.5),
+                                                    _accentAlt.withValues(alpha: 0.5),
                                                   ]
                                                 : [_accent, _accentAlt],
                                             begin: Alignment.centerLeft,
@@ -378,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                               ? []
                                               : [
                                                   BoxShadow(
-                                                    color: _accent.withOpacity(0.4),
+                                                    color: _accent.withValues(alpha: 0.4),
                                                     blurRadius: 18,
                                                     offset: const Offset(0, 10),
                                                   ),
@@ -519,7 +519,7 @@ class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.035)
+      ..color = Colors.white.withValues(alpha: 0.035)
       ..style = PaintingStyle.fill;
 
     const spacing = 26.0;

@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
+import '../theme/app_colors.dart';
 
 enum _ReportFilter { all, dueOnly }
 
@@ -33,18 +34,6 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
 
   _ReportFilter _filter = _ReportFilter.all;
   _ReportSort _sort = _ReportSort.dueHighToLow;
-
-  // 🎨 Shared dark navy palette
-  static const Color _scaffoldBg = Color(0xFF0F0F14);
-  static const Color _surface = Color(0xFF1B1B24);
-  static const Color _surfaceAlt = Color(0xFF20202B);
-  static const Color _borderColor = Color(0xFF2C2C3A);
-  static const Color _textPrimary = Colors.white;
-  static const Color _textSecondary = Color(0xFF9A9AAE);
-  static const Color _accent = Color(0xFF6366F1);
-  static const Color _accentAlt = Color(0xFF8B5CF6);
-  static const Color _due = Color(0xFFEF4444);
-  static const Color _clear = Color(0xFF10B981);
 
   @override
   void initState() {
@@ -287,23 +276,24 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final result = _filteredSorted;
     final totalDue = result.fold<double>(0, (sum, c) => sum + c.totalDue);
 
     return Scaffold(
-      backgroundColor: _scaffoldBg,
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Customer PDF Report",
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: _textPrimary),
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: _textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _accent))
+          ? Center(child: CircularProgressIndicator(color: colors.accent))
           : Column(
               children: [
                 Padding(
@@ -315,15 +305,15 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [_accent, _accentAlt],
+                            colors: [colors.accent, colors.accentAlt],
                           ),
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
-                              color: _accent.withOpacity(0.3),
+                              color: colors.accent.withValues(alpha: 0.3),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),
@@ -347,7 +337,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                                 Text(
                                   "মোট বকেয়া: ৳${totalDue.toStringAsFixed(2)}",
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     fontSize: 12.5,
                                   ),
                                 ),
@@ -356,7 +346,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
+                                color: Colors.white.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 26),
@@ -374,6 +364,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                             child: _FilterChip(
                               label: "সব কাস্টমার",
                               selected: _filter == _ReportFilter.all,
+                              colors: colors,
                               onTap: () => setState(() => _filter = _ReportFilter.all),
                             ),
                           ),
@@ -382,6 +373,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                             child: _FilterChip(
                               label: "শুধু বকেয়া",
                               selected: _filter == _ReportFilter.dueOnly,
+                              colors: colors,
                               onTap: () => setState(() => _filter = _ReportFilter.dueOnly),
                             ),
                           ),
@@ -395,17 +387,17 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         decoration: BoxDecoration(
-                          color: _surface,
+                          color: colors.surface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _borderColor),
+                          border: Border.all(color: colors.borderColor),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<_ReportSort>(
                             value: _sort,
                             isExpanded: true,
-                            dropdownColor: _surface,
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary),
-                            style: const TextStyle(color: _textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
+                            dropdownColor: colors.surface,
+                            icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.textSecondary),
+                            style: TextStyle(color: colors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
                             items: _ReportSort.values.map((option) {
                               return DropdownMenuItem(
                                 value: option,
@@ -427,10 +419,10 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                 // ✅ Preview list (short summary rows)
                 Expanded(
                   child: result.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             "কোনো কাস্টমার পাওয়া যায়নি",
-                            style: TextStyle(color: _textSecondary, fontWeight: FontWeight.w600),
+                            style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600),
                           ),
                         )
                       : ListView.separated(
@@ -439,17 +431,17 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                           separatorBuilder: (_, __) => const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final c = result[index];
-                            final dueColor = c.totalDue > 0 ? _due : _clear;
+                            final dueColor = c.totalDue > 0 ? colors.due : colors.clear;
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [_surface, _surfaceAlt],
+                                gradient: LinearGradient(
+                                  colors: [colors.surface, colors.surfaceAlt],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: _borderColor),
+                                border: Border.all(color: colors.borderColor),
                               ),
                               child: Row(
                                 children: [
@@ -458,12 +450,12 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                                     height: 26,
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
-                                      color: _accent.withOpacity(0.15),
+                                      color: colors.accent.withValues(alpha: 0.15),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Text(
                                       "${index + 1}",
-                                      style: const TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.w800),
+                                      style: TextStyle(color: colors.accent, fontSize: 11, fontWeight: FontWeight.w800),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
@@ -473,12 +465,12 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                                       children: [
                                         Text(
                                           c.name,
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5),
+                                          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
                                           "${_resolveAddress(c, fallback: c.phone)}  •  ${DateFormat('d MMM yyyy').format(c.lastPaymentDate)}",
-                                          style: const TextStyle(color: _textSecondary, fontSize: 11),
+                                          style: TextStyle(color: colors.textSecondary, fontSize: 11),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
@@ -498,9 +490,9 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                 // ✅ Bottom action buttons
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  decoration: const BoxDecoration(
-                    color: _surface,
-                    border: Border(top: BorderSide(color: _borderColor)),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    border: Border(top: BorderSide(color: colors.borderColor)),
                   ),
                   child: Row(
                     children: [
@@ -508,8 +500,8 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _generating || result.isEmpty ? null : _sharePdf,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: _textPrimary,
-                            side: const BorderSide(color: _borderColor),
+                            foregroundColor: colors.textPrimary,
+                            side: BorderSide(color: colors.borderColor),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -523,7 +515,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            gradient: const LinearGradient(colors: [_accent, _accentAlt]),
+                            gradient: LinearGradient(colors: [colors.accent, colors.accentAlt]),
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -566,16 +558,17 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.colors,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
+  final AppColors colors;
   final VoidCallback onTap;
-
-  static const Color _surface = Color(0xFF1B1B24);
-  static const Color _borderColor = Color(0xFF2C2C3A);
-  static const Color _textSecondary = Color(0xFF9A9AAE);
-  static const Color _accent = Color(0xFF6366F1);
 
   @override
   Widget build(BuildContext context) {
@@ -586,14 +579,14 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 11),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? _accent.withOpacity(0.16) : _surface,
+          color: selected ? colors.accent.withValues(alpha: 0.16) : colors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? _accent : _borderColor),
+          border: Border.all(color: selected ? colors.accent : colors.borderColor),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? _accent : _textSecondary,
+            color: selected ? colors.accent : colors.textSecondary,
             fontWeight: FontWeight.w700,
             fontSize: 12.5,
           ),

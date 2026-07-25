@@ -70,7 +70,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
               surface: colors.surface,
               onSurface: colors.textPrimary,
             ),
-            dialogBackgroundColor: colors.surface,
+            dialogTheme: DialogThemeData(backgroundColor: colors.surface),
           ),
           child: child!,
         );
@@ -264,7 +264,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
+                        color: Colors.black.withValues(alpha: 0.25),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -279,7 +279,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: themeColor.withOpacity(0.18),
+                          color: themeColor.withValues(alpha: 0.18),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.person_rounded, color: themeColor, size: 26),
@@ -369,7 +369,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                         width: 140,
                         height: 2.5,
                         decoration: BoxDecoration(
-                          color: themeColor.withOpacity(0.3),
+                          color: themeColor.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
@@ -485,7 +485,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -503,13 +503,13 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                                   height: double.infinity,
                                 ),
                                 Container(
-                                  color: Colors.black.withOpacity(0.2),
+                                  color: Colors.black.withValues(alpha: 0.2),
                                 ),
                                 Center(
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color: Colors.black.withValues(alpha: 0.6),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: const Row(
@@ -535,7 +535,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: themeColor.withOpacity(0.12),
+                                    color: themeColor.withValues(alpha: 0.12),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -570,7 +570,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                       backgroundColor: themeColor,
                       foregroundColor: Colors.white,
                       disabledBackgroundColor: colors.surfaceAlt,
-                      shadowColor: themeColor.withOpacity(0.4),
+                      shadowColor: themeColor.withValues(alpha: 0.4),
                       elevation: 4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),

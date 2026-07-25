@@ -71,6 +71,12 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('কল করা যায়নি, ডায়ালার পাওয়া যায়নি')),
+      );
+      return;
     }
 
     if (!mounted) return;
@@ -122,12 +128,12 @@ class _ReminderScreenState extends State<ReminderScreen> {
           content: Text("Reminder removed for ${customer.name}"),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: Text("Failed to remove reminder: $e"),
+          content: const Text("Failed to remove reminder, please try again"),
         ),
       );
     }
@@ -270,7 +276,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                 surface: colors.surface,
                 onSurface: colors.textPrimary,
               ),
-              dialogBackgroundColor: colors.surface,
+              dialogTheme: DialogThemeData(backgroundColor: colors.surface),
             ),
             child: child!,
           );
@@ -296,7 +302,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                 surface: colors.surface,
                 onSurface: colors.textPrimary,
               ),
-              dialogBackgroundColor: colors.surface,
+              dialogTheme: DialogThemeData(backgroundColor: colors.surface),
             ),
             child: child!,
           );
@@ -312,8 +318,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
         selectedTime.minute,
       );
     }
-
-    if (newReminderDate == null) return;
 
     await _applySnooze(customer, newReminderDate);
   }
@@ -436,7 +440,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
               if (overdueCount > 0)
                 Container(
                   width: double.infinity,
-                  color: colors.due.withOpacity(0.15),
+                  color: colors.due.withValues(alpha: 0.15),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,

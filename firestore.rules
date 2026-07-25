@@ -68,13 +68,6 @@ service cloud.firestore {
       }
     }
 
-    // ============================================
-    // ⚡ COLLECTION GROUP MATCH (রিপোর্টের জন্য)
-    // ============================================
-    match /{path=**}/payments/{paymentId} {
-      allow read: if request.auth != null;
-    }
-
     // ডিফল্টভাবে অন্য সব রিড-রাইট বন্ধ
     match /{document=**} {
       allow read, write: if false;

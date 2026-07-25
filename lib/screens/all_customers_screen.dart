@@ -47,6 +47,11 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('কল করা যায়নি, ডায়ালার পাওয়া যায়নি')),
+      );
     }
   }
 
@@ -416,7 +421,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<int>(
-                            value: availableYears.contains(_selectedYear)
+                            isExpanded: true,
+                            initialValue: availableYears.contains(_selectedYear)
                                 ? _selectedYear
                                 : null,
                             hint: Text(
@@ -471,7 +477,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
 
                         Expanded(
                           child: DropdownButtonFormField<int>(
-                            value: availableMonths.contains(_selectedMonth)
+                            isExpanded: true,
+                            initialValue: availableMonths.contains(_selectedMonth)
                                 ? _selectedMonth
                                 : null,
                             hint: Text(
@@ -527,7 +534,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
 
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value:
+                            isExpanded: true,
+                            initialValue:
                                 availableReminderOptions.contains(
                                   _reminderFilter,
                                 )
@@ -684,7 +692,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                             Text(
                               _searchQuery.isNotEmpty
                                   ? "'$_searchQuery' এর সাথে মিলে এমন কেউ নেই"
-                                  : "No customers found",
+                                  : "কোনো কাস্টমার পাওয়া যায়নি",
                               style: TextStyle(
                                 color: colors.textSecondary,
                                 fontWeight: FontWeight.w600,
@@ -734,7 +742,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                   border: Border.all(color: colors.borderColor),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
+                                      color: Colors.black.withValues(alpha: 0.2),
                                       blurRadius: 12,
                                       offset: const Offset(0, 6),
                                     ),
@@ -745,7 +753,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: colors.accent.withOpacity(0.16),
+                                        color: colors.accent.withValues(alpha: 0.16),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
@@ -817,7 +825,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                             vertical: 5,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: dueColor.withOpacity(0.14),
+                                            color: dueColor.withValues(alpha: 0.14),
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
@@ -843,7 +851,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                           child: Container(
                                             padding: const EdgeInsets.all(7),
                                             decoration: BoxDecoration(
-                                              color: colors.clear.withOpacity(0.14),
+                                              color: colors.clear.withValues(alpha: 0.14),
                                               shape: BoxShape.circle,
                                             ),
                                             child: Icon(

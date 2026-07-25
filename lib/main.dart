@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
@@ -11,7 +12,9 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'providers/app_settings_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/notification_service.dart';
+import 'utils/helpers.dart';
 import 'widgets/app_settings_scope.dart';
 import 'widgets/app_lock_gate.dart'; // ✅ AppLockGate ইমপোর্ট করা হলো
 
@@ -27,7 +30,7 @@ void callbackDispatcher() {
 
       final phone = rawPhone?.replaceAll(RegExp(r'[\s\-]'), '');
 
-      debugPrint('📤 ATTEMPTING SMS: phone=$phone, message=$message');
+      debugPrint('📤 ATTEMPTING SMS: phone=${maskPhone(phone)}');
 
       if (phone != null && phone.isNotEmpty && message != null) {
         try {
@@ -56,7 +59,7 @@ void callbackDispatcher() {
               message: message,
               statusListener: (status) {
                 debugPrint(
-                  '📊 [BACKGROUND] SMS STATUS attempt=$attempts ($phone): $status',
+                  '📊 [BACKGROUND] SMS STATUS attempt=$attempts (${maskPhone(phone)}): $status',
                 );
                 if (!completer.isCompleted) {
                   completer.complete(true);
@@ -132,8 +135,22 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+
+  // ✅ ক্র্যাশ রিপোর্টিং — debug build এ ড্যাশবোর্ড স্প্যাম এড়াতে collection বন্ধ রাখা হয়,
+  // release/profile build এ চালু থাকে।
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+
+  // ✅ Flutter framework এর ভেতরের (widget build/layout ইত্যাদি) fatal error গুলো Crashlytics এ পাঠানো
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+  // ✅ Flutter framework এর বাইরের (async gap, isolate) error গুলোও ধরার জন্য
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
   await NotificationService.init();
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
+  await Workmanager().initialize(callbackDispatcher);
 
   // ✅ App Settings controller ইনিশিয়ালাইজ করা হচ্ছে (theme, currency, business info)
   final settingsController = AppSettingsController();
@@ -204,9 +221,7 @@ class AuthWrapper extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const SplashScreen();
         }
 
         if (snapshot.hasData) {
