@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -38,7 +40,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return DateFormat('d MMMM yyyy').format(date);
   }
 
-  // ✅ এখন Settings-এ সেভ করা SMS টেমপ্লেট + Business Name থেকে মেসেজ তৈরি হচ্ছে
   String _buildDueMessage(Customer customer) {
     final settings = AppSettingsScope.of(context).settings;
     final dateFmt = DateFormat('d MMM yyyy');
@@ -59,57 +60,206 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return "$days দিন আগে";
   }
 
+  // ✅ বাংলা টেক্সট কে PDF এর জন্য ছবি বানানো হচ্ছে — pdf প্যাকেজ বাংলার
+  // যুক্তাক্ষর/matra ঠিকভাবে shape করতে পারে না, কিন্তু Flutter এর নিজস্ব
+  // rendering engine পারে। তাই Flutter দিয়ে রেন্ডার করে ছবি বানিয়ে PDF এ বসানো হচ্ছে।
+  Future<pw.Widget> _bengaliText(
+    String text, {
+    double fontSize = 11,
+    FontWeight fontWeight = FontWeight.normal,
+    ui.Color color = const ui.Color(0xFF000000),
+  }) async {
+    const scale = 3.0; // ক্রিস্প রেজোলিউশনের জন্য বড় করে রেন্ডার করা হচ্ছে
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontFamily: 'NotoSerifBengali',
+          fontSize: fontSize * scale,
+          fontWeight: fontWeight,
+          color: color,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr, // Fixed TextDirection reference
+    );
+    textPainter.layout();
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    textPainter.paint(canvas, Offset.zero);
+    final picture = recorder.endRecording();
+
+    final image = await picture.toImage(
+      textPainter.width.ceil().clamp(1, 5000),
+      textPainter.height.ceil().clamp(1, 500),
+    );
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final bytes = byteData!.buffer.asUint8List();
+
+    return pw.Image(
+      pw.MemoryImage(bytes),
+      width: textPainter.width / scale,
+      height: textPainter.height / scale,
+    );
+  }
+
   Future<pw.Document> _generatePdf(Customer customer) async {
     final payments = await _customerRepo.streamPayments(customer.id).first;
     final settings = AppSettingsScope.of(context).settings;
+
+    final bengaliRegular = await rootBundle.load(
+      'assets/fonts/NotoSerifBengali_Condensed-Regular.ttf',
+    );
+    final bengaliBold = await rootBundle.load(
+      'assets/fonts/NotoSerifBengali-Bold.ttf',
+    );
+
+    final regularFont = pw.Font.ttf(bengaliRegular);
+    final boldFont = pw.Font.ttf(bengaliBold);
+
+    // ✅ যেসব field এ বাংলা টেক্সট থাকতে পারে, সেগুলোকে আগে থেকেই
+    // ছবি হিসেবে render করে রাখা হচ্ছে (async, PDF build শুরুর আগে)
+    final businessNameImg = await _bengaliText(
+      settings.businessName,
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+    );
+
+    final businessAddressImg = settings.businessAddress.isNotEmpty
+        ? await _bengaliText(settings.businessAddress, fontSize: 10)
+        : null;
+
+    final customerNameImg = await _bengaliText(customer.name, fontSize: 11);
+
+    final customerAddressImg = customer.address != null
+        ? await _bengaliText(customer.address!, fontSize: 11)
+        : null;
+
+    // ✅ Payment history এর Note কলামে বাংলা থাকলে সেগুলোও ছবি বানানো হচ্ছে
+    final noteImages = <int, pw.Widget>{};
+    for (var i = 0; i < payments.length; i++) {
+      final note = payments[i].note;
+      if (note != null && note.trim().isNotEmpty) {
+        noteImages[i] = await _bengaliText(note, fontSize: 9);
+      }
+    }
 
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.MultiPage(
+        theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
         build: (context) => [
-          pw.Text(
-            settings.businessName,
-            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-          ),
-          if (settings.businessAddress.isNotEmpty)
-            pw.Text(settings.businessAddress, style: const pw.TextStyle(fontSize: 10)),
+          businessNameImg,
+          if (businessAddressImg != null) businessAddressImg,
           pw.SizedBox(height: 12),
           pw.Text(
             'Customer Payment History',
-            style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(
+              fontSize: 22,
+              fontWeight: pw.FontWeight.bold,
+              font: boldFont,
+            ),
           ),
           pw.SizedBox(height: 16),
-          pw.Text('Name: ${customer.name}'),
-          pw.Text('Phone: ${customer.phone}'),
-          if (customer.address != null) pw.Text('Address: ${customer.address}'),
-          pw.Text('Due Date: ${_formatDateOnly(customer.lastPaymentDate)}'),
-          pw.Text('Total Due: ${settings.currencySymbol}${customer.totalDue.toStringAsFixed(2)}'),
+
+          pw.Row(
+            children: [
+              pw.Text('Name: ', style: pw.TextStyle(font: regularFont)),
+              customerNameImg,
+            ],
+          ),
+          pw.Text(
+            'Phone: ${customer.phone}',
+            style: pw.TextStyle(font: regularFont),
+          ),
+          if (customerAddressImg != null)
+            pw.Row(
+              children: [
+                pw.Text('Address: ', style: pw.TextStyle(font: regularFont)),
+                customerAddressImg,
+              ],
+            ),
+          pw.Text(
+            'Due Date: ${_formatDateOnly(customer.lastPaymentDate)}',
+            style: pw.TextStyle(font: regularFont),
+          ),
+          pw.Text(
+            'Total Due: ${settings.currencySymbol}${customer.totalDue.toStringAsFixed(2)}',
+            style: pw.TextStyle(font: regularFont),
+          ),
           if (customer.nextReminderDate != null)
             pw.Text(
               'Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}',
+              style: pw.TextStyle(font: regularFont),
             ),
           pw.SizedBox(height: 20),
           pw.Text(
             'Payment History',
-            style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(
+              fontSize: 18,
+              fontWeight: pw.FontWeight.bold,
+              font: boldFont,
+            ),
           ),
           pw.SizedBox(height: 10),
+
           if (payments.isEmpty)
-            pw.Text('No transactions yet')
+            pw.Text(
+              'No transactions yet',
+              style: pw.TextStyle(font: regularFont),
+            )
           else
-            pw.Table.fromTextArray(
-              headers: const ['Date', 'Type', 'Amount', 'Note'],
-              data: payments.map((payment) {
-                return [
-                  _formatDateTime(payment.date),
-                  payment.type == PaymentType.payment
-                      ? 'Record Payment'
-                      : 'Add Charge',
-                  payment.amount.toStringAsFixed(2),
-                  payment.note ?? '',
-                ];
-              }).toList(),
+            pw.Table(
+              border: pw.TableBorder.all(width: 0.5),
+              children: [
+                pw.TableRow(
+                  children: ['Date', 'Type', 'Amount', 'Note'].map((h) {
+                    return pw.Padding(
+                      padding: const pw.EdgeInsets.all(4),
+                      child: pw.Text(
+                        h,
+                        style: pw.TextStyle(font: boldFont, fontSize: 10),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                ...List.generate(payments.length, (i) {
+                  final payment = payments[i];
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(
+                          _formatDateTime(payment.date),
+                          style: pw.TextStyle(font: regularFont, fontSize: 9),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(
+                          payment.type == PaymentType.payment
+                              ? 'Record Payment'
+                              : 'Add Charge',
+                          style: pw.TextStyle(font: regularFont, fontSize: 9),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(
+                          payment.amount.toStringAsFixed(2),
+                          style: pw.TextStyle(font: regularFont, fontSize: 9),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: noteImages[i] ?? pw.SizedBox(),
+                      ),
+                    ],
+                  );
+                }),
+              ],
             ),
         ],
       ),
@@ -180,12 +330,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     if (updatedDue < 0) updatedDue = 0;
 
-    // ✅ Due Date এখন থেকে পরিবর্তন হবে না — customer এর আসল/আগের lastPaymentDate
-    // অপরিবর্তিত রাখা হচ্ছে। শুধু totalDue আপডেট হবে।
     await _customerRepo.updateCustomerDue(
       customerId: currentCustomer.id,
       newTotalDue: updatedDue,
-      lastPaymentDate: currentCustomer.lastPaymentDate, // ✅ বদলাচ্ছে না
+      lastPaymentDate: currentCustomer.lastPaymentDate,
     );
 
     await _customerRepo.addPayment(
@@ -428,7 +576,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     File? newSelectedImage;
     bool isSavingEdit = false;
 
-    // ✅ Date edit unlock করার জন্য ৭ বার ট্যাপ ট্র্যাক করা হচ্ছে
     int dateTapCount = 0;
     bool dateUnlocked = false;
 
@@ -547,7 +694,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 4),
-                    // ✅ Date field — লক করা, ৭ বার ট্যাপে আনলক হয়
                     TextField(
                       controller: dateController,
                       readOnly: true,
@@ -653,8 +799,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             address: addressController.text.trim(),
                             note: noteController.text.trim(),
                             totalDue: totalDue,
-                            // ✅ শুধুমাত্র dateUnlocked true থাকলেই নতুন তারিখ পাঠানো হচ্ছে,
-                            // নাহলে null পাঠিয়ে আগের due date অপরিবর্তিত রাখা হচ্ছে
                             lastPaymentDate: dateUnlocked ? lastPaymentDate : null,
                             photoUrl: photoBase64,
                           );
@@ -783,7 +927,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+    final colors = AppColors.of(context);
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
