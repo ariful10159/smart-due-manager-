@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // ✅ USERS COLLECTION — শুধু নিজের profile access
+    // ============================================
+    match /users/{userId} {
+      allow read, create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false; 
+    }
+
+    // ============================================
+    // ✅ CUSTOMERS COLLECTION — শুধু owner এর নিজের ডেটা
+    // ============================================
+    match /customers/{customerId} {
+
+      // ✅ Read — শুধু owner
+      allow read: if request.auth != null &&
+                   resource.data.ownerId == request.auth.uid;
+
+      // ✅ Create — নতুন customer তৈরি
+      allow create: if request.auth != null &&
+                    request.resource.data.ownerId == request.auth.uid;
+
+      // ✅ Update — 🛠️ এখানে due date বা createdAt ডেট লক করা হয়েছে!
+      // 'createdAt' এবং প্রাথমিক ডিউ সংক্রান্ত ডেট একবার তৈরি হলে আর চেঞ্জ করা যাবে না।
+      allow update: if request.auth != null &&
+                    resource.data.ownerId == request.auth.uid &&
+                    request.resource.data.ownerId == resource.data.ownerId &&
+                    (!request.resource.data.keys().hasAll(['createdAt']) || request.resource.data.createdAt == resource.data.createdAt);
+
+      // ✅ Delete — শুধু owner
+      allow delete: if request.auth != null &&
+                    resource.data.ownerId == request.auth.uid;
+
+      // ============================================
+      // ✅ PAYMENTS SUBCOLLECTION (নিরাপদ রুলস)
+      // 🛠️ পেমেন্ট ডকুমেন্টের 'date' ফিল্ড আপডেট করা লক করা হয়েছে!
+      // ============================================
+      match /payments/{paymentId} {
+        allow read, create: if request.auth != null &&
+                               get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid;
+        
+        // পেমেন্ট হয়ে যাওয়ার পর ট্রানজেকশন ডেট কেউ এডিট বা আপডেট করতে পারবে না
+        allow update: if request.auth != null &&
+                      get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid &&
+                      request.resource.data.date == resource.data.date;
+                      
+        allow delete: if request.auth != null &&
+                      get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid;
+      }
+
+      // ============================================
+      // ✅ REMINDERS SUBCOLLECTION
+      // ============================================
+      match /reminders/{reminderId} {
+        allow read, write: if request.auth != null &&
+                            get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid;
+      }
+
+      // ============================================
+      // ✅ SMS LOGS SUBCOLLECTION
+      // ============================================
+      match /smsLogs/{logId} {
+        allow read, write: if request.auth != null &&
+                            get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    // ============================================
+    // ✅ NOTEBOOKS COLLECTION — শুধু owner এর নিজের notebook
+    // ============================================
+    match /notebooks/{notebookId} {
+      allow read: if request.auth != null &&
+                   resource.data.ownerId == request.auth.uid;
+
+      allow create: if request.auth != null &&
+                    request.resource.data.ownerId == request.auth.uid;
+
+      allow update: if request.auth != null &&
+                    resource.data.ownerId == request.auth.uid &&
+                    request.resource.data.ownerId == resource.data.ownerId;
+
+      allow delete: if request.auth != null &&
+                    resource.data.ownerId == request.auth.uid;
+
+      // ============================================
+      // ✅ PAGES SUBCOLLECTION
+      // ============================================
+      match /pages/{pageId} {
+        allow read, write: if request.auth != null &&
+                            get(/databases/$(database)/documents/notebooks/$(notebookId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    // ডিফল্টভাবে অন্য সব রিড-রাইট বন্ধ
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
