@@ -1,15 +1,17 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../models/payment.dart';
 import '../theme/app_colors.dart';
+import '../utils/html_escape.dart';
 import 'customer_detail_screen.dart';
 import 'customer_pdf_report_screen.dart';
 
@@ -184,42 +186,113 @@ class _ReportScreenState extends State<ReportScreen> {
     return withDue.take(5).toList();
   }
 
+  // ✅ HTML দিয়ে PDF বানানো হচ্ছে (আগে pdf প্যাকেজের সরাসরি pw.Text ব্যবহার হতো,
+  // যেটা বাংলা কাস্টমারের নাম ঠিকভাবে shape করতে পারত না — শুধু ফাঁকা বক্স দেখাত।
+  // HTML রেন্ডারার বাংলা text shaping সঠিকভাবে করে)
+  Future<Uint8List> _buildReportPdf(
+    List<Map<String, dynamic>> reportData,
+    double totalCollection,
+    PdfPageFormat format,
+  ) async {
+    final currencyFmt = NumberFormat('#,##0.00');
+
+    final rowsHtml = StringBuffer();
+    for (final row in reportData) {
+      rowsHtml.write('''
+        <tr>
+          <td>${escapeHtml(row['name'] as String)}</td>
+          <td>${escapeHtml(row['phone'] as String)}</td>
+          <td class="right">${currencyFmt.format(row['totalDue'])}</td>
+          <td class="right">${currencyFmt.format(row['paid'])}</td>
+          <td class="right">${currencyFmt.format(row['remaining'])}</td>
+        </tr>
+      ''');
+    }
+
+    final html = '''
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;
+    padding: 24px;
+    color: #1a1a1a;
+    font-size: 12px;
+  }
+  .title { font-size: 20px; font-weight: 700; margin: 0; }
+  .period { font-size: 12px; color: #555; margin: 4px 0 16px 0; }
+  .total-box {
+    padding: 12px 16px;
+    background-color: #f0f0f5;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .total-label { font-weight: 700; font-size: 13px; }
+  .total-value { font-weight: 700; font-size: 15px; color: #16a34a; }
+  .section-title { font-size: 13px; font-weight: 700; margin: 0 0 8px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background-color: #6366F1; color: #ffffff; }
+  th, td {
+    border: 0.5px solid #ccc;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 10.5px;
+  }
+  th { font-weight: 700; font-size: 10.5px; }
+  td.right, th.right { text-align: right; }
+  tbody tr:nth-child(even) { background-color: #f7f7fb; }
+  .empty { color: #777; font-size: 11px; }
+</style>
+</head>
+<body>
+  <p class="title">Collection Report (${_period.name.toUpperCase()})</p>
+  <p class="period">Period: ${escapeHtml(_periodLabel())}</p>
+
+  <div class="total-box">
+    <span class="total-label">Total Collection</span>
+    <span class="total-value">${currencyFmt.format(totalCollection)} TK</span>
+  </div>
+
+  <p class="section-title">Customer Statement Table</p>
+  ${reportData.isEmpty ? '<p class="empty">No payments received in this period.</p>' : '''
+  <table>
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Phone</th>
+        <th class="right">Total Due</th>
+        <th class="right">Payment</th>
+        <th class="right">Remaining</th>
+      </tr>
+    </thead>
+    <tbody>
+      $rowsHtml
+    </tbody>
+  </table>
+  '''}
+</body>
+</html>
+''';
+
+    return Printing.convertHtml(format: format, html: html);
+  }
+
   Future<void> _exportPdf() async {
     final (start, end) = _dateRange();
     final rangePayments = _paymentsInRange(start, end);
     final reportData = _getCustomerReportData(rangePayments);
-    final totalCollection = rangePayments.fold<double>(0, (sum, p) => sum + p.amount);
+    final totalCollection = rangePayments.fold<double>(0, (runningTotal, p) => runningTotal + p.amount);
 
-    final pdf = pw.Document();
-    pdf.addPage(
-      pw.MultiPage(
-        build: (context) => [
-          pw.Text('Collection Report (${_period.name.toUpperCase()})', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-          pw.Text('Period: ${_periodLabel()}', style: pw.TextStyle(fontSize: 14)),
-          pw.SizedBox(height: 15),
-          pw.Text('Total Collection: ${totalCollection.toStringAsFixed(2)} TK', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 20),
-          pw.Text('Customer Statement Table:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 8),
-          if (reportData.isEmpty)
-            pw.Text('No payments received in this period.')
-          else
-            pw.TableHelper.fromTextArray(
-              headers: const ['Customer', 'Total Due', 'Payment', 'Remaining'],
-              data: reportData.map((row) {
-                return [
-                  "${row['name']} (${row['phone']})",
-                  row['totalDue'].toStringAsFixed(0),
-                  row['paid'].toStringAsFixed(0),
-                  row['remaining'].toStringAsFixed(0),
-                ];
-              }).toList(),
-            ),
-        ],
-      ),
+    await Printing.layoutPdf(
+      onLayout: (format) => _buildReportPdf(reportData, totalCollection, format),
+      name: 'smart_due_collection_report.pdf',
     );
-
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 
   @override

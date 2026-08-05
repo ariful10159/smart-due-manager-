@@ -40,15 +40,16 @@ class AppColors {
         : AppColors.light(settings.accentColor);
   }
 
+  // ✅ Navy-tinted ডার্ক থিম — আগে প্রায় কালো (near-black) লাগত, এখন স্পষ্ট নেভি ব্লু আন্ডারটোন
   factory AppColors.dark(Color accent) {
     return AppColors(
-      scaffoldBg: const Color(0xFF0F0F14),
-      surface: const Color(0xFF1B1B24),
-      surfaceAlt: const Color(0xFF20202B),
-      borderColor: const Color(0xFF2C2C3A),
+      scaffoldBg: const Color(0xFF0A0E1C),
+      surface: const Color(0xFF121A2E),
+      surfaceAlt: const Color(0xFF182240),
+      borderColor: const Color(0xFF293654),
       textPrimary: Colors.white,
-      textSecondary: const Color(0xFF9A9AAE),
-      hintColor: const Color(0xFF5C5C6E),
+      textSecondary: const Color(0xFF95A0BD),
+      hintColor: const Color(0xFF5D6980),
       accent: accent,
       accentAlt: const Color(0xFF8B5CF6),
       due: const Color(0xFFEF4444),

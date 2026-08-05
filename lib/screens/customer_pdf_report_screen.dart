@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
+import '../utils/html_escape.dart';
 
 enum _ReportFilter { all, dueOnly }
 
@@ -103,16 +104,6 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     }
   }
 
-  // ✅ HTML এ ব্যবহারের জন্য বিশেষ ক্যারেক্টার escape করা (& < > " ইত্যাদি)
-  String _escapeHtml(String input) {
-    return input
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-  }
-
   // ✅ PDF বানানোর মূল ফাংশন — HTML দিয়ে (বাংলা text shaping সঠিকভাবে হওয়ার জন্য)
   Future<Uint8List> _buildPdf(List<Customer> customers, PdfPageFormat format) async {
     final currencyFmt = NumberFormat('#,##0.00');
@@ -126,9 +117,9 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
       rowsHtml.write('''
         <tr>
           <td class="center">${i + 1}</td>
-          <td>${_escapeHtml(c.name)}</td>
-          <td>${_escapeHtml(c.phone.isNotEmpty ? c.phone : "-")}</td>
-          <td>${_escapeHtml(_resolveAddress(c))}</td>
+          <td>${escapeHtml(c.name)}</td>
+          <td>${escapeHtml(c.phone.isNotEmpty ? c.phone : "-")}</td>
+          <td>${escapeHtml(_resolveAddress(c))}</td>
           <td>${dateFmt.format(c.lastPaymentDate)}</td>
           <td class="right">${currencyFmt.format(c.totalDue)}</td>
         </tr>

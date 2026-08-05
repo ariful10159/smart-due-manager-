@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:image_picker/image_picker.dart';
@@ -16,6 +15,7 @@ import '../models/customer_repository.dart';
 import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
 import '../utils/helpers.dart';
+import '../utils/pdf_bengali_text.dart';
 import '../widgets/app_settings_scope.dart';
 import '../widgets/payment_history_tile.dart';
 import 'add_payment_screen.dart';
@@ -67,50 +67,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return value.length > 100 && _base64Pattern.hasMatch(value);
   }
 
-  // ✅ বাংলা টেক্সট কে PDF এর জন্য ছবি বানানো হচ্ছে — pdf প্যাকেজ বাংলার
-  // যুক্তাক্ষর/matra ঠিকভাবে shape করতে পারে না, কিন্তু Flutter এর নিজস্ব
-  // rendering engine পারে। তাই Flutter দিয়ে রেন্ডার করে ছবি বানিয়ে PDF এ বসানো হচ্ছে।
-  Future<pw.Widget> _bengaliText(
-    String text, {
-    double fontSize = 11,
-    FontWeight fontWeight = FontWeight.normal,
-    ui.Color color = const ui.Color(0xFF000000),
-  }) async {
-    const scale = 3.0; // ক্রিস্প রেজোলিউশনের জন্য বড় করে রেন্ডার করা হচ্ছে
-
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          fontFamily: 'NotoSerifBengali',
-          fontSize: fontSize * scale,
-          fontWeight: fontWeight,
-          color: color,
-        ),
-      ),
-      textDirection: ui.TextDirection.ltr, // Fixed TextDirection reference
-    );
-    textPainter.layout();
-
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    textPainter.paint(canvas, Offset.zero);
-    final picture = recorder.endRecording();
-
-    final image = await picture.toImage(
-      textPainter.width.ceil().clamp(1, 5000),
-      textPainter.height.ceil().clamp(1, 500),
-    );
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final bytes = byteData!.buffer.asUint8List();
-
-    return pw.Image(
-      pw.MemoryImage(bytes),
-      width: textPainter.width / scale,
-      height: textPainter.height / scale,
-    );
-  }
-
   Future<pw.Document> _generatePdf(Customer customer) async {
     final payments = await _customerRepo.streamPayments(customer.id).first;
     final settings = AppSettingsScope.of(context).settings;
@@ -127,20 +83,20 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     // ✅ যেসব field এ বাংলা টেক্সট থাকতে পারে, সেগুলোকে আগে থেকেই
     // ছবি হিসেবে render করে রাখা হচ্ছে (async, PDF build শুরুর আগে)
-    final businessNameImg = await _bengaliText(
+    final businessNameImg = await bengaliTextImage(
       settings.businessName,
       fontSize: 16,
       fontWeight: FontWeight.bold,
     );
 
     final businessAddressImg = settings.businessAddress.isNotEmpty
-        ? await _bengaliText(settings.businessAddress, fontSize: 10)
+        ? await bengaliTextImage(settings.businessAddress, fontSize: 10)
         : null;
 
-    final customerNameImg = await _bengaliText(customer.name, fontSize: 11);
+    final customerNameImg = await bengaliTextImage(customer.name, fontSize: 11);
 
     final customerAddressImg = customer.address != null
-        ? await _bengaliText(customer.address!, fontSize: 11)
+        ? await bengaliTextImage(customer.address!, fontSize: 11)
         : null;
 
     // ✅ Payment history এর Note কলামে বাংলা থাকলে সেগুলোও ছবি বানানো হচ্ছে
@@ -148,7 +104,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     for (var i = 0; i < payments.length; i++) {
       final note = payments[i].note;
       if (note != null && note.trim().isNotEmpty) {
-        noteImages[i] = await _bengaliText(note, fontSize: 9);
+        noteImages[i] = await bengaliTextImage(note, fontSize: 9);
       }
     }
 
@@ -1543,7 +1499,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         itemCount: payments.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
-                          return PaymentHistoryTile(payment: payments[index]);
+                          return PaymentHistoryTile(payment: payments[index], customer: customer);
                         },
                       );
                     },
