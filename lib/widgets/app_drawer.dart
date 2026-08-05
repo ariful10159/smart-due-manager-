@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../models/legal_content.dart';
+import '../providers/app_settings_controller.dart';
+import '../screens/archived_customers_screen.dart';
+import '../screens/help_support_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/login_screen.dart';
 import '../screens/notebook_list_screen.dart';
+import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
+import 'app_settings_scope.dart';
+
+const String _playStoreUrl =
+    'https://play.google.com/store/apps/details?id=com.masum.smart_due_personal';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key, this.currentRoute = 'home'});
@@ -95,6 +106,32 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             _DrawerItem(
+              icon: Icons.bar_chart_rounded,
+              label: "Reports",
+              selected: currentRoute == 'reports',
+              onTap: () {
+                Navigator.pop(context);
+                if (currentRoute != 'reports') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ReportScreen()),
+                  );
+                }
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.archive_outlined,
+              label: "Archived Customers",
+              selected: currentRoute == 'archived',
+              onTap: () {
+                Navigator.pop(context);
+                if (currentRoute != 'archived') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ArchivedCustomersScreen()),
+                  );
+                }
+              },
+            ),
+            _DrawerItem(
               icon: Icons.settings_rounded,
               label: "Settings",
               selected: currentRoute == 'settings',
@@ -106,6 +143,45 @@ class AppDrawer extends StatelessWidget {
                   );
                 }
               },
+            ),
+            _DarkModeToggle(colors: colors),
+
+            Divider(color: colors.borderColor, height: 1),
+            const SizedBox(height: 8),
+            _DrawerItem(
+              icon: Icons.help_outline_rounded,
+              label: "Help & Support",
+              selected: currentRoute == 'help',
+              onTap: () {
+                Navigator.pop(context);
+                if (currentRoute != 'help') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+                  );
+                }
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.feedback_outlined,
+              label: "Send Feedback",
+              selected: false,
+              onTap: () => _sendFeedback(context),
+            ),
+            _DrawerItem(
+              icon: Icons.star_outline_rounded,
+              label: "Rate the App",
+              selected: false,
+              onTap: () => _rateApp(context),
+            ),
+
+            Divider(color: colors.borderColor, height: 1),
+            const SizedBox(height: 4),
+            _DrawerItem(
+              icon: Icons.logout_rounded,
+              label: "Logout",
+              selected: false,
+              isDestructive: true,
+              onTap: () => _confirmLogout(context, colors),
             ),
             const Spacer(),
             Padding(
@@ -121,6 +197,83 @@ class AppDrawer extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _sendFeedback(BuildContext context) async {
+    Navigator.pop(context);
+
+    final uri = Uri(
+      scheme: 'mailto',
+      path: LegalContent.supportEmail,
+      query: 'subject=${Uri.encodeComponent("${LegalContent.appName} - Feedback")}',
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ইমেইল অ্যাপ পাওয়া যায়নি')),
+      );
+    }
+  }
+
+  Future<void> _rateApp(BuildContext context) async {
+    Navigator.pop(context);
+
+    final uri = Uri.parse(_playStoreUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Play Store খোলা যায়নি')),
+      );
+    }
+  }
+
+  Future<void> _confirmLogout(BuildContext context, AppColors colors) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text(
+          "Logout",
+          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          "আপনি কি লগআউট করতে চান?",
+          style: TextStyle(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              "Logout",
+              style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+
+    await AuthService.logout();
+  }
 }
 
 class _DrawerItem extends StatelessWidget {
@@ -129,17 +282,23 @@ class _DrawerItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.isDestructive = false,
   });
 
   final IconData icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final color = selected ? colors.accent : colors.textSecondary;
+    final color = isDestructive
+        ? colors.due
+        : selected
+            ? colors.accent
+            : colors.textSecondary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
@@ -158,10 +317,66 @@ class _DrawerItem extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected ? colors.textPrimary : colors.textSecondary,
+                    color: isDestructive
+                        ? colors.due
+                        : selected
+                            ? colors.textPrimary
+                            : colors.textSecondary,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 14,
                   ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DarkModeToggle extends StatelessWidget {
+  const _DarkModeToggle({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppSettingsController controller = AppSettingsScope.of(context);
+    final isDark = controller.settings.isDarkMode;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => controller.updateDarkMode(!isDark),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  color: colors.textSecondary,
+                  size: 20,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    isDark ? "Dark Mode" : "Light Mode",
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: isDark,
+                  activeThumbColor: colors.accent,
+                  onChanged: (value) => controller.updateDarkMode(value),
                 ),
               ],
             ),

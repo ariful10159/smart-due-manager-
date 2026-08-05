@@ -16,9 +16,10 @@ import '../theme/app_colors.dart';
 enum _SaveStatus { saved, saving, unsaved }
 
 class NotebookScreen extends StatefulWidget {
-  const NotebookScreen({super.key, required this.notebookId});
+  const NotebookScreen({super.key, required this.notebookId, this.initialPageId});
 
   final String notebookId;
+  final String? initialPageId; // ✅ Global Search থেকে সরাসরি নির্দিষ্ট page এ নিয়ে যাওয়ার জন্য
 
   @override
   State<NotebookScreen> createState() => _NotebookScreenState();
@@ -365,8 +366,12 @@ class _NotebookScreenState extends State<NotebookScreen> {
           }
 
           if (_currentPage == null) {
+            final initialPage = widget.initialPageId == null
+                ? null
+                : pages.where((p) => p.id == widget.initialPageId).firstOrNull;
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && _currentPage == null) _selectPage(pages.first);
+              if (mounted && _currentPage == null) _selectPage(initialPage ?? pages.first);
             });
             return Center(child: CircularProgressIndicator(color: colors.accent));
           }

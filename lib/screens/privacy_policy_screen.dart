@@ -11,6 +11,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
     return const LegalDocumentView(
       title: "Privacy Policy",
       sections: LegalContent.privacyPolicy,
+      icon: Icons.privacy_tip_rounded,
     );
   }
 }

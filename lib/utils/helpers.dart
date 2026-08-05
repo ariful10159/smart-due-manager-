@@ -9,3 +9,15 @@ String maskPhone(String? phone) {
   if (phone.length <= 3) return '*' * phone.length;
   return '${'*' * (phone.length - 3)}${phone.substring(phone.length - 3)}';
 }
+
+/// ✅ Play Store SMS/Call Log permission policy অনুযায়ী app নিজে SEND_SMS দিয়ে
+/// SMS পাঠাতে পারে না — এর বদলে default SMS app কে prefilled message সহ খুলে
+/// দেওয়া হয়, ব্যবহারকারী নিজে Send করবেন।
+Uri buildSmsComposeUri(String phone, String message) {
+  final cleanPhone = phone.replaceAll(RegExp(r'[\s\-]'), '');
+  return Uri(
+    scheme: 'sms',
+    path: cleanPhone,
+    queryParameters: {'body': message},
+  );
+}

@@ -89,6 +89,14 @@ class ReminderHistoryScreen extends StatelessWidget {
                       : colors.warn;
 
               final note = (reminder['note'] as String?)?.trim() ?? '';
+              final isRecurring = reminder['isRecurring'] == true;
+              final recurrenceType = reminder['recurrenceType']?.toString();
+              final recurrenceLabel = switch (recurrenceType) {
+                'weekly' => 'Weekly',
+                'biweekly' => 'Bi-weekly',
+                'monthly' => 'Monthly',
+                _ => null,
+              };
 
               return Container(
                 decoration: BoxDecoration(
@@ -147,6 +155,19 @@ class ReminderHistoryScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+                          if (isRecurring && recurrenceLabel != null) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "Recurring · $recurrenceLabel",
+                                  style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ],
                           if (note.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(

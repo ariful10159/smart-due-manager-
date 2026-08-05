@@ -14,6 +14,8 @@ class Customer {
   final String? photoUrl;
   final String ownerId; // ✅ NEW — কোন user এই customer এর মালিক
   final Map<String, String> customFields;
+  final bool isRecurringReminder; // ✅ মাসিক কিস্তির মতো auto-repeat reminder চালু আছে কিনা
+  final String? recurrenceType; // 'weekly' | 'biweekly' | 'monthly'
 
   const Customer({
     required this.id,
@@ -29,6 +31,8 @@ class Customer {
     this.isHidden = false,
     this.photoUrl,
     this.customFields = const {},
+    this.isRecurringReminder = false,
+    this.recurrenceType,
   });
 
   static String _asString(dynamic value, {String fallback = ''}) {
@@ -83,6 +87,8 @@ class Customer {
       photoUrl: map['photoUrl']?.toString(),
       ownerId: _asString(map['ownerId']), // ✅ NEW
       customFields: _asStringMap(map['customFields']),
+      isRecurringReminder: _asBool(map['isRecurringReminder']),
+      recurrenceType: map['recurrenceType']?.toString(),
     );
   }
 
@@ -112,6 +118,8 @@ class Customer {
       'photoUrl': photoUrl,
       'ownerId': ownerId, // ✅ NEW
       'customFields': customFields,
+      'isRecurringReminder': isRecurringReminder,
+      'recurrenceType': recurrenceType,
     };
   }
 
@@ -129,6 +137,8 @@ class Customer {
     String? photoUrl,
     String? ownerId,
     Map<String, String>? customFields,
+    bool? isRecurringReminder,
+    String? recurrenceType,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -144,6 +154,8 @@ class Customer {
       photoUrl: photoUrl ?? this.photoUrl,
       ownerId: ownerId ?? this.ownerId,
       customFields: customFields ?? this.customFields,
+      isRecurringReminder: isRecurringReminder ?? this.isRecurringReminder,
+      recurrenceType: recurrenceType ?? this.recurrenceType,
     );
   }
 }

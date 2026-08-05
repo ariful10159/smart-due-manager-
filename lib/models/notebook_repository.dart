@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'notebook.dart';
 import 'notebook_page.dart';
@@ -38,6 +38,21 @@ class NotebookRepository {
           .map((doc) => Notebook.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
     });
+  }
+
+  // ✅ Global Search এর মতো এক-বারের জন্য ডেটা দরকার এমন জায়গায় ব্যবহারের জন্য
+  Future<List<Notebook>> fetchNotebooksOnce() async {
+    final snapshot = await _col.where('ownerId', isEqualTo: _currentUserId).get();
+    return snapshot.docs
+        .map((doc) => Notebook.fromMap({...doc.data(), 'id': doc.id}))
+        .toList();
+  }
+
+  Future<List<NotebookPage>> fetchPagesOnce(String notebookId) async {
+    final snapshot = await _pagesCol(notebookId).orderBy('order').get();
+    return snapshot.docs
+        .map((doc) => NotebookPage.fromMap({...doc.data(), 'id': doc.id}))
+        .toList();
   }
 
   // ✅ নতুন notebook তৈরি + একটা ডিফল্ট প্রথম page সহ
@@ -230,18 +245,20 @@ class NotebookRepository {
     await touchNotebook(notebookId);
   }
 
-  // ✅ Editor এ ইনসার্ট করা ছবি Firebase Storage এ আপলোড করে URL রিটার্ন করে
+  // ✅ Editor এ ইনসার্ট করা ছবি base64 এ এনকোড করে data URI রিটার্ন করে
+  // (Firestore এ সরাসরি store হবে, Firebase Storage লাগবে না)
   Future<String> uploadNotebookImage({
     required String notebookId,
     required File file,
   }) async {
-    final uid = _currentUserId;
-    final imageId = DateTime.now().millisecondsSinceEpoch.toString();
     final ext = file.path.split('.').last.toLowerCase();
-    final ref = FirebaseStorage.instance
-        .ref('notebook_images/$uid/$notebookId/$imageId.$ext');
-
-    await ref.putFile(file);
-    return ref.getDownloadURL();
+    final mimeType = switch (ext) {
+      'png' => 'image/png',
+      'gif' => 'image/gif',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+    final bytes = await file.readAsBytes();
+    return 'data:$mimeType;base64,${base64Encode(bytes)}';
   }
 }

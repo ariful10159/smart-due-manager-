@@ -40,14 +40,12 @@ dependencies:
   share_plus: ^10.1.4
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
-  another_telephony: ^0.4.1
-  workmanager: ^0.9.0+3
-  wakelock_plus: ^1.2.8
   flutter_launcher_icons: ^0.14.3
   shared_preferences: ^2.3.2
   crypto: ^3.0.3          # PIN হ্যাশ করার জন্য
   local_auth: ^2.3.0       # Fingerprint/Face unlock এর জন্য
   csv: ^6.0.0               # CSV এক্সপোর্টের জন্য
+  fl_chart: ^0.69.2         # Dashboard/analytics চার্ট এর জন্য
   
   
   
@@ -64,7 +62,10 @@ dependencies:
   intl: ^0.20.2
   url_launcher: ^6.2.6
   file_picker: ^8.1.6
-  flutter_quill: ^11.5.0
+  flutter_quill:
+    git:
+      url: https://github.com/singerdmx/flutter-quill.git
+      ref: c273155025
   flutter_quill_extensions: ^11.0.0
   
   
@@ -130,3 +131,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  flutter_quill:
+    git:
+      url: https://github.com/singerdmx/flutter-quill.git
+      ref: c273155025

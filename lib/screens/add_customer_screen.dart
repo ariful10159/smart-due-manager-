@@ -13,13 +13,9 @@ import '../widgets/custom_bottom_nav_bar.dart';
 enum CustomFieldType {
   text,
   number,
-  phone,
-  email,
   date,
-  time,
   currency,
   multiline,
-  yesNo,
   photo,
 }
 
@@ -30,20 +26,12 @@ extension CustomFieldTypeX on CustomFieldType {
         return 'Text';
       case CustomFieldType.number:
         return 'Number';
-      case CustomFieldType.phone:
-        return 'Phone';
-      case CustomFieldType.email:
-        return 'Email';
       case CustomFieldType.date:
         return 'Date';
-      case CustomFieldType.time:
-        return 'Time';
       case CustomFieldType.currency:
         return 'Amount';
       case CustomFieldType.multiline:
         return 'Long Text';
-      case CustomFieldType.yesNo:
-        return 'Yes/No';
       case CustomFieldType.photo:
         return 'Photo';
     }
@@ -55,20 +43,12 @@ extension CustomFieldTypeX on CustomFieldType {
         return Icons.short_text_rounded;
       case CustomFieldType.number:
         return Icons.numbers_rounded;
-      case CustomFieldType.phone:
-        return Icons.phone_android_rounded;
-      case CustomFieldType.email:
-        return Icons.email_outlined;
       case CustomFieldType.date:
         return Icons.calendar_today_rounded;
-      case CustomFieldType.time:
-        return Icons.access_time_rounded;
       case CustomFieldType.currency:
         return Icons.monetization_on_outlined;
       case CustomFieldType.multiline:
         return Icons.notes_rounded;
-      case CustomFieldType.yesNo:
-        return Icons.toggle_on_outlined;
       case CustomFieldType.photo:
         return Icons.photo_camera_outlined;
     }
@@ -276,34 +256,44 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: CustomFieldType.values.map((type) {
-                        final isSelected = type == selectedType;
-                        return ChoiceChip(
-                          label: Text(type.label),
-                          avatar: Icon(
-                            type.icon,
-                            size: 16,
-                            color: isSelected ? Colors.white : colors.textSecondary,
+                    DropdownButtonFormField<CustomFieldType>(
+                      initialValue: selectedType,
+                      isExpanded: true,
+                      dropdownColor: colors.surface,
+                      style: TextStyle(color: colors.textPrimary, fontSize: 14),
+                      icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.textSecondary),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: colors.surfaceAlt,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colors.borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colors.borderColor),
+                        ),
+                      ),
+                      items: CustomFieldType.values.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(type.icon, size: 18, color: colors.textSecondary),
+                              const SizedBox(width: 10),
+                              Text(type.label),
+                            ],
                           ),
-                          selected: isSelected,
-                          selectedColor: colors.accent,
-                          backgroundColor: colors.surfaceAlt,
-                          side: BorderSide(color: colors.borderColor),
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                          onSelected: (_) {
-                            setDialogState(() {
-                              selectedType = type;
-                            });
-                          },
                         );
                       }).toList(),
+                      onChanged: (type) {
+                        if (type == null) return;
+                        setDialogState(() {
+                          selectedType = type;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -475,96 +465,6 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
     if (pickedDate != null) {
       controller.text = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
-    }
-  }
-
-  Future<void> _pickCustomFieldTime(
-    TextEditingController controller,
-    AppColors colors,
-  ) async {
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme(
-              brightness: colors.scaffoldBg.computeLuminance() < 0.5
-                  ? Brightness.dark
-                  : Brightness.light,
-              primary: colors.accent,
-              onPrimary: Colors.white,
-              secondary: colors.accentAlt,
-              onSecondary: Colors.white,
-              error: colors.due,
-              onError: Colors.white,
-              surface: colors.surface,
-              onSurface: colors.textPrimary,
-            ),
-            dialogTheme: DialogThemeData(backgroundColor: colors.surface),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedTime != null) {
-      final hour = pickedTime.hourOfPeriod == 0 ? 12 : pickedTime.hourOfPeriod;
-      final minute = pickedTime.minute.toString().padLeft(2, '0');
-      final period = pickedTime.period == DayPeriod.am ? 'AM' : 'PM';
-      controller.text = '$hour:$minute $period';
-    }
-  }
-
-  Future<void> _pickCustomFieldYesNo(
-    TextEditingController controller,
-    AppColors colors,
-  ) async {
-    final value = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: BorderSide(color: colors.borderColor),
-          ),
-          title: Text(
-            'Select Value',
-            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
-          ),
-          content: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(dialogContext, 'Yes'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.clear,
-                    side: BorderSide(color: colors.clear),
-                  ),
-                  child: const Text('Yes'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(dialogContext, 'No'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.due,
-                    side: BorderSide(color: colors.due),
-                  ),
-                  child: const Text('No'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (value != null) {
-      controller.text = value;
     }
   }
 
@@ -851,9 +751,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       );
     }
 
-    final isPickerField = field.type == CustomFieldType.date ||
-        field.type == CustomFieldType.time ||
-        field.type == CustomFieldType.yesNo;
+    final isPickerField = field.type == CustomFieldType.date;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -879,16 +777,10 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                   onTap: switch (field.type) {
                     CustomFieldType.date =>
                       () => _pickCustomFieldDate(field.controller, colors),
-                    CustomFieldType.time =>
-                      () => _pickCustomFieldTime(field.controller, colors),
-                    CustomFieldType.yesNo =>
-                      () => _pickCustomFieldYesNo(field.controller, colors),
                     _ => null,
                   },
                   keyboardType: switch (field.type) {
                     CustomFieldType.number => TextInputType.number,
-                    CustomFieldType.phone => TextInputType.phone,
-                    CustomFieldType.email => TextInputType.emailAddress,
                     CustomFieldType.currency =>
                       const TextInputType.numberWithOptions(decimal: true),
                     _ => TextInputType.text,
@@ -1078,14 +970,22 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         textEditingController: _addressController,
                         focusNode: _addressFocusNode,
                         optionsBuilder: (textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
+                          final query = textEditingValue.text.toLowerCase().trim();
+                          if (query.isEmpty) {
                             return _savedAddresses;
                           }
-                          return _savedAddresses.where(
-                            (address) => address
-                                .toLowerCase()
-                                .contains(textEditingValue.text.toLowerCase()),
-                          );
+                          final firstWordMatches = <String>[];
+                          final otherWordMatches = <String>[];
+                          for (final address in _savedAddresses) {
+                            final words = address.toLowerCase().split(RegExp(r'\s+'));
+                            if (words.isEmpty) continue;
+                            if (words.first.startsWith(query)) {
+                              firstWordMatches.add(address);
+                            } else if (words.skip(1).any((word) => word.startsWith(query))) {
+                              otherWordMatches.add(address);
+                            }
+                          }
+                          return [...firstWordMatches, ...otherWordMatches];
                         },
                         onSelected: (selection) {
                           _addressController.text = selection;
@@ -1226,122 +1126,32 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [colors.surface, colors.surfaceAlt],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                if (_customFields.isNotEmpty)
+                  ..._customFields.map((field) => _buildCustomFieldCard(field, colors)),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _addCustomField(colors),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.add_rounded, size: 18, color: colors.accent),
+                        const SizedBox(width: 6),
+                        Text(
+                          _customFields.isEmpty ? 'Add custom field' : 'Add another field',
+                          style: TextStyle(
+                            color: colors.accent,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: colors.borderColor),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      )
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: colors.accent.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(Icons.tune_rounded, color: colors.accent, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Custom Fields',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: colors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Add extra details specific to this customer',
-                                  style: TextStyle(fontSize: 12, color: colors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (_customFields.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: colors.accent.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                '${_customFields.length}',
-                                style: TextStyle(
-                                  color: colors.accent,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      if (_customFields.isEmpty)
-                        InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () => _addCustomField(colors),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceAlt,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: colors.borderColor, width: 1.5),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.add_circle_outline_rounded,
-                                  color: colors.accent,
-                                  size: 26,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'No custom fields yet',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                    color: colors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Tap here or the icon at the top to add one',
-                                  style: TextStyle(fontSize: 12, color: colors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      else
-                        ..._customFields.map((field) => _buildCustomFieldCard(field, colors)),
-                    ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
                 _isSaving
                     ? Center(child: CircularProgressIndicator(color: colors.accent))

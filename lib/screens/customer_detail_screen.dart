@@ -15,6 +15,7 @@ import '../models/payment.dart';
 import '../models/customer_repository.dart';
 import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/helpers.dart';
 import '../widgets/app_settings_scope.dart';
 import '../widgets/payment_history_tile.dart';
 import 'add_payment_screen.dart';
@@ -379,12 +380,16 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     );
 
     if (!mounted) return;
+    final recurrenceType = await _askRecurrence();
+    if (!mounted) return;
     final note = await _askReminderNote();
 
     await _customerRepo.addReminder(
       customerId: customer.id,
       reminderDate: scheduledDateTime,
       note: note,
+      isRecurring: recurrenceType != null,
+      recurrenceType: recurrenceType,
     );
 
     await NotificationService.scheduleReminder(
@@ -392,23 +397,127 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       title: "Payment Reminder",
       body: "${customer.name} will pay now",
       scheduledDate: scheduledDateTime,
-    );
-
-    final smsMessage = _buildDueMessage(customer);
-
-    await NotificationService.scheduleSms(
-      taskId: 'sms_${customer.id}',
-      phoneNumber: customer.phone,
-      message: smsMessage,
-      scheduledDate: scheduledDateTime,
-      customerId: customer.id,
+      smsPhone: customer.phone,
+      smsMessage: _buildDueMessage(customer),
     );
 
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Reminder Updated ✅")),
+      SnackBar(
+        content: Text(
+          recurrenceType == null
+              ? "Reminder Updated ✅"
+              : "Reminder Updated ✅ (${_recurrenceLabel(recurrenceType)} এ auto-repeat হবে)",
+        ),
+      ),
     );
+  }
+
+  // ✅ কিস্তিভিত্তিক বকেয়ার জন্য "Repeat" অপশন — বাছাই করা হলে প্রতি সাইকেলে
+  // reminder ম্যানুয়ালি সেট না করেই নিজে থেকে পরের তারিখে চলে যাবে
+  Future<String?> _askRecurrence() async {
+    final colors = AppColors.of(context);
+
+    return showModalBottomSheet<String?>(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  "Repeat Reminder?",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "মাসিক কিস্তির মতো বকেয়া হলে auto-repeat চালু করুন",
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Icon(Icons.event_busy_rounded, color: colors.textSecondary),
+                title: Text("None (one-time)", style: TextStyle(color: colors.textPrimary)),
+                onTap: () => Navigator.pop(context, null),
+              ),
+              ListTile(
+                leading: Icon(Icons.repeat_rounded, color: colors.accent),
+                title: Text("Weekly", style: TextStyle(color: colors.textPrimary)),
+                onTap: () => Navigator.pop(context, 'weekly'),
+              ),
+              ListTile(
+                leading: Icon(Icons.repeat_rounded, color: colors.accent),
+                title: Text("Bi-weekly (every 2 weeks)", style: TextStyle(color: colors.textPrimary)),
+                onTap: () => Navigator.pop(context, 'biweekly'),
+              ),
+              ListTile(
+                leading: Icon(Icons.repeat_rounded, color: colors.accent),
+                title: Text("Monthly (installment)", style: TextStyle(color: colors.textPrimary)),
+                onTap: () => Navigator.pop(context, 'monthly'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _recurrenceLabel(String recurrenceType) {
+    switch (recurrenceType) {
+      case 'weekly':
+        return "Weekly";
+      case 'biweekly':
+        return "Bi-weekly";
+      case 'monthly':
+      default:
+        return "Monthly";
+    }
+  }
+
+  Future<void> _markRecurringDone(Customer customer) async {
+    final colors = AppColors.of(context);
+    try {
+      final nextDate = await _customerRepo.advanceRecurringReminder(customer);
+      if (nextDate == null) return;
+
+      await NotificationService.scheduleReminder(
+        id: customer.hashCode,
+        title: "Payment Reminder",
+        body: "${customer.name} will pay now",
+        scheduledDate: nextDate,
+        smsPhone: customer.phone,
+        smsMessage: _buildDueMessage(customer),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: colors.clear,
+          content: Text("পরের reminder সেট হয়েছে: ${_formatDateTime(nextDate)}"),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: colors.due,
+          content: const Text("Failed to advance reminder, please try again"),
+        ),
+      );
+    }
   }
 
   Future<String?> _askReminderNote() async {
@@ -491,9 +600,15 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Cancel Reminder", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(
+          customer.isRecurringReminder ? "Stop Recurring Reminder" : "Cancel Reminder",
+          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
+        ),
         content: Text(
-          "'${customer.name}' এর জন্য সেট করা reminder টা বাতিল করতে চান?",
+          customer.isRecurringReminder
+              ? "'${customer.name}' এর ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')} auto-repeat reminder পুরোপুরি বন্ধ করতে চান? "
+                  "শুধু এই সাইকেলটা skip করতে চাইলে 'Mark Done' ব্যবহার করুন।"
+              : "'${customer.name}' এর জন্য সেট করা reminder টা বাতিল করতে চান?",
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
@@ -503,7 +618,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Remove Reminder", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
+            child: Text(
+              customer.isRecurringReminder ? "Stop Recurring" : "Remove Reminder",
+              style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -518,7 +636,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     final colors = AppColors.of(context);
     try {
       await _customerRepo.clearReminder(customer.id);
-      await NotificationService.cancelScheduledSms('sms_${customer.id}');
+      await NotificationService.cancelReminder(customer.hashCode);
 
       if (!mounted) return;
 
@@ -536,6 +654,55 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           content: const Text("Failed to remove reminder, please try again"),
         ),
       );
+    }
+  }
+
+  Future<void> _confirmSendSms(Customer customer) async {
+    final colors = AppColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("Send SMS", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(
+          "'${customer.name}' কে (${customer.phone}) due reminder SMS পাঠাতে চান?",
+          style: TextStyle(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text("Send", style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // ✅ Play Store policy অনুযায়ী app নিজে SMS পাঠাতে পারে না — default SMS app
+    // prefilled অবস্থায় খুলে দেওয়া হয়, ব্যবহারকারী নিজে Send করবেন
+    final uri = buildSmsComposeUri(customer.phone, _buildDueMessage(customer));
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      await _customerRepo.logSmsSent(
+        customerId: customer.id,
+        type: 'manual',
+      );
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('SMS app খোলা যায়নি')),
+        );
+      }
     }
   }
 
@@ -964,6 +1131,19 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     );
   }
 
+  Future<void> _callCustomer(Customer customer) async {
+    final uri = Uri(scheme: 'tel', path: customer.phone);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('কল করা যায়নি')),
+      );
+    }
+  }
+
   Future<void> _openWhatsApp(Customer customer) async {
     final cleanPhone = customer.phone.replaceAll(RegExp(r'[\s\-]'), '');
     final fullPhone = cleanPhone.startsWith('0')
@@ -1000,23 +1180,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.sms, color: colors.info),
-            onPressed: () async {
-              await NotificationService.sendSmsNow(
-                phoneNumber: widget.customer.phone,
-                message: _buildDueMessage(widget.customer),
-              );
-
-              await _customerRepo.logSmsSent(
-                customerId: widget.customer.id,
-                type: 'manual',
-              );
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('SMS send attempted')),
-                );
-              }
-            },
+            onPressed: () => _confirmSendSms(widget.customer),
           ),
           IconButton(
             icon: Icon(Icons.edit, color: colors.accent),
@@ -1076,6 +1240,18 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         style: TextStyle(color: colors.textSecondary),
                       ),
                       const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => _callCustomer(customer),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.call,
+                            size: 18,
+                            color: colors.info,
+                          ),
+                        ),
+                      ),
                       InkWell(
                         onTap: () => _openWhatsApp(customer),
                         borderRadius: BorderRadius.circular(20),
@@ -1234,14 +1410,38 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
-                          style: TextStyle(color: colors.warn),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
+                              style: TextStyle(color: colors.warn),
+                            ),
+                            if (customer.isRecurringReminder) ...[
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "Repeats ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')}",
+                                    style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
+                      if (customer.isRecurringReminder)
+                        IconButton(
+                          icon: Icon(Icons.check_circle_outline_rounded, color: colors.clear, size: 20),
+                          tooltip: "Mark Done (repeat continues)",
+                          onPressed: () => _markRecurringDone(customer),
+                        ),
                       IconButton(
                         icon: Icon(Icons.cancel, color: colors.due, size: 20),
-                        tooltip: "Remove Reminder",
+                        tooltip: customer.isRecurringReminder ? "Stop Recurring" : "Remove Reminder",
                         onPressed: () => _confirmClearReminder(customer),
                       ),
                     ],

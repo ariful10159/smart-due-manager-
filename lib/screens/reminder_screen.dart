@@ -34,6 +34,10 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
   Timer? _timer;
 
+  // ✅ যেসব recurring reminder এর তারিখ পার হয়ে গেছে (অ্যাপ কয়েকদিন না খোলার কারণে),
+  // তাদের auto-advance ইন-ফ্লাইট থাকা অবস্থায় দ্বিতীয়বার ট্রিগার আটকাতে
+  final Set<String> _autoAdvancing = {};
+
   @override
   void initState() {
     super.initState();
@@ -114,11 +118,80 @@ class _ReminderScreenState extends State<ReminderScreen> {
     }
   }
 
+  // ✅ অ্যাপ কয়েক সাইকেল বন্ধ থাকলেও recurring reminder অতীতে আটকে না থেকে
+  // নিজে থেকেই পরবর্তী ভবিষ্যৎ সাইকেলে চলে যায় — ম্যানুয়ালি রিসেট করা লাগে না
+  Future<void> _autoAdvanceIfNeeded(Customer customer) async {
+    if (_autoAdvancing.contains(customer.id)) return;
+    _autoAdvancing.add(customer.id);
+
+    try {
+      final nextDate = await _repo.advanceRecurringReminder(customer);
+      if (nextDate == null) return;
+      if (!mounted) return;
+
+      await NotificationService.scheduleReminder(
+        id: customer.hashCode,
+        title: "Payment Reminder",
+        body: "${customer.name} will pay now",
+        scheduledDate: nextDate,
+        smsPhone: customer.phone,
+        smsMessage: _buildReminderMessage(customer),
+      );
+    } finally {
+      _autoAdvancing.remove(customer.id);
+    }
+  }
+
+  Future<void> _markRecurringDone(Customer customer) async {
+    final colors = AppColors.of(context);
+    try {
+      final nextDate = await _repo.advanceRecurringReminder(customer);
+      if (nextDate == null) return;
+
+      await NotificationService.scheduleReminder(
+        id: customer.hashCode,
+        title: "Payment Reminder",
+        body: "${customer.name} will pay now",
+        scheduledDate: nextDate,
+        smsPhone: customer.phone,
+        smsMessage: _buildReminderMessage(customer),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: colors.clear,
+          content: Text("পরের reminder সেট হয়েছে: ${_formatDateTime(nextDate)}"),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: colors.due,
+          content: const Text("Failed to advance reminder, please try again"),
+        ),
+      );
+    }
+  }
+
+  String _recurrenceLabel(String recurrenceType) {
+    switch (recurrenceType) {
+      case 'weekly':
+        return "Weekly";
+      case 'biweekly':
+        return "Bi-weekly";
+      case 'monthly':
+      default:
+        return "Monthly";
+    }
+  }
+
   Future<void> _clearReminder(Customer customer) async {
     final colors = AppColors.of(context);
     try {
       await _repo.clearReminder(customer.id);
-      await NotificationService.cancelScheduledSms('sms_${customer.id}');
+      await NotificationService.cancelReminder(customer.hashCode);
 
       if (!mounted) return;
 
@@ -149,9 +222,15 @@ class _ReminderScreenState extends State<ReminderScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Delete Reminder", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(
+          customer.isRecurringReminder ? "Stop Recurring Reminder" : "Delete Reminder",
+          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
+        ),
         content: Text(
-          "'${customer.name}' এর reminder টা মুছে দিতে চান?",
+          customer.isRecurringReminder
+              ? "'${customer.name}' এর ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')} auto-repeat reminder পুরোপুরি বন্ধ করতে চান? "
+                  "শুধু এই সাইকেলটা skip করতে চাইলে 'Mark Done' ব্যবহার করুন।"
+              : "'${customer.name}' এর reminder টা মুছে দিতে চান?",
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
@@ -161,7 +240,10 @@ class _ReminderScreenState extends State<ReminderScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Delete", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
+            child: Text(
+              customer.isRecurringReminder ? "Stop Recurring" : "Delete",
+              style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -378,22 +460,14 @@ class _ReminderScreenState extends State<ReminderScreen> {
     try {
       await _repo.addReminder(customerId: customer.id, reminderDate: newDate, note: note);
 
+      // ✅ এখন Settings-এ সেভ করা টেমপ্লেট থেকে SMS মেসেজ তৈরি হচ্ছে
       await NotificationService.scheduleReminder(
         id: customer.hashCode,
         title: "Payment Reminder",
         body: "${customer.name} will pay now",
         scheduledDate: newDate,
-      );
-
-      // ✅ এখন Settings-এ সেভ করা টেমপ্লেট থেকে SMS মেসেজ তৈরি হচ্ছে
-      final smsMessage = _buildReminderMessage(customer);
-
-      await NotificationService.scheduleSms(
-        taskId: 'sms_${customer.id}',
-        phoneNumber: customer.phone,
-        message: smsMessage,
-        scheduledDate: newDate,
-        customerId: customer.id,
+        smsPhone: customer.phone,
+        smsMessage: _buildReminderMessage(customer),
       );
 
       if (!mounted) return;
@@ -479,6 +553,23 @@ class _ReminderScreenState extends State<ReminderScreen> {
           final overdueCount = customers
               .where((c) => c.nextReminderDate!.isBefore(DateTime.now()))
               .length;
+
+          // ✅ অ্যাপ খোলার সাথে সাথেই পার হয়ে যাওয়া recurring reminder গুলো
+          // পরের ভবিষ্যৎ সাইকেলে auto-advance হয়ে যায়
+          final overdueRecurring = customers
+              .where((c) =>
+                  c.isRecurringReminder &&
+                  c.nextReminderDate!.isBefore(DateTime.now()) &&
+                  !_autoAdvancing.contains(c.id))
+              .toList();
+
+          if (overdueRecurring.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              for (final c in overdueRecurring) {
+                _autoAdvanceIfNeeded(c);
+              }
+            });
+          }
 
           if (customers.isEmpty) {
             return Center(
@@ -613,6 +704,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                       color: isOverdue ? colors.due : colors.clear,
                                     ),
                                   ),
+                                  if (customer.isRecurringReminder) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "Repeats ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')}",
+                                          style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
                               trailing: Text(
@@ -641,18 +745,30 @@ class _ReminderScreenState extends State<ReminderScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Expanded(
-                                    child: TextButton.icon(
-                                      onPressed: () => _snoozeReminder(customer),
-                                      icon: Icon(Icons.snooze, size: 18, color: colors.accent),
-                                      label: Text("Snooze", style: TextStyle(color: colors.accent)),
+                                  if (customer.isRecurringReminder)
+                                    Expanded(
+                                      child: TextButton.icon(
+                                        onPressed: () => _markRecurringDone(customer),
+                                        icon: Icon(Icons.check_circle_outline_rounded, size: 18, color: colors.clear),
+                                        label: Text("Mark Done", style: TextStyle(color: colors.clear)),
+                                      ),
+                                    )
+                                  else
+                                    Expanded(
+                                      child: TextButton.icon(
+                                        onPressed: () => _snoozeReminder(customer),
+                                        icon: Icon(Icons.snooze, size: 18, color: colors.accent),
+                                        label: Text("Snooze", style: TextStyle(color: colors.accent)),
+                                      ),
                                     ),
-                                  ),
                                   Expanded(
                                     child: TextButton.icon(
                                       onPressed: () => _confirmDelete(customer),
                                       icon: Icon(Icons.delete_outline, size: 18, color: colors.due),
-                                      label: Text("Delete", style: TextStyle(color: colors.due)),
+                                      label: Text(
+                                        customer.isRecurringReminder ? "Stop" : "Delete",
+                                        style: TextStyle(color: colors.due),
+                                      ),
                                     ),
                                   ),
                                 ],

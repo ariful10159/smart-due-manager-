@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/payment.dart';
+import '../theme/app_colors.dart';
 
 class PaymentHistoryTile extends StatelessWidget {
   const PaymentHistoryTile({super.key, required this.payment});
@@ -15,12 +16,20 @@ class PaymentHistoryTile extends StatelessWidget {
   }
 
   void _showPaymentDetail(BuildContext context) {
+    final colors = AppColors.of(context);
+
     showDialog(
       context: context,
       useSafeArea: true,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
         title: Text(
           payment.type == PaymentType.payment ? 'Payment' : 'Charge Added',
+          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: SizedBox(
           width: double.maxFinite,
@@ -31,34 +40,39 @@ class PaymentHistoryTile extends StatelessWidget {
               children: [
                 if (payment.receiptImageUrl != null &&
                     payment.receiptImageUrl!.isNotEmpty)
-                  _buildReceiptImage(),
+                  _buildReceiptImage(colors),
                 if (payment.receiptImageUrl != null &&
                     payment.receiptImageUrl!.isNotEmpty)
                   const SizedBox(height: 16),
                 Text(
                   "Amount: ${payment.amount.toStringAsFixed(2)}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text("Date: ${_formatDateTime(payment.date)}"),
+                Text(
+                  "Date: ${_formatDateTime(payment.date)}",
+                  style: TextStyle(color: colors.textSecondary),
+                ),
                 if (payment.paymentMethod != null) ...[
                   const SizedBox(height: 6),
                   Text(
                     "Method: ${Payment.paymentMethodToString(payment.paymentMethod!)}",
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                 ],
                 if (payment.description != null &&
                     payment.description!.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     "Description:",
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
                   ),
                   const SizedBox(height: 4),
-                  Text(payment.description!),
+                  Text(payment.description!, style: TextStyle(color: colors.textSecondary)),
                 ],
               ],
             ),
@@ -67,14 +81,14 @@ class PaymentHistoryTile extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text("Close"),
+            child: Text("Close", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildReceiptImage() {
+  Widget _buildReceiptImage(AppColors colors) {
     try {
       final bytes = base64Decode(payment.receiptImageUrl!);
       return ClipRRect(
@@ -87,7 +101,9 @@ class PaymentHistoryTile extends StatelessWidget {
             fit: BoxFit.cover,
             gaplessPlayback: true,
             errorBuilder: (context, error, stackTrace) {
-              return const Center(child: Text('ছবি লোড করা যায়নি'));
+              return Center(
+                child: Text('ছবি লোড করা যায়নি', style: TextStyle(color: colors.textSecondary)),
+              );
             },
           ),
         ),
@@ -99,43 +115,88 @@ class PaymentHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final isPayment = payment.type == PaymentType.payment;
+    final amountColor = isPayment ? colors.clear : colors.due;
 
-    return Card(
-      child: ListTile(
-        onTap: () {
-          // ✅ পরের frame এ dialog খোলা হচ্ছে, current build/layout এর সাথে conflict এড়াতে
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) {
-              _showPaymentDetail(context);
-            }
-          });
-        },
-        leading: Icon(
-          isPayment ? Icons.arrow_downward : Icons.arrow_upward,
-          color: isPayment ? Colors.green : Colors.red,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [colors.surface, colors.surfaceAlt],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        title: Text(
-          payment.amount.toStringAsFixed(2),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          payment.description?.isNotEmpty == true
-              ? payment.description!
-              : (isPayment ? 'Payment' : 'Charge Added'),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              DateFormat('d MMM yyyy').format(payment.date),
-              style: const TextStyle(fontSize: 12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            // ✅ পরের frame এ dialog খোলা হচ্ছে, current build/layout এর সাথে conflict এড়াতে
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                _showPaymentDetail(context);
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: amountColor.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isPayment ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                    color: amountColor,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        payment.amount.toStringAsFixed(2),
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: colors.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        payment.description?.isNotEmpty == true
+                            ? payment.description!
+                            : (isPayment ? 'Payment' : 'Charge Added'),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      DateFormat('d MMM yyyy').format(payment.date),
+                      style: TextStyle(fontSize: 11.5, color: colors.hintColor),
+                    ),
+                    if (payment.receiptImageUrl != null &&
+                        payment.receiptImageUrl!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Icon(Icons.photo_rounded, size: 15, color: colors.textSecondary),
+                    ],
+                  ],
+                ),
+              ],
             ),
-            if (payment.receiptImageUrl != null &&
-                payment.receiptImageUrl!.isNotEmpty)
-              const Icon(Icons.photo, size: 16, color: Colors.grey),
-          ],
+          ),
         ),
       ),
     );

@@ -11,6 +11,7 @@ import '../theme/app_colors.dart';
 import 'add_customer_screen.dart';
 import 'customer_detail_screen.dart';
 import 'all_customers_screen.dart';
+import 'global_search_screen.dart';
 import 'reminder_screen.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/app_drawer.dart';
@@ -180,6 +181,14 @@ class _HomeScreenState extends State<HomeScreen> {
           elevation: 0,
           iconTheme: IconThemeData(color: colors.textPrimary),
           actions: [
+            _AppBarIconButton(
+              icon: Icons.search_rounded,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
+                );
+              },
+            ),
             _AppBarIconButton(
               icon: Icons.bar_chart_rounded,
               onPressed: () {

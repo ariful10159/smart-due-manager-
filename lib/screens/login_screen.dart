@@ -1,7 +1,7 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 
@@ -19,18 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-
-  // 🎨 Shared dark navy palette — matches the rest of the app
-  static const Color _scaffoldBg = Color(0xFF0F0F14);
-  static const Color _surface = Color(0xFF1B1B24);
-  static const Color _surfaceAlt = Color(0xFF20202B);
-  static const Color _borderColor = Color(0xFF2C2C3A);
-  static const Color _textPrimary = Colors.white;
-  static const Color _textSecondary = Color(0xFF9A9AAE);
-  static const Color _hintColor = Color(0xFF5C5C6E);
-  static const Color _accent = Color(0xFF6366F1); // Indigo
-  static const Color _accentAlt = Color(0xFF8B5CF6); // Violet
-  static const Color _due = Color(0xFFEF4444);
 
   @override
   void dispose() {
@@ -53,9 +41,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (error != null) {
+      final colors = AppColors.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: _due,
+          backgroundColor: colors.due,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: const EdgeInsets.all(14),
@@ -75,6 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   InputDecoration _fieldDecoration({
+    required AppColors colors,
     required String label,
     required IconData icon,
     required Color iconColor,
@@ -84,8 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: _textSecondary, fontSize: 13),
-      hintStyle: const TextStyle(color: _hintColor, fontSize: 13.5),
+      labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
+      hintStyle: TextStyle(color: colors.hintColor, fontSize: 13.5),
       prefixIcon: Padding(
         padding: const EdgeInsets.all(12),
         child: Container(
@@ -99,54 +89,56 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: _surfaceAlt,
+      fillColor: colors.surfaceAlt,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _borderColor),
+        borderSide: BorderSide(color: colors.borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _borderColor),
+        borderSide: BorderSide(color: colors.borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _accent, width: 1.6),
+        borderSide: BorderSide(color: colors.accent, width: 1.6),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _due, width: 1.2),
+        borderSide: BorderSide(color: colors.due, width: 1.2),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _due, width: 1.6),
+        borderSide: BorderSide(color: colors.due, width: 1.6),
       ),
-      errorStyle: const TextStyle(color: _due, fontSize: 11.5),
+      errorStyle: TextStyle(color: colors.due, fontSize: 11.5),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return Scaffold(
-      backgroundColor: _scaffoldBg,
+      backgroundColor: colors.scaffoldBg,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // ✅ Subtle dot-grid texture across the whole background
           Positioned.fill(
-            child: CustomPaint(painter: _DotGridPainter()),
+            child: CustomPaint(painter: _DotGridPainter(color: colors.textPrimary)),
           ),
 
           // ✅ Decorative glow blobs
           Positioned(
             top: -90,
             right: -70,
-            child: _GlowBlob(size: 240, color: _accent.withValues(alpha: 0.22)),
+            child: _GlowBlob(size: 240, color: colors.accent.withValues(alpha: 0.22)),
           ),
           Positioned(
             top: 120,
             left: -100,
-            child: _GlowBlob(size: 200, color: _accentAlt.withValues(alpha: 0.16)),
+            child: _GlowBlob(size: 200, color: colors.accentAlt.withValues(alpha: 0.16)),
           ),
 
           SafeArea(
@@ -171,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: _accent.withValues(alpha: 0.25),
+                                    color: colors.accent.withValues(alpha: 0.25),
                                     width: 1.4,
                                   ),
                                 ),
@@ -179,15 +171,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               Container(
                                 padding: const EdgeInsets.all(22),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
-                                    colors: [_accent, _accentAlt],
+                                    colors: [colors.accent, colors.accentAlt],
                                   ),
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: _accent.withValues(alpha: 0.45),
+                                      color: colors.accent.withValues(alpha: 0.45),
                                       blurRadius: 34,
                                       spreadRadius: 2,
                                     ),
@@ -205,8 +197,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 20),
 
                           ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [_textPrimary, Color(0xFFC7C7E0)],
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [colors.textPrimary, colors.textSecondary],
                             ).createShader(bounds),
                             child: const Text(
                               "Smart Due",
@@ -219,11 +211,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             "আপনার হিসাব, আপনার নিয়ন্ত্রণে",
                             style: TextStyle(
                               fontSize: 13,
-                              color: _textSecondary,
+                              color: colors.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -236,13 +228,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Container(
                               padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [_surface, _surfaceAlt],
+                                gradient: LinearGradient(
+                                  colors: [colors.surface, colors.surfaceAlt],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: _borderColor),
+                                border: Border.all(color: colors.borderColor),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.35),
@@ -250,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     offset: const Offset(0, 16),
                                   ),
                                   BoxShadow(
-                                    color: _accent.withValues(alpha: 0.06),
+                                    color: colors.accent.withValues(alpha: 0.06),
                                     blurRadius: 40,
                                     offset: const Offset(0, -6),
                                   ),
@@ -267,8 +259,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           width: 4,
                                           height: 22,
                                           decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [_accent, _accentAlt],
+                                            gradient: LinearGradient(
+                                              colors: [colors.accent, colors.accentAlt],
                                               begin: Alignment.topCenter,
                                               end: Alignment.bottomCenter,
                                             ),
@@ -276,21 +268,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 10),
-                                        const Text(
+                                        Text(
                                           "Welcome Back",
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w800,
-                                            color: _textPrimary,
+                                            color: colors.textPrimary,
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const Padding(
-                                      padding: EdgeInsets.only(left: 14, top: 3),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 14, top: 3),
                                       child: Text(
                                         "Login করে চালিয়ে যান",
-                                        style: TextStyle(fontSize: 12, color: _textSecondary),
+                                        style: TextStyle(fontSize: 12, color: colors.textSecondary),
                                       ),
                                     ),
                                     const SizedBox(height: 24),
@@ -298,11 +290,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     TextFormField(
                                       controller: _phoneController,
                                       keyboardType: TextInputType.phone,
-                                      style: const TextStyle(color: _textPrimary, fontSize: 14.5),
+                                      style: TextStyle(color: colors.textPrimary, fontSize: 14.5),
                                       decoration: _fieldDecoration(
+                                        colors: colors,
                                         label: "Phone Number",
                                         icon: Icons.phone_rounded,
-                                        iconColor: _accent,
+                                        iconColor: colors.accent,
                                         hint: "01XXXXXXXXX",
                                       ),
                                       validator: (v) => v == null || v.trim().isEmpty
@@ -314,17 +307,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                     TextFormField(
                                       controller: _passwordController,
                                       obscureText: _obscurePassword,
-                                      style: const TextStyle(color: _textPrimary, fontSize: 14.5),
+                                      style: TextStyle(color: colors.textPrimary, fontSize: 14.5),
                                       decoration: _fieldDecoration(
+                                        colors: colors,
                                         label: "Password",
                                         icon: Icons.lock_rounded,
-                                        iconColor: _accentAlt,
+                                        iconColor: colors.accentAlt,
                                         suffixIcon: IconButton(
                                           icon: Icon(
                                             _obscurePassword
                                                 ? Icons.visibility_rounded
                                                 : Icons.visibility_off_rounded,
-                                            color: _textSecondary,
+                                            color: colors.textSecondary,
                                             size: 20,
                                           ),
                                           onPressed: () {
@@ -345,10 +339,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                           minimumSize: Size.zero,
                                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           "Forgot Password?",
                                           style: TextStyle(
-                                            color: _accent,
+                                            color: colors.accent,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -367,10 +361,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                           gradient: LinearGradient(
                                             colors: _isLoading
                                                 ? [
-                                                    _accent.withValues(alpha: 0.5),
-                                                    _accentAlt.withValues(alpha: 0.5),
+                                                    colors.accent.withValues(alpha: 0.5),
+                                                    colors.accentAlt.withValues(alpha: 0.5),
                                                   ]
-                                                : [_accent, _accentAlt],
+                                                : [colors.accent, colors.accentAlt],
                                             begin: Alignment.centerLeft,
                                             end: Alignment.centerRight,
                                           ),
@@ -378,7 +372,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                               ? []
                                               : [
                                                   BoxShadow(
-                                                    color: _accent.withValues(alpha: 0.4),
+                                                    color: colors.accent.withValues(alpha: 0.4),
                                                     blurRadius: 18,
                                                     offset: const Offset(0, 10),
                                                   ),
@@ -447,18 +441,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
                             child: RichText(
-                              text: const TextSpan(
+                              text: TextSpan(
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: _textSecondary,
+                                  color: colors.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 children: [
-                                  TextSpan(text: "নতুন অ্যাকাউন্ট? "),
+                                  const TextSpan(text: "নতুন অ্যাকাউন্ট? "),
                                   TextSpan(
                                     text: "Register করুন",
                                     style: TextStyle(
-                                      color: _accent,
+                                      color: colors.accent,
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
@@ -475,7 +469,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               "Smart Due v1.0",
                               style: TextStyle(
                                 fontSize: 10.5,
-                                color: _hintColor,
+                                color: colors.hintColor,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.3,
                               ),
@@ -516,10 +510,14 @@ class _GlowBlob extends StatelessWidget {
 }
 
 class _DotGridPainter extends CustomPainter {
+  _DotGridPainter({required this.color});
+
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.035)
+      ..color = color.withValues(alpha: 0.035)
       ..style = PaintingStyle.fill;
 
     const spacing = 26.0;
@@ -533,5 +531,5 @@ class _DotGridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DotGridPainter oldDelegate) => oldDelegate.color != color;
 }

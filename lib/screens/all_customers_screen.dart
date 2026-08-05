@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
+import '../utils/helpers.dart';
+import '../widgets/app_settings_scope.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'archived_customers_screen.dart';
 import 'customer_detail_screen.dart';
@@ -37,6 +39,9 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   String _searchQuery = '';
   CustomerSortOption _sortOption = CustomerSortOption.none;
 
+  bool _selectionMode = false;
+  final Set<String> _selectedIds = {};
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -53,6 +58,216 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
         const SnackBar(content: Text('কল করা যায়নি, ডায়ালার পাওয়া যায়নি')),
       );
     }
+  }
+
+  String _buildDueMessage(Customer customer) {
+    final settings = AppSettingsScope.of(context).settings;
+    final dateFmt = DateFormat('d MMM yyyy');
+    final currencyFmt = NumberFormat('#,##0.00');
+
+    return settings.smsReminderTemplate
+        .replaceAll('{name}', customer.name)
+        .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
+        .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
+        .replaceAll('{business_name}', settings.businessName)
+        .replaceAll('{phone}', customer.phone);
+  }
+
+  void _enterSelectionMode(String customerId) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds.add(customerId);
+    });
+  }
+
+  void _toggleSelection(String customerId) {
+    setState(() {
+      if (_selectedIds.contains(customerId)) {
+        _selectedIds.remove(customerId);
+      } else {
+        _selectedIds.add(customerId);
+      }
+      if (_selectedIds.isEmpty) {
+        _selectionMode = false;
+      }
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _selectAll(List<Customer> customers) {
+    setState(() {
+      _selectedIds
+        ..clear()
+        ..addAll(customers.map((c) => c.id));
+    });
+  }
+
+  // ✅ Play Store SMS policy অনুযায়ী app নিজে bulk SMS পাঠাতে পারে না — প্রতিটা
+  // কাস্টমারের জন্য default SMS app আলাদাভাবে prefilled অবস্থায় খুলে দেওয়া হয়,
+  // ব্যবহারকারী একে একে নিজে Send করবেন
+  Future<void> _confirmSendBulkSms(List<Customer> customers) async {
+    final colors = AppColors.of(context);
+    final selected = customers.where((c) => _selectedIds.contains(c.id)).toList();
+    if (selected.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("Send SMS", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(
+          "নির্বাচিত ${selected.length} জন কাস্টমারের জন্য একে একে SMS app খুলে দেওয়া হবে। "
+          "প্রতিটা customer-এর জন্য আপনাকে নিজে Send বাটনে চাপতে হবে।",
+          style: TextStyle(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text("Start", style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _selectionMode = false);
+
+    if (!mounted) return;
+    final openedCount = await _runSmsQueue(selected);
+
+    if (!mounted) return;
+    setState(() => _selectedIds.clear());
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("$openedCount/${selected.length} জনের জন্য SMS app খোলা হয়েছে")),
+    );
+  }
+
+  Future<int> _runSmsQueue(List<Customer> queue) async {
+    var index = 0;
+    var openedCount = 0;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final colors = AppColors.of(sheetContext);
+            final customer = queue[index];
+            final isLast = index + 1 >= queue.length;
+
+            Future<void> advance() {
+              if (isLast) {
+                Navigator.pop(sheetContext);
+                return Future.value();
+              }
+              setSheetState(() => index++);
+              return Future.value();
+            }
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border.all(color: colors.borderColor),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "SMS পাঠান (${index + 1}/${queue.length})",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      customer.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(customer.phone, style: TextStyle(color: colors.textSecondary)),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: advance,
+                            child: Text(isLast ? "Close" : "Skip"),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colors.info,
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.sms_rounded),
+                            label: const Text("Open SMS App"),
+                            onPressed: () async {
+                              final uri = buildSmsComposeUri(
+                                customer.phone,
+                                _buildDueMessage(customer),
+                              );
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                                await _repo.logSmsSent(
+                                  customerId: customer.id,
+                                  type: 'manual',
+                                );
+                                openedCount++;
+                              }
+                              await advance();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return openedCount;
   }
 
   String _formatDate(DateTime date) {
@@ -241,86 +456,39 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
 
-    return Scaffold(
-      backgroundColor: colors.scaffoldBg,
-      appBar: AppBar(
-        title: Text(
-          "All Customers",
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-            letterSpacing: 0.3,
-            color: colors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: colors.textPrimary),
-        actions: [
-          // ✅ Sort menu
-          PopupMenuButton<CustomerSortOption>(
-            icon: Icon(Icons.sort_rounded, color: colors.textPrimary),
-            tooltip: "Sort",
-            color: colors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide(color: colors.borderColor),
+    return StreamBuilder<List<Customer>>(
+      stream: _repo.streamCustomers(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Scaffold(
+            backgroundColor: colors.scaffoldBg,
+            appBar: AppBar(
+              title: Text(
+                "All Customers",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  letterSpacing: 0.3,
+                  color: colors.textPrimary,
+                ),
+              ),
+              centerTitle: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              iconTheme: IconThemeData(color: colors.textPrimary),
             ),
-            onSelected: (value) {
-              setState(() => _sortOption = value);
-            },
-            itemBuilder: (context) => CustomerSortOption.values.map((option) {
-              final isSelected = _sortOption == option;
-              return PopupMenuItem(
-                value: option,
-                child: Row(
-                  children: [
-                    if (isSelected)
-                      Icon(Icons.check, size: 18, color: colors.accent)
-                    else
-                      const SizedBox(width: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      _sortLabel(option),
-                      style: TextStyle(
-                        color: isSelected ? colors.accent : colors.textPrimary,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-          IconButton(
-            icon: Icon(Icons.archive_outlined, color: colors.textPrimary),
-            tooltip: "Archived Customers",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ArchivedCustomersScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: StreamBuilder<List<Customer>>(
-        stream: _repo.streamCustomers(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Center(
+            body: Center(
               child: CircularProgressIndicator(color: colors.accent),
-            );
-          }
+            ),
+            bottomNavigationBar: CustomBottomNavBar(
+              selectedIndex: _selectedIndex,
+            ),
+          );
+        }
 
-          final allCustomers = snapshot.data!;
+        final allCustomers = snapshot.data!;
 
-          // ✅ ধাপে ধাপে filter/search/sort apply করা হচ্ছে
+        // ✅ ধাপে ধাপে filter/search/sort apply করা হচ্ছে
           var result = _applyFilters(allCustomers);
           result = _applySearch(result);
           result = _applySort(result);
@@ -355,8 +523,123 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
             (sum, c) => sum + c.totalDue,
           );
 
-          return Column(
-            children: [
+          return Scaffold(
+            backgroundColor: colors.scaffoldBg,
+            appBar: _selectionMode
+                ? AppBar(
+                    title: Text(
+                      "${_selectedIds.length} selected",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    centerTitle: false,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    iconTheme: IconThemeData(color: colors.textPrimary),
+                    leading: IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      tooltip: "Cancel",
+                      onPressed: _exitSelectionMode,
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.select_all_rounded),
+                        tooltip: "Select All",
+                        onPressed: () => _selectAll(result),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.sms_rounded, color: colors.info),
+                        tooltip: "Send SMS",
+                        onPressed: _selectedIds.isEmpty
+                            ? null
+                            : () => _confirmSendBulkSms(result),
+                      ),
+                    ],
+                  )
+                : AppBar(
+                    title: Text(
+                      "All Customers",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                        letterSpacing: 0.3,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    centerTitle: true,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    iconTheme: IconThemeData(color: colors.textPrimary),
+                    actions: [
+                      // ✅ Sort menu
+                      PopupMenuButton<CustomerSortOption>(
+                        icon: Icon(Icons.sort_rounded, color: colors.textPrimary),
+                        tooltip: "Sort",
+                        color: colors.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(color: colors.borderColor),
+                        ),
+                        onSelected: (value) {
+                          setState(() => _sortOption = value);
+                        },
+                        itemBuilder: (context) =>
+                            CustomerSortOption.values.map((option) {
+                          final isSelected = _sortOption == option;
+                          return PopupMenuItem(
+                            value: option,
+                            child: Row(
+                              children: [
+                                if (isSelected)
+                                  Icon(Icons.check, size: 18, color: colors.accent)
+                                else
+                                  const SizedBox(width: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _sortLabel(option),
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? colors.accent
+                                        : colors.textPrimary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.checklist_rounded, color: colors.textPrimary),
+                        tooltip: "Select customers",
+                        onPressed: result.isEmpty
+                            ? null
+                            : () => _enterSelectionMode(result.first.id),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.archive_outlined, color: colors.textPrimary),
+                        tooltip: "Archived Customers",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ArchivedCustomersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+            bottomNavigationBar: CustomBottomNavBar(
+              selectedIndex: _selectedIndex,
+            ),
+            body: Column(
+              children: [
               // ✅ SEARCH BOX
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -716,12 +999,17 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                           final dueColor = customer.totalDue > 0
                               ? colors.due
                               : colors.clear;
+                          final isSelected = _selectedIds.contains(customer.id);
 
                           return Material(
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(18),
                               onTap: () {
+                                if (_selectionMode) {
+                                  _toggleSelection(customer.id);
+                                  return;
+                                }
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => CustomerDetailScreen(
@@ -730,6 +1018,9 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                   ),
                                 );
                               },
+                              onLongPress: _selectionMode
+                                  ? null
+                                  : () => _enterSelectionMode(customer.id),
                               child: Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
@@ -739,7 +1030,12 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: colors.borderColor),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? colors.accent
+                                        : colors.borderColor,
+                                    width: isSelected ? 1.6 : 1,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(alpha: 0.2),
@@ -750,18 +1046,32 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: colors.accent.withValues(alpha: 0.16),
-                                        shape: BoxShape.circle,
+                                    if (_selectionMode)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: Icon(
+                                          isSelected
+                                              ? Icons.check_circle_rounded
+                                              : Icons.radio_button_unchecked_rounded,
+                                          color: isSelected
+                                              ? colors.accent
+                                              : colors.textSecondary,
+                                          size: 24,
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: colors.accent.withValues(alpha: 0.16),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.person_rounded,
+                                          color: colors.accent,
+                                          size: 24,
+                                        ),
                                       ),
-                                      child: Icon(
-                                        Icons.person_rounded,
-                                        color: colors.accent,
-                                        size: 24,
-                                      ),
-                                    ),
                                     const SizedBox(width: 14),
                                     Expanded(
                                       child: Column(
@@ -872,13 +1182,9 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                       ),
               ),
             ],
+            ),
           );
         },
-      ),
-
-      bottomNavigationBar: CustomBottomNavBar(
-        selectedIndex: _selectedIndex,
-      ),
-    );
+      );
   }
 }

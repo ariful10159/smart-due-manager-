@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../screens/app_lock_screen.dart';
 import '../widgets/app_settings_scope.dart';
 

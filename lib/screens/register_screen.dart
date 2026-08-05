@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -44,10 +45,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = false);
 
     if (error != null) {
+      final colors = AppColors.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.redAccent.shade400,
+          backgroundColor: colors.due,
           elevation: 8,
           margin: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -68,13 +70,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  InputDecoration _fieldDecoration({
+    required AppColors colors,
+    required String label,
+    required IconData icon,
+    String? hint,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      hintStyle: TextStyle(color: colors.hintColor, fontSize: 14),
+      labelStyle: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w500),
+      prefixIcon: Icon(icon, color: colors.accent.withValues(alpha: 0.8)),
+      suffixIcon: suffixIcon,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.borderColor, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.accent, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: colors.scaffoldBg,
       body: Stack(
         children: [
           // ─── 🎨 LUXURY BACKGROUND BLOB LIGHTS ───
@@ -86,7 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryColor.withValues(alpha: 0.18),
+                color: colors.accent.withValues(alpha: 0.18),
               ),
             ),
           ),
@@ -98,11 +126,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryColor.withValues(alpha: 0.08),
+                color: colors.accentAlt.withValues(alpha: 0.08),
               ),
             ),
           ),
-          
+
           // ─── 📦 MAIN INTERFACE SCROLL VIEW ───
           SafeArea(
             child: Center(
@@ -120,33 +148,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(22),
                           decoration: BoxDecoration(
-                            color: theme.cardColor,
+                            color: colors.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: primaryColor.withValues(alpha: 0.12),
+                                color: colors.accent.withValues(alpha: 0.12),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               )
                             ],
-                            border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1.5),
+                            border: Border.all(color: colors.accent.withValues(alpha: 0.2), width: 1.5),
                           ),
                           child: Icon(
                             Icons.person_add_alt_1_rounded,
                             size: 44,
-                            color: primaryColor,
+                            color: colors.accent,
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // --- Title & Subtitle Hero Section ---
                       Text(
                         "Create Account",
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineMedium?.copyWith(
+                        style: TextStyle(
                           fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.onSurface,
+                          color: colors.textPrimary,
                           letterSpacing: -0.5,
                           fontSize: 28,
                         ),
@@ -155,8 +183,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Text(
                         "Join us and manage your transactions smartly",
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
+                        style: TextStyle(
+                          color: colors.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -165,16 +193,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       // ─── 💳 ULTRA PRECISE LUXURY CARD CONTAINER ───
                       Container(
                         decoration: BoxDecoration(
-                          color: theme.cardColor,
+                          gradient: LinearGradient(
+                            colors: [colors.surface, colors.surfaceAlt],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 32,
                               offset: const Offset(0, 16),
                             ),
                           ],
-                          border: Border.all(color: Colors.grey.shade200.withValues(alpha: 0.6), width: 1),
+                          border: Border.all(color: colors.borderColor, width: 1),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(24),
@@ -184,21 +216,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               TextFormField(
                                 controller: _nameController,
                                 textInputAction: TextInputAction.next,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                                decoration: InputDecoration(
-                                  labelText: "Full Name",
-                                  labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.person_outline_rounded, color: primaryColor.withValues(alpha: 0.7)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
-                                  ),
+                                style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
+                                decoration: _fieldDecoration(
+                                  colors: colors,
+                                  label: "Full Name",
+                                  icon: Icons.person_outline_rounded,
                                 ),
                                 validator: (v) => v == null || v.trim().isEmpty ? "আপনার নাম দিন" : null,
                               ),
@@ -209,23 +231,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _phoneController,
                                 keyboardType: TextInputType.phone,
                                 textInputAction: TextInputAction.next,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                                decoration: InputDecoration(
-                                  labelText: "Phone Number",
-                                  hintText: "01XXXXXXXXX",
-                                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                  labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.phone_outlined, color: primaryColor.withValues(alpha: 0.7)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
-                                  ),
+                                style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
+                                decoration: _fieldDecoration(
+                                  colors: colors,
+                                  label: "Phone Number",
+                                  hint: "01XXXXXXXXX",
+                                  icon: Icons.phone_outlined,
                                 ),
                                 validator: (v) {
                                   if (v == null || v.trim().isEmpty) return "ফোন নাম্বার দিন";
@@ -240,27 +251,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 textInputAction: TextInputAction.next,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                                decoration: InputDecoration(
-                                  labelText: "Password",
-                                  labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.lock_outline_rounded, color: primaryColor.withValues(alpha: 0.7)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
-                                  ),
+                                style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
+                                decoration: _fieldDecoration(
+                                  colors: colors,
+                                  label: "Password",
+                                  icon: Icons.lock_outline_rounded,
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       _obscurePassword
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
-                                      color: Colors.grey.shade500,
+                                      color: colors.textSecondary,
                                     ),
                                     onPressed: () {
                                       setState(() => _obscurePassword = !_obscurePassword);
@@ -280,27 +281,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _confirmPasswordController,
                                 obscureText: _obscureConfirmPassword,
                                 textInputAction: TextInputAction.done,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                                decoration: InputDecoration(
-                                  labelText: "Confirm Password",
-                                  labelStyle: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                  prefixIcon: Icon(Icons.lock_reset_rounded, color: primaryColor.withValues(alpha: 0.7)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
-                                  ),
+                                style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
+                                decoration: _fieldDecoration(
+                                  colors: colors,
+                                  label: "Confirm Password",
+                                  icon: Icons.lock_reset_rounded,
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       _obscureConfirmPassword
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
-                                      color: Colors.grey.shade500,
+                                      color: colors.textSecondary,
                                     ),
                                     onPressed: () {
                                       setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
@@ -326,16 +317,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(18),
                           gradient: LinearGradient(
-                            colors: [
-                              primaryColor,
-                              primaryColor.withBlue(220).withGreen(100),
-                            ],
+                            colors: [colors.accent, colors.accentAlt],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.35),
+                              color: colors.accent.withValues(alpha: 0.35),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -378,7 +366,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         children: [
                           Text(
                             "আগে থেকেই অ্যাকাউন্ট আছে? ",
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w500),
+                            style: TextStyle(color: colors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
                           ),
                           GestureDetector(
                             onTap: _isLoading
@@ -393,7 +381,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             child: Text(
                               "Login করুন",
                               style: TextStyle(
-                                color: primaryColor,
+                                color: colors.accent,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                                 decoration: TextDecoration.underline,

@@ -4,6 +4,37 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'customer.dart';
 import 'payment.dart';
 
+const List<String> kRecurrenceTypes = ['weekly', 'biweekly', 'monthly'];
+
+// ✅ এক সাইকেল এগিয়ে দেওয়া — মাসিক হলে ক্যালেন্ডার মাস অনুযায়ী (তারিখ drift এড়াতে,
+// মাসের শেষ দিনের বেশি হলে সেই মাসের শেষ দিনে ক্ল্যাম্প করা হয়)
+DateTime _advanceOnce(DateTime date, String recurrenceType) {
+  switch (recurrenceType) {
+    case 'weekly':
+      return date.add(const Duration(days: 7));
+    case 'biweekly':
+      return date.add(const Duration(days: 14));
+    case 'monthly':
+    default:
+      final nextMonth = date.month == 12 ? 1 : date.month + 1;
+      final nextYear = date.month == 12 ? date.year + 1 : date.year;
+      final daysInNextMonth = DateTime(nextYear, nextMonth + 1, 0).day;
+      final day = date.day > daysInNextMonth ? daysInNextMonth : date.day;
+      return DateTime(nextYear, nextMonth, day, date.hour, date.minute);
+  }
+}
+
+// ✅ পরবর্তী reminder এর তারিখ বের করা — অ্যাপ কয়েক সাইকেল বন্ধ থাকলেও (যেমন কয়েক
+// মাস না খোলা হলে) অতীতে আটকে না থেকে সরাসরি পরবর্তী ভবিষ্যৎ তারিখে "ক্যাচ-আপ" করে
+DateTime nextRecurrenceDate({required DateTime from, required String recurrenceType}) {
+  var next = _advanceOnce(from, recurrenceType);
+  final now = DateTime.now();
+  while (next.isBefore(now)) {
+    next = _advanceOnce(next, recurrenceType);
+  }
+  return next;
+}
+
 class CustomerRepository {
   CustomerRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -129,9 +160,13 @@ class CustomerRepository {
     });
   }
 
-  // ✅ Cancel reminder
+  // ✅ Cancel reminder — recurring হলে সাইকেলও পুরোপুরি বন্ধ হয়ে যায়
   Future<void> clearReminder(String customerId) async {
-    await _col.doc(customerId).update({'nextReminderDate': null});
+    await _col.doc(customerId).update({
+      'nextReminderDate': null,
+      'isRecurringReminder': false,
+      'recurrenceType': null,
+    });
   }
 
   // ✅ Add payment
@@ -161,11 +196,14 @@ class CustomerRepository {
         .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());  
   }
 
-  // ✅ Add new reminder
+  // ✅ Add new reminder — isRecurring true হলে recurrenceType অনুযায়ী প্রতি সাইকেলে
+  // (weekly/biweekly/monthly) নিজে থেকেই আবার শিডিউল হবে, ম্যানুয়ালি বারবার সেট করতে হবে না
   Future<void> addReminder({
     required String customerId,
     required DateTime reminderDate,
     String? note,
+    bool isRecurring = false,
+    String? recurrenceType,
   }) async {
     final reminderId = DateTime.now().millisecondsSinceEpoch.toString();
 
@@ -182,6 +220,8 @@ class CustomerRepository {
     // 2️⃣ Set new active reminder
     await _col.doc(customerId).update({
       'nextReminderDate': Timestamp.fromDate(reminderDate),
+      'isRecurringReminder': isRecurring,
+      'recurrenceType': isRecurring ? recurrenceType : null,
     });
 
     // 3️⃣ Save new reminder to history
@@ -191,7 +231,33 @@ class CustomerRepository {
       'createdAt': Timestamp.now(),
       'status': 'active',
       'note': note?.trim() ?? '',
+      'isRecurring': isRecurring,
+      'recurrenceType': isRecurring ? recurrenceType : null,
     });
+  }
+
+  // ✅ Recurring reminder এর বর্তমান সাইকেল "done" মার্ক করে পরের সাইকেলে auto-advance
+  // করা হয় — recurrence বন্ধ না করে, শুধু পরবর্তী তারিখে reschedule করা হয়
+  Future<DateTime?> advanceRecurringReminder(Customer customer) async {
+    if (!customer.isRecurringReminder ||
+        customer.recurrenceType == null ||
+        customer.nextReminderDate == null) {
+      return null;
+    }
+
+    final nextDate = nextRecurrenceDate(
+      from: customer.nextReminderDate!,
+      recurrenceType: customer.recurrenceType!,
+    );
+
+    await addReminder(
+      customerId: customer.id,
+      reminderDate: nextDate,
+      isRecurring: true,
+      recurrenceType: customer.recurrenceType,
+    );
+
+    return nextDate;
   }
 
   // ✅ Stream reminder history

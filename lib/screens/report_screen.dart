@@ -1,11 +1,16 @@
+import 'dart:math' as math;
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../models/payment.dart';
+import '../theme/app_colors.dart';
+import 'customer_detail_screen.dart';
 import 'customer_pdf_report_screen.dart';
 
 enum ReportPeriod { daily, weekly, monthly }
@@ -157,6 +162,28 @@ class _ReportScreenState extends State<ReportScreen> {
     return reportRows;
   }
 
+  // ✅ গত ৬ মাসের (চলতি মাসসহ) মাসিক কালেকশন — Dashboard trend chart এর ডেটা
+  List<(DateTime month, double total)> _monthlyTrend() {
+    final now = DateTime.now();
+    return List.generate(6, (i) {
+      final month = DateTime(now.year, now.month - (5 - i), 1);
+      final total = _payments
+          .where((p) =>
+              p.type == PaymentType.payment &&
+              p.date.year == month.year &&
+              p.date.month == month.month)
+          .fold<double>(0, (runningTotal, p) => runningTotal + p.amount);
+      return (month, total);
+    });
+  }
+
+  // ✅ সবচেয়ে বেশি বকেয়া থাকা কাস্টমাররা — Dashboard "Top Defaulters" এর ডেটা
+  List<Customer> _topDefaulters() {
+    final withDue = _customers.where((c) => c.totalDue > 0).toList()
+      ..sort((a, b) => b.totalDue.compareTo(a.totalDue));
+    return withDue.take(5).toList();
+  }
+
   Future<void> _exportPdf() async {
     final (start, end) = _dateRange();
     final rangePayments = _paymentsInRange(start, end);
@@ -197,14 +224,23 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return Scaffold(
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
-        title: const Text("Collection Reports"),
+        title: Text(
+          "Collection Reports",
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
+        ),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           // কাস্টম পিডিএফ স্ক্রিন বাটন
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_rounded),
+            icon: Icon(Icons.picture_as_pdf_rounded, color: colors.textPrimary),
             tooltip: "Customer PDF Report",
             onPressed: () {
               Navigator.of(context).push(
@@ -214,22 +250,23 @@ class _ReportScreenState extends State<ReportScreen> {
           ),
           // ডাইরেক্ট এক্সপোর্ট পিডিএফ বাটন
           IconButton(
-            icon: const Icon(Icons.download_rounded),
+            icon: Icon(Icons.download_rounded, color: colors.textPrimary),
             tooltip: "Download PDF",
             onPressed: _loading ? null : _exportPdf,
           ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: colors.accent))
           : RefreshIndicator(
               onRefresh: _loadData,
-              child: _buildContent(),
+              color: colors.accent,
+              child: _buildContent(colors),
             ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(AppColors colors) {
     final (start, end) = _dateRange();
     final rangePayments = _paymentsInRange(start, end);
     final reportData = _getCustomerReportData(rangePayments);
@@ -238,7 +275,35 @@ class _ReportScreenState extends State<ReportScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Text(
+          "Dashboard",
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: colors.textPrimary),
+        ),
+        const SizedBox(height: 12),
+        _MonthlyTrendCard(trend: _monthlyTrend(), colors: colors),
+        const SizedBox(height: 14),
+        _TopDefaultersCard(
+          defaulters: _topDefaulters(),
+          colors: colors,
+          onTapCustomer: (customer) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => CustomerDetailScreen(customer: customer)),
+            );
+          },
+        ),
+
+        const SizedBox(height: 28),
+        Divider(color: colors.borderColor),
+        const SizedBox(height: 12),
+
         SegmentedButton<ReportPeriod>(
+          style: SegmentedButton.styleFrom(
+            backgroundColor: colors.surface,
+            foregroundColor: colors.textSecondary,
+            selectedBackgroundColor: colors.accent,
+            selectedForegroundColor: Colors.white,
+            side: BorderSide(color: colors.borderColor),
+          ),
           segments: const [
             ButtonSegment(value: ReportPeriod.daily, label: Text("Daily"), icon: Icon(Icons.today)),
             ButtonSegment(value: ReportPeriod.weekly, label: Text("Weekly"), icon: Icon(Icons.view_week)),
@@ -259,15 +324,15 @@ class _ReportScreenState extends State<ReportScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
-              icon: const Icon(Icons.chevron_left),
+              icon: Icon(Icons.chevron_left, color: colors.textPrimary),
               onPressed: () => setState(() => _offset -= 1),
             ),
             Text(
               _periodLabel(),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
             ),
             IconButton(
-              icon: const Icon(Icons.chevron_right),
+              icon: Icon(Icons.chevron_right, color: colors.textPrimary),
               onPressed: _offset >= 0 ? null : () => setState(() => _offset += 1),
             ),
           ],
@@ -279,17 +344,21 @@ class _ReportScreenState extends State<ReportScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
+            gradient: LinearGradient(
+              colors: [colors.clear.withValues(alpha: 0.16), colors.clear.withValues(alpha: 0.06)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            border: Border.all(color: colors.clear.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [
-              const Text("Total Collection", style: TextStyle(fontSize: 14, color: Colors.grey)),
+              Text("Total Collection", style: TextStyle(fontSize: 14, color: colors.textSecondary)),
               const SizedBox(height: 6),
               Text(
                 "${totalCollection.toStringAsFixed(0)} TK",
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: colors.clear),
               ),
             ],
           ),
@@ -297,23 +366,28 @@ class _ReportScreenState extends State<ReportScreen> {
 
         const SizedBox(height: 24),
 
-        const Text(
+        Text(
           "Customer Payment Details",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
         ),
         const SizedBox(height: 12),
 
         if (reportData.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
-            child: Center(child: Text("No transactions found for this period.", style: TextStyle(color: Colors.grey))),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: Text(
+                "No transactions found for this period.",
+                style: TextStyle(color: colors.textSecondary),
+              ),
+            ),
           )
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: reportData.length,
-            separatorBuilder: (context, index) => const Divider(),
+            separatorBuilder: (context, index) => Divider(color: colors.borderColor),
             itemBuilder: (context, index) {
               final row = reportData[index];
               return Padding(
@@ -324,16 +398,16 @@ class _ReportScreenState extends State<ReportScreen> {
                   children: [
                     Text(
                       row['name'],
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
                     ),
-                    Text(row['phone'], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(row['phone'], style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _AmountInfo(label: "Total Due", amount: row['totalDue'], color: Colors.orange),
-                        _AmountInfo(label: "Payment", amount: row['paid'], color: Colors.green),
-                        _AmountInfo(label: "Remaining", amount: row['remaining'], color: Colors.red),
+                        _AmountInfo(label: "Total Due", amount: row['totalDue'], color: colors.warn, textColor: colors.textSecondary),
+                        _AmountInfo(label: "Payment", amount: row['paid'], color: colors.clear, textColor: colors.textSecondary),
+                        _AmountInfo(label: "Remaining", amount: row['remaining'], color: colors.due, textColor: colors.textSecondary),
                       ],
                     ),
                   ],
@@ -348,23 +422,374 @@ class _ReportScreenState extends State<ReportScreen> {
 }
 
 class _AmountInfo extends StatelessWidget {
-  const _AmountInfo({required this.label, required this.amount, required this.color});
+  const _AmountInfo({
+    required this.label,
+    required this.amount,
+    required this.color,
+    required this.textColor,
+  });
   final String label;
   final double amount;
   final Color color;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(label, style: TextStyle(fontSize: 11, color: textColor)),
         const SizedBox(height: 2),
         Text(
           "${amount.toStringAsFixed(0)} TK",
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
         ),
       ],
+    );
+  }
+}
+
+// ✅ Y-axis এর জন্য "গোলগাল" সর্বোচ্চ মান বের করা (যেমন 4,300 হলে 5,000 দেখাবে)
+// — এতে gridline গুলো পড়ার মতো ক্লিন সংখ্যায় থাকে
+double _niceAxisMax(double rawMax) {
+  if (rawMax <= 0) return 100;
+
+  final magnitude = math.pow(10, (math.log(rawMax) / math.ln10).floor()).toDouble();
+  final normalized = rawMax / magnitude;
+
+  double niceNormalized;
+  if (normalized <= 1) {
+    niceNormalized = 1;
+  } else if (normalized <= 2) {
+    niceNormalized = 2;
+  } else if (normalized <= 5) {
+    niceNormalized = 5;
+  } else {
+    niceNormalized = 10;
+  }
+
+  return niceNormalized * magnitude;
+}
+
+class _MonthlyTrendCard extends StatelessWidget {
+  const _MonthlyTrendCard({required this.trend, required this.colors});
+
+  final List<(DateTime month, double total)> trend;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final currencyFmt = NumberFormat('#,##0');
+    final hasData = trend.any((entry) => entry.$2 > 0);
+    final rawMax = trend.fold<double>(0, (m, e) => e.$2 > m ? e.$2 : m);
+    final axisMax = _niceAxisMax(rawMax * 1.2);
+    final latest = trend.last;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [colors.surface, colors.surfaceAlt],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Monthly Collection Trend",
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: colors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Last 6 months",
+                      style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasData)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      DateFormat('MMM').format(latest.$1),
+                      style: TextStyle(fontSize: 11, color: colors.textSecondary, fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      "${currencyFmt.format(latest.$2)} TK",
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: colors.clear),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!hasData)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              child: Center(
+                child: Text(
+                  "এই সময়ে কোনো পেমেন্ট রেকর্ড নেই",
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12.5),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 180,
+              child: BarChart(
+                BarChartData(
+                  maxY: axisMax,
+                  minY: 0,
+                  alignment: BarChartAlignment.spaceAround,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: axisMax / 4,
+                    getDrawingHorizontalLine: (_) => FlLine(
+                      color: colors.borderColor,
+                      strokeWidth: 1,
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: axisMax / 4,
+                        getTitlesWidget: (value, meta) => Text(
+                          currencyFmt.format(value),
+                          style: TextStyle(fontSize: 9.5, color: colors.hintColor),
+                        ),
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 24,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 || index >= trend.length) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              DateFormat('MMM').format(trend[index].$1),
+                              style: TextStyle(fontSize: 10.5, color: colors.textSecondary, fontWeight: FontWeight.w600),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (_) => colors.surfaceAlt,
+                      tooltipBorder: BorderSide(color: colors.borderColor),
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final month = trend[group.x.toInt()].$1;
+                        return BarTooltipItem(
+                          "${DateFormat('MMM yyyy').format(month)}\n",
+                          TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600, fontSize: 11),
+                          children: [
+                            TextSpan(
+                              text: "${currencyFmt.format(rod.toY)} TK",
+                              style: TextStyle(color: colors.clear, fontWeight: FontWeight.w800, fontSize: 12.5),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  barGroups: [
+                    for (int i = 0; i < trend.length; i++)
+                      BarChartGroupData(
+                        x: i,
+                        barRods: [
+                          BarChartRodData(
+                            toY: trend[i].$2,
+                            color: colors.clear,
+                            width: 18,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(4),
+                              topRight: Radius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopDefaultersCard extends StatelessWidget {
+  const _TopDefaultersCard({
+    required this.defaulters,
+    required this.colors,
+    required this.onTapCustomer,
+  });
+
+  final List<Customer> defaulters;
+  final AppColors colors;
+  final ValueChanged<Customer> onTapCustomer;
+
+  @override
+  Widget build(BuildContext context) {
+    final currencyFmt = NumberFormat('#,##0');
+    final maxDue = defaulters.isEmpty
+        ? 0.0
+        : defaulters.fold<double>(0, (m, c) => c.totalDue > m ? c.totalDue : m);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [colors.surface, colors.surfaceAlt],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Top Defaulters",
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: colors.textPrimary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            "সবচেয়ে বেশি বকেয়া থাকা কাস্টমার",
+            style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          if (defaulters.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  "🎉 কোনো বকেয়া নেই, সব কাস্টমার ক্লিয়ার",
+                  style: TextStyle(color: colors.clear, fontSize: 12.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+            )
+          else
+            for (int i = 0; i < defaulters.length; i++) ...[
+              _DefaulterRow(
+                rank: i + 1,
+                customer: defaulters[i],
+                fraction: maxDue == 0 ? 0 : defaulters[i].totalDue / maxDue,
+                currencyFmt: currencyFmt,
+                colors: colors,
+                onTap: () => onTapCustomer(defaulters[i]),
+              ),
+              if (i != defaulters.length - 1) const SizedBox(height: 12),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DefaulterRow extends StatelessWidget {
+  const _DefaulterRow({
+    required this.rank,
+    required this.customer,
+    required this.fraction,
+    required this.currencyFmt,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final int rank;
+  final Customer customer;
+  final double fraction;
+  final NumberFormat currencyFmt;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    "#$rank",
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: colors.hintColor),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      customer.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: colors.textPrimary),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${currencyFmt.format(customer.totalDue)} TK",
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: colors.due),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Stack(
+                      children: [
+                        Container(
+                          height: 8,
+                          width: double.infinity,
+                          color: colors.due.withValues(alpha: 0.14),
+                        ),
+                        Container(
+                          height: 8,
+                          width: constraints.maxWidth * fraction.clamp(0.0, 1.0),
+                          color: colors.due,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

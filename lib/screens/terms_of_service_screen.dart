@@ -11,6 +11,7 @@ class TermsOfServiceScreen extends StatelessWidget {
     return const LegalDocumentView(
       title: "Terms of Service",
       sections: LegalContent.termsOfService,
+      icon: Icons.gavel_rounded,
     );
   }
 }
