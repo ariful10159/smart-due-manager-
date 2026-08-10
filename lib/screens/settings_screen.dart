@@ -100,7 +100,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsRow(
                 icon: Icons.sms_rounded,
-                title: "SMS রিমাইন্ডার টেমপ্লেট",
+                title: "SMS টেমপ্লেট",
                 colors: colors,
                 isLast: true,
                 onTap: () => Navigator.of(context).push(

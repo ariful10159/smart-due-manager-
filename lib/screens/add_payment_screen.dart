@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../models/customer.dart';
 import '../models/payment.dart';
 import '../theme/app_colors.dart';
@@ -25,6 +23,7 @@ class AddPaymentScreen extends StatefulWidget {
 class _AddPaymentScreenState extends State<AddPaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
+  final _discountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _dateController = TextEditingController();
 
@@ -43,6 +42,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
   @override
   void dispose() {
     _amountController.dispose();
+    _discountController.dispose();
     _descriptionController.dispose();
     _dateController.dispose();
     super.dispose();
@@ -125,11 +125,36 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final amount = double.tryParse(_amountController.text.trim());
-    if (amount == null || amount <= 0) {
+    final amountText = _amountController.text.trim();
+    final amount = amountText.isEmpty ? 0.0 : double.tryParse(amountText);
+    if (amount == null || amount < 0) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      return;
+    }
+
+    final isPayment = widget.type == PaymentType.payment;
+    final discountText = _discountController.text.trim();
+    final discount = isPayment && discountText.isNotEmpty
+        ? double.tryParse(discountText) ?? -1
+        : 0.0;
+
+    if (discount < 0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Discount amount সঠিক নয়')));
+      return;
+    }
+
+    if (amount <= 0 && discount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isPayment ? 'Amount অথবা Discount amount দিন' : 'Enter a valid amount',
+          ),
+        ),
+      );
       return;
     }
 
@@ -144,6 +169,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         customerId: widget.customer.id,
         amount: amount,
+        discount: discount,
         type: widget.type,
         paymentMethod: _selectedMethod,
         description: _descriptionController.text.trim().isEmpty
@@ -319,7 +345,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                   child: Column(
                     children: [
                       Text(
-                        'ENTER AMOUNT',
+                        isPayment ? 'ENTER AMOUNT ' : 'ENTER AMOUNT',
                         style: TextStyle(
                           fontSize: 12,
                           letterSpacing: 1.5,
@@ -357,9 +383,20 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                             errorStyle: const TextStyle(fontSize: 12),
                           ),
                           validator: (value) {
-                            final amount = double.tryParse((value ?? '').trim());
-                            if (amount == null || amount <= 0) {
-                              return 'Please enter amount';
+                            final trimmed = (value ?? '').trim();
+                            if (trimmed.isEmpty) {
+                              // ✅ amount ফাঁকা রাখা যাবে যদি Record Payment হয় এবং
+                              // Discount Amount দেওয়া থাকে (শুধু discount দিয়েও সেভ করা যাবে)
+                              final isPayment = widget.type == PaymentType.payment;
+                              final discount = double.tryParse(_discountController.text.trim());
+                              if (isPayment && discount != null && discount > 0) {
+                                return null;
+                              }
+                              return 'Amount অথবা Discount amount দিন';
+                            }
+                            final amount = double.tryParse(trimmed);
+                            if (amount == null || amount < 0) {
+                              return 'সঠিক amount দিন';
                             }
                             return null;
                           },
@@ -376,6 +413,56 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     ],
                   ),
                 ),
+
+                // 🏷️ Discount Amount (শুধু Record Payment এ প্রযোজ্য) — এই পরিমাণও
+                // বকেয়া থেকে বাদ যায়, কিন্তু নগদ হিসেবে গণ্য হয় না
+                if (isPayment) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    'Discount Amount (Optional)',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _discountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700),
+                    decoration: InputDecoration(
+                      prefixText: '৳ ',
+                      hintText: '0.00',
+                      hintStyle: TextStyle(color: colors.hintColor),
+                      filled: true,
+                      fillColor: colors.surface,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: colors.borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: colors.borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: themeColor, width: 1.5),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return null;
+                      final discount = double.tryParse(value.trim());
+                      if (discount == null || discount < 0) {
+                        return 'সঠিক discount amount দিন';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'দিলে এই পরিমাণও বকেয়া থেকে বাদ যাবে, কিন্তু নগদ হিসেবে গণ্য হবে না',
+                    style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
+                  ),
+                ],
+
                 const SizedBox(height: 36),
 
                 // 📅 Date Selection Field

@@ -91,6 +91,17 @@ class PaymentHistoryTile extends StatelessWidget {
                           color: colors.textPrimary,
                         ),
                       ),
+                      if (payment.discount > 0) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          "Discount: ${payment.discount.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                            color: colors.clear,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       Text(
                         "Date: ${_formatDateTime(payment.date)}",
@@ -224,9 +235,20 @@ class PaymentHistoryTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        payment.amount.toStringAsFixed(2),
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: colors.textPrimary),
+                      Row(
+                        children: [
+                          Text(
+                            payment.amount.toStringAsFixed(2),
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: colors.textPrimary),
+                          ),
+                          if (payment.discount > 0) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              "-${payment.discount.toStringAsFixed(2)} discount",
+                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: colors.clear),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(

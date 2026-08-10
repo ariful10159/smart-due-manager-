@@ -5,11 +5,15 @@ class AppSettings {
   final bool isDarkMode;
   final String currencySymbol;
   final String businessName;
+  final String ownerName;
   final String businessAddress;
   final String? businessLogoUrl;
 
   // ✅ নতুন যোগ করা ফিল্ডগুলো
   final String smsReminderTemplate;
+  // ✅ কাস্টমারের বকেয়া সম্পূর্ণ পরিশোধ (৳0) হয়ে গেলে due-reminder টেমপ্লেটের
+  // বদলে এই ধন্যবাদ টেমপ্লেট ব্যবহার হয়
+  final String fullPaymentThankYouTemplate;
   final double fontScale;
   final bool appLockEnabled;
   final String? appLockPinHash;
@@ -19,9 +23,11 @@ class AppSettings {
     required this.isDarkMode,
     required this.currencySymbol,
     required this.businessName,
+    this.ownerName = '',
     required this.businessAddress,
     this.businessLogoUrl,
     required this.smsReminderTemplate,
+    required this.fullPaymentThankYouTemplate,
     required this.fontScale,
     required this.appLockEnabled,
     this.appLockPinHash,
@@ -34,10 +40,13 @@ class AppSettings {
         isDarkMode: true,
         currencySymbol: '৳',
         businessName: 'Smart Due',
+        ownerName: '',
         businessAddress: '',
         businessLogoUrl: null,
         smsReminderTemplate:
             'প্রিয় {name}, আপনার বকেয়া {amount} টাকা। অনুগ্রহ করে {due_date} এর মধ্যে পরিশোধ করুন। ধন্যবাদ — {business_name}',
+        fullPaymentThankYouTemplate:
+            'প্রিয় {name}, আপনার সম্পূর্ণ বকেয়া পরিশোধ হয়ে গেছে। আমাদের সাথে থাকার জন্য অনেক ধন্যবাদ! — {business_name}',
         fontScale: 1.0,
         appLockEnabled: false,
         appLockPinHash: null,
@@ -52,11 +61,14 @@ class AppSettings {
       currencySymbol:
           map['currencySymbol'] as String? ?? defaults.currencySymbol,
       businessName: map['businessName'] as String? ?? defaults.businessName,
+      ownerName: map['ownerName'] as String? ?? defaults.ownerName,
       businessAddress:
           map['businessAddress'] as String? ?? defaults.businessAddress,
       businessLogoUrl: map['businessLogoUrl'] as String?,
       smsReminderTemplate: map['smsReminderTemplate'] as String? ??
           defaults.smsReminderTemplate,
+      fullPaymentThankYouTemplate: map['fullPaymentThankYouTemplate'] as String? ??
+          defaults.fullPaymentThankYouTemplate,
       fontScale: (map['fontScale'] as num?)?.toDouble() ?? defaults.fontScale,
       appLockEnabled:
           map['appLockEnabled'] as bool? ?? defaults.appLockEnabled,
@@ -70,9 +82,11 @@ class AppSettings {
       'isDarkMode': isDarkMode,
       'currencySymbol': currencySymbol,
       'businessName': businessName,
+      'ownerName': ownerName,
       'businessAddress': businessAddress,
       'businessLogoUrl': businessLogoUrl,
       'smsReminderTemplate': smsReminderTemplate,
+      'fullPaymentThankYouTemplate': fullPaymentThankYouTemplate,
       'fontScale': fontScale,
       'appLockEnabled': appLockEnabled,
       'appLockPinHash': appLockPinHash,
@@ -84,9 +98,11 @@ class AppSettings {
     bool? isDarkMode,
     String? currencySymbol,
     String? businessName,
+    String? ownerName,
     String? businessAddress,
     String? businessLogoUrl,
     String? smsReminderTemplate,
+    String? fullPaymentThankYouTemplate,
     double? fontScale,
     bool? appLockEnabled,
     String? appLockPinHash,
@@ -97,9 +113,12 @@ class AppSettings {
       isDarkMode: isDarkMode ?? this.isDarkMode,
       currencySymbol: currencySymbol ?? this.currencySymbol,
       businessName: businessName ?? this.businessName,
+      ownerName: ownerName ?? this.ownerName,
       businessAddress: businessAddress ?? this.businessAddress,
       businessLogoUrl: businessLogoUrl ?? this.businessLogoUrl,
       smsReminderTemplate: smsReminderTemplate ?? this.smsReminderTemplate,
+      fullPaymentThankYouTemplate:
+          fullPaymentThankYouTemplate ?? this.fullPaymentThankYouTemplate,
       fontScale: fontScale ?? this.fontScale,
       appLockEnabled: appLockEnabled ?? this.appLockEnabled,
       appLockPinHash: clearPin ? null : (appLockPinHash ?? this.appLockPinHash),
@@ -134,6 +153,14 @@ class AppSettings {
     '{name}',
     '{amount}',
     '{due_date}',
+    '{business_name}',
+    '{phone}',
+  ];
+
+  // ✅ Full-payment thank-you টেমপ্লেটে {amount}/{due_date} অর্থহীন (বকেয়া ৳0),
+  // তাই এখানে আলাদা, ছোট placeholder লিস্ট
+  static const List<String> thankYouPlaceholders = [
+    '{name}',
     '{business_name}',
     '{phone}',
   ];

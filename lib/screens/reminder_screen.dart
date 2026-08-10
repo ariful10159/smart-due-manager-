@@ -2,21 +2,23 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/helpers.dart';
 import '../widgets/app_settings_scope.dart';
+import '../widgets/call_button.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'customer_detail_screen.dart';
+import 'home_screen.dart';
 
-enum ReminderSortOption {
+enum ReminderSortOption {    
   dateAscending,
   dateDescending,
   overdueFirst,
   upcomingFirst,
-}
+}     
 
 class ReminderScreen extends StatefulWidget {
   const ReminderScreen({super.key});
@@ -31,6 +33,9 @@ class _ReminderScreenState extends State<ReminderScreen> {
   final int _selectedIndex = 3;
 
   ReminderSortOption _selectedSort = ReminderSortOption.dateAscending;
+
+  bool _selectionMode = false;
+  final Set<String> _selectedIds = {};
 
   Timer? _timer;
 
@@ -61,12 +66,214 @@ class _ReminderScreenState extends State<ReminderScreen> {
     final dateFmt = DateFormat('d MMM yyyy');
     final currencyFmt = NumberFormat('#,##0.00');
 
-    return settings.smsReminderTemplate
+    // ✅ বকেয়া সম্পূর্ণ পরিশোধ হয়ে গেলে due-reminder এর বদলে thank-you টেমপ্লেট
+    final template = customer.totalDue <= 0
+        ? settings.fullPaymentThankYouTemplate
+        : settings.smsReminderTemplate;
+
+    return template
         .replaceAll('{name}', customer.name)
         .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
         .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
         .replaceAll('{business_name}', settings.businessName)
         .replaceAll('{phone}', customer.phone);
+  }
+
+  void _enterSelectionMode(String customerId) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds.add(customerId);
+    });
+  }
+
+  void _toggleSelection(String customerId) {
+    setState(() {
+      if (_selectedIds.contains(customerId)) {
+        _selectedIds.remove(customerId);
+      } else {
+        _selectedIds.add(customerId);
+      }
+      if (_selectedIds.isEmpty) {
+        _selectionMode = false;
+      }
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _selectAll(List<Customer> customers) {
+    setState(() {
+      _selectedIds
+        ..clear()
+        ..addAll(customers.map((c) => c.id));
+    });
+  }
+
+  // ✅ Play Store SMS policy অনুযায়ী app নিজে bulk SMS পাঠাতে পারে না — প্রতিটা
+  // কাস্টমারের জন্য default SMS app আলাদাভাবে prefilled অবস্থায় খুলে দেওয়া হয়,
+  // ব্যবহারকারী একে একে নিজে Send করবেন
+  Future<void> _confirmSendBulkSms(List<Customer> customers) async {
+    final colors = AppColors.of(context);
+    final selected = customers.where((c) => _selectedIds.contains(c.id)).toList();
+    if (selected.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        title: Text("Send SMS", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(
+          "নির্বাচিত ${selected.length} জন কাস্টমারের জন্য একে একে SMS app খুলে দেওয়া হবে। "
+          "প্রতিটা customer-এর জন্য আপনাকে নিজে Send বাটনে চাপতে হবে।",
+          style: TextStyle(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text("Start", style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _selectionMode = false);
+
+    if (!mounted) return;
+    final openedCount = await _runSmsQueue(selected);
+
+    if (!mounted) return;
+    setState(() => _selectedIds.clear());
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("$openedCount/${selected.length} জনের জন্য SMS app খোলা হয়েছে")),
+    );
+  }
+
+  Future<int> _runSmsQueue(List<Customer> queue) async {
+    var index = 0;
+    var openedCount = 0;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final colors = AppColors.of(sheetContext);
+            final customer = queue[index];
+            final isLast = index + 1 >= queue.length;
+
+            Future<void> advance() {
+              if (isLast) {
+                Navigator.pop(sheetContext);
+                return Future.value();
+              }
+              setSheetState(() => index++);
+              return Future.value();
+            }
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border.all(color: colors.borderColor),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "SMS পাঠান (${index + 1}/${queue.length})",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      customer.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(customer.phone, style: TextStyle(color: colors.textSecondary)),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: advance,
+                            child: Text(isLast ? "Close" : "Skip"),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colors.info,
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.sms_rounded),
+                            label: const Text("Open SMS App"),
+                            onPressed: () async {
+                              final uri = buildSmsComposeUri(
+                                customer.phone,
+                                _buildReminderMessage(customer),
+                              );
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                                await _repo.logSmsSent(
+                                  customerId: customer.id,
+                                  type: 'manual',
+                                );
+                                openedCount++;
+                              }
+                              await advance();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return openedCount;
   }
 
   Future<void> _callCustomer(Customer customer) async {
@@ -495,54 +702,36 @@ class _ReminderScreenState extends State<ReminderScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
 
-    return Scaffold(
-      backgroundColor: colors.scaffoldBg,
-      appBar: AppBar(
-        title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: colors.textPrimary),
-        actions: [
-          PopupMenuButton<ReminderSortOption>(
-            onSelected: (value) {
-              setState(() {
-                _selectedSort = value;
-              });
-            },
-            color: colors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide(color: colors.borderColor),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_selectionMode) {
+          _exitSelectionMode();
+          return;
+        }
+        Navigator.of(context).pushAndRemoveUntil(
+          tabTransitionRoute(const HomeScreen(), false),
+          (route) => false,
+        );
+      },
+      child: StreamBuilder<List<Customer>>(
+      stream: _repo.streamCustomers(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Scaffold(
+            backgroundColor: colors.scaffoldBg,
+            appBar: AppBar(
+              title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
+              centerTitle: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              iconTheme: IconThemeData(color: colors.textPrimary),
             ),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: ReminderSortOption.dateAscending,
-                child: Text("Date ↑ (Nearest First)", style: TextStyle(color: colors.textPrimary)),
-              ),
-              PopupMenuItem(
-                value: ReminderSortOption.dateDescending,
-                child: Text("Date ↓ (Latest First)", style: TextStyle(color: colors.textPrimary)),
-              ),
-              PopupMenuItem(
-                value: ReminderSortOption.overdueFirst,
-                child: Text("Overdue First", style: TextStyle(color: colors.textPrimary)),
-              ),
-              PopupMenuItem(
-                value: ReminderSortOption.upcomingFirst,
-                child: Text("Upcoming First", style: TextStyle(color: colors.textPrimary)),
-              ),
-            ],
-            icon: Icon(Icons.sort, color: colors.textPrimary),
-          ),
-        ],
-      ),
-      body: StreamBuilder<List<Customer>>(
-        stream: _repo.streamCustomers(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator(color: colors.accent));
-          }
+            body: Center(child: CircularProgressIndicator(color: colors.accent)),
+            bottomNavigationBar: CustomBottomNavBar(selectedIndex: _selectedIndex),
+          );
+        }
 
           List<Customer> customers = snapshot.data!
               .where((c) => c.nextReminderDate != null)
@@ -550,9 +739,17 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
           customers = _applySorting(customers);
 
-          final overdueCount = customers
+          final overdueCustomers = customers
               .where((c) => c.nextReminderDate!.isBefore(DateTime.now()))
-              .length;
+              .toList();
+          final upcomingCustomers = customers
+              .where((c) => !c.nextReminderDate!.isBefore(DateTime.now()))
+              .toList();
+
+          final overdueCount = overdueCustomers.length;
+          final overdueAmount = overdueCustomers.fold<double>(0, (sum, c) => sum + c.totalDue);
+          final upcomingAmount = upcomingCustomers.fold<double>(0, (sum, c) => sum + c.totalDue);
+          final totalAmount = overdueAmount + upcomingAmount;
 
           // ✅ অ্যাপ খোলার সাথে সাথেই পার হয়ে যাওয়া recurring reminder গুলো
           // পরের ভবিষ্যৎ সাইকেলে auto-advance হয়ে যায়
@@ -572,35 +769,149 @@ class _ReminderScreenState extends State<ReminderScreen> {
           }
 
           if (customers.isEmpty) {
-            return Center(
-              child: Text("No reminders set", style: TextStyle(color: colors.textSecondary)),
+            return Scaffold(
+              backgroundColor: colors.scaffoldBg,
+              appBar: AppBar(
+                title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
+                centerTitle: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                iconTheme: IconThemeData(color: colors.textPrimary),
+              ),
+              body: Center(
+                child: Text("No reminders set", style: TextStyle(color: colors.textSecondary)),
+              ),
+              bottomNavigationBar: CustomBottomNavBar(selectedIndex: _selectedIndex),
             );
           }
 
-          return Column(
-            children: [
-              if (overdueCount > 0)
-                Container(
-                  width: double.infinity,
-                  color: colors.due.withValues(alpha: 0.15),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning_amber, color: colors.due, size: 18),
-                      const SizedBox(width: 6),
-                      Text(
-                        "$overdueCount reminder(s) overdue",
-                        style: TextStyle(
-                          color: colors.due,
-                          fontWeight: FontWeight.w600,
+          return Scaffold(
+            backgroundColor: colors.scaffoldBg,
+            appBar: _selectionMode
+                ? AppBar(
+                    title: Text(
+                      "${_selectedIds.length} selected",
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
+                    ),
+                    centerTitle: false,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    iconTheme: IconThemeData(color: colors.textPrimary),
+                    leading: IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      tooltip: "Cancel",
+                      onPressed: _exitSelectionMode,
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.select_all_rounded),
+                        tooltip: "Select All",
+                        onPressed: () => _selectAll(customers),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.sms_rounded, color: colors.info),
+                        tooltip: "Send SMS",
+                        onPressed: _selectedIds.isEmpty
+                            ? null
+                            : () => _confirmSendBulkSms(customers),
+                      ),
+                    ],
+                  )
+                : AppBar(
+                    title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
+                    centerTitle: true,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    iconTheme: IconThemeData(color: colors.textPrimary),
+                    actions: [
+                      IconButton(
+                        icon: Icon(Icons.checklist_rounded, color: colors.textPrimary),
+                        tooltip: "Select reminders",
+                        onPressed: () => _enterSelectionMode(customers.first.id),
+                      ),
+                      PopupMenuButton<ReminderSortOption>(
+                        onSelected: (value) {
+                          setState(() {
+                            _selectedSort = value;
+                          });
+                        },
+                        color: colors.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(color: colors.borderColor),
                         ),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: ReminderSortOption.dateAscending,
+                            child: Text("Date ↑ (Nearest First)", style: TextStyle(color: colors.textPrimary)),
+                          ),
+                          PopupMenuItem(
+                            value: ReminderSortOption.dateDescending,
+                            child: Text("Date ↓ (Latest First)", style: TextStyle(color: colors.textPrimary)),
+                          ),
+                          PopupMenuItem(
+                            value: ReminderSortOption.overdueFirst,
+                            child: Text("Overdue First", style: TextStyle(color: colors.textPrimary)),
+                          ),
+                          PopupMenuItem(
+                            value: ReminderSortOption.upcomingFirst,
+                            child: Text("Upcoming First", style: TextStyle(color: colors.textPrimary)),
+                          ),
+                        ],
+                        icon: Icon(Icons.sort, color: colors.textPrimary),
                       ),
                     ],
                   ),
+            bottomNavigationBar: CustomBottomNavBar(selectedIndex: _selectedIndex),
+            body: Column(
+              children: [
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colors.surface, colors.surfaceAlt],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colors.borderColor),
                 ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ReminderStat(
+                        label: "Overdue",
+                        count: overdueCount,
+                        amount: overdueAmount,
+                        color: colors.due,
+                        colors: colors,
+                      ),
+                    ),
+                    Container(width: 1, height: 34, color: colors.borderColor),
+                    Expanded(
+                      child: _ReminderStat(
+                        label: "Upcoming",
+                        count: upcomingCustomers.length,
+                        amount: upcomingAmount,
+                        color: colors.warn,
+                        colors: colors,
+                      ),
+                    ),
+                    Container(width: 1, height: 34, color: colors.borderColor),
+                    Expanded(
+                      child: _ReminderStat(
+                        label: "Total",
+                        count: customers.length,
+                        amount: totalAmount,
+                        color: colors.textPrimary,
+                        colors: colors,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               Expanded(
                 child: ListView.separated(
@@ -611,10 +922,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     final customer = customers[index];
                     final reminderDate = customer.nextReminderDate!;
                     final isOverdue = reminderDate.isBefore(DateTime.now());
+                    final isSelected = _selectedIds.contains(customer.id);
 
                     return Dismissible(
                       key: ValueKey(customer.id),
-                      direction: DismissDirection.endToStart,
+                      direction: _selectionMode ? DismissDirection.none : DismissDirection.endToStart,
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
@@ -659,122 +971,226 @@ class _ReminderScreenState extends State<ReminderScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colors.borderColor),
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: isOverdue ? colors.due : colors.warn,
-                                child: Icon(
-                                  isOverdue ? Icons.alarm_off : Icons.alarm,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              title: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      customer.name,
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.call, color: colors.clear),
-                                    onPressed: () => _callCustomer(customer),
-                                  ),
-                                ],
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _formatDateTime(reminderDate),
-                                    style: TextStyle(
-                                      color: isOverdue ? colors.due : colors.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _countdownText(reminderDate),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                      color: isOverdue ? colors.due : colors.clear,
-                                    ),
-                                  ),
-                                  if (customer.isRecurringReminder) ...[
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          "Repeats ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')}",
-                                          style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              trailing: Text(
-                                customer.totalDue.toStringAsFixed(2),
-                                style: TextStyle(
-                                  color: customer.totalDue > 0 ? colors.due : colors.clear,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => CustomerDetailScreen(
-                                      customer: customer,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: 8,
-                                right: 8,
-                                bottom: 8,
-                              ),
-                              child: Row(
-                                children: [
-                                  if (customer.isRecurringReminder)
-                                    Expanded(
-                                      child: TextButton.icon(
-                                        onPressed: () => _markRecurringDone(customer),
-                                        icon: Icon(Icons.check_circle_outline_rounded, size: 18, color: colors.clear),
-                                        label: Text("Mark Done", style: TextStyle(color: colors.clear)),
-                                      ),
-                                    )
-                                  else
-                                    Expanded(
-                                      child: TextButton.icon(
-                                        onPressed: () => _snoozeReminder(customer),
-                                        icon: Icon(Icons.snooze, size: 18, color: colors.accent),
-                                        label: Text("Snooze", style: TextStyle(color: colors.accent)),
-                                      ),
-                                    ),
-                                  Expanded(
-                                    child: TextButton.icon(
-                                      onPressed: () => _confirmDelete(customer),
-                                      icon: Icon(Icons.delete_outline, size: 18, color: colors.due),
-                                      label: Text(
-                                        customer.isRecurringReminder ? "Stop" : "Delete",
-                                        style: TextStyle(color: colors.due),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isSelected ? colors.accent : colors.borderColor,
+                            width: isSelected ? 1.6 : 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.18),
+                              blurRadius: 14,
+                              offset: const Offset(0, 7),
                             ),
                           ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Container(width: 4, color: isOverdue ? colors.due : colors.warn),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          if (_selectionMode) {
+                                            _toggleSelection(customer.id);
+                                            return;
+                                          }
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => CustomerDetailScreen(customer: customer),
+                                            ),
+                                          );
+                                        },
+                                        onLongPress: _selectionMode
+                                            ? null
+                                            : () => _enterSelectionMode(customer.id),
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              if (_selectionMode)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(bottom: 8),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        isSelected
+                                                            ? Icons.check_circle_rounded
+                                                            : Icons.radio_button_unchecked_rounded,
+                                                        color: isSelected ? colors.accent : colors.textSecondary,
+                                                        size: 20,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        isSelected ? "Selected" : "Tap to select",
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: isSelected ? colors.accent : colors.textSecondary,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              Row(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.all(9),
+                                                    decoration: BoxDecoration(
+                                                      color: (isOverdue ? colors.due : colors.warn).withValues(alpha: 0.15),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Icon(
+                                                      isOverdue ? Icons.alarm_off_rounded : Icons.alarm_rounded,
+                                                      color: isOverdue ? colors.due : colors.warn,
+                                                      size: 20,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          customer.name,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: TextStyle(
+                                                            fontWeight: FontWeight.w800,
+                                                            fontSize: 15.5,
+                                                            color: colors.textPrimary,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 6),
+                                                        Row(
+                                                          children: [
+                                                            Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                              decoration: BoxDecoration(
+                                                                color: (isOverdue ? colors.due : colors.clear).withValues(alpha: 0.14),
+                                                                borderRadius: BorderRadius.circular(20),
+                                                              ),
+                                                              child: Text(
+                                                                _countdownText(reminderDate),
+                                                                style: TextStyle(
+                                                                  fontSize: 10.5,
+                                                                  fontWeight: FontWeight.w700,
+                                                                  color: isOverdue ? colors.due : colors.clear,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                                        decoration: BoxDecoration(
+                                                          color: (customer.totalDue > 0 ? colors.due : colors.clear).withValues(alpha: 0.14),
+                                                          borderRadius: BorderRadius.circular(10),
+                                                        ),
+                                                        child: Text(
+                                                          customer.totalDue.toStringAsFixed(2),
+                                                          style: TextStyle(
+                                                            color: customer.totalDue > 0 ? colors.due : colors.clear,
+                                                            fontWeight: FontWeight.w800,
+                                                            fontSize: 13,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 6),
+                                                      CallButton(
+                                                        onTap: () => _callCustomer(customer),
+                                                        colors: colors,
+                                                        compact: true,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 10),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.calendar_month_rounded, size: 13, color: colors.textSecondary),
+                                                  const SizedBox(width: 6),
+                                                  Expanded(
+                                                    child: Text(
+                                                      _formatDateTime(reminderDate),
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              if (customer.isRecurringReminder) ...[
+                                                const SizedBox(height: 6),
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      "Repeats ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')}",
+                                                      style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Divider(color: colors.borderColor, height: 1),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                      child: Row(
+                                        children: [
+                                          if (customer.isRecurringReminder)
+                                            Expanded(
+                                              child: TextButton.icon(
+                                                onPressed: () => _markRecurringDone(customer),
+                                                icon: Icon(Icons.check_circle_outline_rounded, size: 18, color: colors.clear),
+                                                label: Text("Mark Done", style: TextStyle(color: colors.clear, fontWeight: FontWeight.w600)),
+                                              ),
+                                            )
+                                          else
+                                            Expanded(
+                                              child: TextButton.icon(
+                                                onPressed: () => _snoozeReminder(customer),
+                                                icon: Icon(Icons.snooze_rounded, size: 18, color: colors.accent),
+                                                label: Text("Snooze", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600)),
+                                              ),
+                                            ),
+                                          Expanded(
+                                            child: TextButton.icon(
+                                              onPressed: () => _confirmDelete(customer),
+                                              icon: Icon(Icons.delete_outline_rounded, size: 18, color: colors.due),
+                                              label: Text(
+                                                customer.isRecurringReminder ? "Stop" : "Delete",
+                                                style: TextStyle(color: colors.due, fontWeight: FontWeight.w600),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -782,13 +1198,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
                 ),
               ),
             ],
+            ),
           );
         },
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        selectedIndex: _selectedIndex,
-      ),
-    );
+      );
   }
 
   String _formatDateTime(DateTime date) {
@@ -857,5 +1271,52 @@ class _ReminderScreenState extends State<ReminderScreen> {
     }
 
     return customers;
+  }
+}
+
+class _ReminderStat extends StatelessWidget {
+  const _ReminderStat({
+    required this.label,
+    required this.count,
+    required this.amount,
+    required this.color,
+    required this.colors,
+  });
+
+  final String label;
+  final int count;
+  final double amount;
+  final Color color;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+            color: colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          amount.toStringAsFixed(2),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          "$count",
+          style: TextStyle(fontSize: 11, color: colors.hintColor),
+        ),
+      ],
+    );
   }
 }

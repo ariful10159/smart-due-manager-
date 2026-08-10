@@ -17,6 +17,7 @@ class BusinessProfileScreen extends StatefulWidget {
 
 class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   late TextEditingController _nameController;
+  late TextEditingController _ownerNameController;
   late TextEditingController _addressController;
   bool _uploadingLogo = false;
   bool _initialized = false;
@@ -24,6 +25,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _ownerNameController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -46,6 +48,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
       final controller = AppSettingsScope.of(context);
       await controller.updateBusinessInfo(
         name: _nameController.text.trim(),
+        ownerName: _ownerNameController.text.trim(),
         address: _addressController.text.trim(),
         logoUrl: url,
       );
@@ -68,6 +71,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     final controller = AppSettingsScope.of(context);
     await controller.updateBusinessInfo(
       name: _nameController.text.trim(),
+      ownerName: _ownerNameController.text.trim(),
       address: _addressController.text.trim(),
       logoUrl: controller.settings.businessLogoUrl,
     );
@@ -85,6 +89,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
 
     if (!_initialized) {
       _nameController = TextEditingController(text: settings.businessName);
+      _ownerNameController = TextEditingController(text: settings.ownerName);
       _addressController = TextEditingController(text: settings.businessAddress);
       _initialized = true;
     }
@@ -145,6 +150,29 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
             style: TextStyle(color: colors.textPrimary),
             decoration: InputDecoration(
               labelText: "Business/Shop নাম",
+              labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
+              filled: true,
+              fillColor: colors.surfaceAlt,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: settings.accentColor, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ownerNameController,
+            style: TextStyle(color: colors.textPrimary),
+            decoration: InputDecoration(
+              labelText: "মালিকের নাম",
               labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
               filled: true,
               fillColor: colors.surfaceAlt,

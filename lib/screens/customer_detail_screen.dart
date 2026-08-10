@@ -17,6 +17,7 @@ import '../theme/app_colors.dart';
 import '../utils/helpers.dart';
 import '../utils/pdf_bengali_text.dart';
 import '../widgets/app_settings_scope.dart';
+import '../widgets/call_button.dart';
 import '../widgets/payment_history_tile.dart';
 import 'add_payment_screen.dart';
 import 'reminder_history_screen.dart';
@@ -46,7 +47,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     final dateFmt = DateFormat('d MMM yyyy');
     final currencyFmt = NumberFormat('#,##0.00');
 
-    return settings.smsReminderTemplate
+    // ✅ বকেয়া সম্পূর্ণ পরিশোধ হয়ে গেলে due-reminder এর বদলে thank-you টেমপ্লেট
+    final template = customer.totalDue <= 0
+        ? settings.fullPaymentThankYouTemplate
+        : settings.smsReminderTemplate;
+
+    return template
         .replaceAll('{name}', customer.name)
         .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
         .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
@@ -288,7 +294,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     if (payment == null) return;
 
     double updatedDue = type == PaymentType.payment
-        ? currentCustomer.totalDue - payment.amount
+        ? currentCustomer.totalDue - payment.amount - payment.discount
         : currentCustomer.totalDue + payment.amount;
 
     if (updatedDue < 0) updatedDue = 0;
@@ -615,6 +621,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<void> _confirmSendSms(Customer customer) async {
     final colors = AppColors.of(context);
+    final message = _buildDueMessage(customer);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -624,9 +631,33 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text("Send SMS", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
-        content: Text(
-          "'${customer.name}' কে (${customer.phone}) due reminder SMS পাঠাতে চান?",
-          style: TextStyle(color: colors.textSecondary),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                customer.totalDue <= 0
+                    ? "'${customer.name}' কে (${customer.phone}) ধন্যবাদ SMS পাঠাতে চান?"
+                    : "'${customer.name}' কে (${customer.phone}) due reminder SMS পাঠাতে চান?",
+                style: TextStyle(color: colors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colors.surfaceAlt,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: colors.borderColor),
+                ),
+                child: Text(
+                  message,
+                  style: TextStyle(color: colors.textPrimary, fontSize: 13.5, height: 1.4),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -1196,18 +1227,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         style: TextStyle(color: colors.textSecondary),
                       ),
                       const SizedBox(width: 8),
-                      InkWell(
+                      CallButton(
                         onTap: () => _callCustomer(customer),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.call,
-                            size: 18,
-                            color: colors.info,
-                          ),
-                        ),
+                        colors: colors,
+                        compact: true,
                       ),
+                      const SizedBox(width: 4),
                       InkWell(
                         onTap: () => _openWhatsApp(customer),
                         borderRadius: BorderRadius.circular(20),

@@ -7,9 +7,11 @@ import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
 import '../utils/helpers.dart';
 import '../widgets/app_settings_scope.dart';
+import '../widgets/call_button.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'archived_customers_screen.dart';
 import 'customer_detail_screen.dart';
+import 'home_screen.dart';
 
 enum CustomerSortOption {
   none,
@@ -65,7 +67,12 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     final dateFmt = DateFormat('d MMM yyyy');
     final currencyFmt = NumberFormat('#,##0.00');
 
-    return settings.smsReminderTemplate
+    // ✅ বকেয়া সম্পূর্ণ পরিশোধ হয়ে গেলে due-reminder এর বদলে thank-you টেমপ্লেট
+    final template = customer.totalDue <= 0
+        ? settings.fullPaymentThankYouTemplate
+        : settings.smsReminderTemplate;
+
+    return template
         .replaceAll('{name}', customer.name)
         .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
         .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
@@ -456,7 +463,20 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
 
-    return StreamBuilder<List<Customer>>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_selectionMode) {
+          _exitSelectionMode();
+          return;
+        }
+        Navigator.of(context).pushAndRemoveUntil(
+          tabTransitionRoute(const HomeScreen(), false),
+          (route) => false,
+        );
+      },
+      child: StreamBuilder<List<Customer>>(
       stream: _repo.streamCustomers(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -1152,24 +1172,10 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 6),
-                                        InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          onTap: () =>
-                                              _callCustomer(customer.phone),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(7),
-                                            decoration: BoxDecoration(
-                                              color: colors.clear.withValues(alpha: 0.14),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Icon(
-                                              Icons.call_rounded,
-                                              color: colors.clear,
-                                              size: 17,
-                                            ),
-                                          ),
+                                        CallButton(
+                                          onTap: () => _callCustomer(customer.phone),
+                                          colors: colors,
+                                          compact: true,
                                         ),
                                       ],
                                     ),
@@ -1185,6 +1191,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
             ),
           );
         },
+      ),
       );
   }
 }

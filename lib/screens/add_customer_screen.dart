@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/customer.dart';
 import '../theme/app_colors.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
+import 'home_screen.dart';
 
 enum CustomFieldType {
   text,
@@ -818,7 +819,16 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          tabTransitionRoute(const HomeScreen(), false),
+          (route) => false,
+        );
+      },
+      child: Scaffold(
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
@@ -1202,6 +1212,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       ),
       bottomNavigationBar: CustomBottomNavBar(
         selectedIndex: _selectedIndex,
+      ),
       ),
     );
   }

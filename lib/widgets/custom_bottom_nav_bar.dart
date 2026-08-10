@@ -99,30 +99,34 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     if (widget.isDisabled || index == widget.selectedIndex) return;
     HapticFeedback.selectionClick();
 
+    // ✅ ট্যাব বাম থেকে ডানে না ডান থেকে বামে গেল সেটা অনুযায়ী slide-এর
+    // দিক ঠিক হয় — PowerPoint-এর slide-flow-এর মতো একটা directional feel
+    final slideFromRight = index > widget.selectedIndex;
+
     switch (index) {
       case 0:
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          tabTransitionRoute(const HomeScreen(), slideFromRight),
           (route) => false,
         );
         break;
       case 1:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const AddCustomerScreen()),
+          tabTransitionRoute(const AddCustomerScreen(), slideFromRight),
         );
         break;
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const AllCustomersScreen()),
+          tabTransitionRoute(const AllCustomersScreen(), slideFromRight),
         );
         break;
       case 3:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const ReminderScreen()),
+          tabTransitionRoute(const ReminderScreen(), slideFromRight),
         );
         break;
     }
@@ -429,4 +433,42 @@ class _NotchedBarPainter extends CustomPainter {
         oldDelegate.color != color ||
         oldDelegate.borderColor != borderColor;
   }
+}
+
+// ============================================================
+// ট্যাব পাল্টানোর সময় PowerPoint-এর slide-flow-এর মতো একটা
+// directional slide + fade transition — নতুন screen যেদিক থেকে
+// ট্যাব সিলেক্ট হলো সেদিক থেকে ঢোকে, পুরনোটা উল্টো দিকে বেরিয়ে যায়।
+// ============================================================
+Route<T> tabTransitionRoute<T>(Widget page, bool slideFromRight) {
+  return PageRouteBuilder<T>(
+    transitionDuration: const Duration(milliseconds: 320),
+    reverseTransitionDuration: const Duration(milliseconds: 320),
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final enterCurve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final exitCurve = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeInCubic);
+
+      final enterOffset = Tween<Offset>(
+        begin: Offset(slideFromRight ? 0.25 : -0.25, 0),
+        end: Offset.zero,
+      ).animate(enterCurve);
+
+      final exitOffset = Tween<Offset>(
+        begin: Offset.zero,
+        end: Offset(slideFromRight ? -0.2 : 0.2, 0),
+      ).animate(exitCurve);
+
+      return SlideTransition(
+        position: exitOffset,
+        child: SlideTransition(
+          position: enterOffset,
+          child: FadeTransition(
+            opacity: enterCurve,
+            child: child,
+          ),
+        ),
+      );
+    },
+  );
 }

@@ -39,10 +39,12 @@ class AppSettingsController extends ChangeNotifier {
   Future<void> updateBusinessInfo({
     required String name,
     required String address,
+    String? ownerName,
     String? logoUrl,
   }) =>
       update(_settings.copyWith(
         businessName: name,
+        ownerName: ownerName,
         businessAddress: address,
         businessLogoUrl: logoUrl,
       ));

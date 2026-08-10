@@ -8,6 +8,7 @@ import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
 import '../utils/html_escape.dart';
+import '../widgets/app_settings_scope.dart';
 
 enum _ReportFilter { all, dueOnly }
 
@@ -105,7 +106,12 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
   }
 
   // ✅ PDF বানানোর মূল ফাংশন — HTML দিয়ে (বাংলা text shaping সঠিকভাবে হওয়ার জন্য)
-  Future<Uint8List> _buildPdf(List<Customer> customers, PdfPageFormat format) async {
+  Future<Uint8List> _buildPdf(
+    List<Customer> customers,
+    String businessName,
+    String ownerName,
+    PdfPageFormat format,
+  ) async {
     final currencyFmt = NumberFormat('#,##0.00');
     final dateFmt = DateFormat('d MMM yyyy');
     final now = DateTime.now();
@@ -151,6 +157,12 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     font-size: 18px;
     font-weight: 700;
     margin: 0;
+  }
+  .owner-name {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #444;
+    margin: 2px 0 0 0;
   }
   .date {
     font-size: 10px;
@@ -206,7 +218,10 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
 </head>
 <body>
   <div class="header-row">
-    <p class="title">Smart Due — Customer Report</p>
+    <div>
+      <p class="title">${escapeHtml(businessName)} — Customer Report</p>
+      ${ownerName.trim().isNotEmpty ? '<p class="owner-name">Owner: ${escapeHtml(ownerName)}</p>' : ''}
+    </div>
     <p class="date">তারিখ: ${dateFmt.format(now)}</p>
   </div>
   <p class="summary-line">
@@ -242,8 +257,9 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     setState(() => _generating = true);
     try {
       final customers = _filteredSorted;
+      final settings = AppSettingsScope.settingsOf(context);
       await Printing.layoutPdf(
-        onLayout: (format) => _buildPdf(customers, format),
+        onLayout: (format) => _buildPdf(customers, settings.businessName, settings.ownerName, format),
         name: 'smart_due_customer_report.pdf',
       );
     } finally {
@@ -255,7 +271,8 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     setState(() => _generating = true);
     try {
       final customers = _filteredSorted;
-      final bytes = await _buildPdf(customers, PdfPageFormat.a4);
+      final settings = AppSettingsScope.settingsOf(context);
+      final bytes = await _buildPdf(customers, settings.businessName, settings.ownerName, PdfPageFormat.a4);
       await Printing.sharePdf(
         bytes: bytes,
         filename: 'smart_due_customer_report.pdf',

@@ -13,13 +13,49 @@ class SmsTemplateScreen extends StatefulWidget {
 }
 
 class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
-  late TextEditingController _templateController;
+  late TextEditingController _dueTemplateController;
+  late TextEditingController _thankYouTemplateController;
   bool _initialized = false;
 
   @override
   void dispose() {
-    _templateController.dispose();
+    _dueTemplateController.dispose();
+    _thankYouTemplateController.dispose();
     super.dispose();
+  }
+
+  void _insertTag(TextEditingController controller, String tag) {
+    final text = controller.text;
+    final selection = controller.selection;
+    final insertPos = selection.start >= 0 ? selection.start : text.length;
+    final newText = text.replaceRange(insertPos, insertPos, tag);
+    controller.text = newText;
+    controller.selection = TextSelection.collapsed(offset: insertPos + tag.length);
+  }
+
+  Widget _buildPlaceholderChips(
+    AppColors colors,
+    TextEditingController controller,
+    List<String> tags,
+  ) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: tags.map((tag) {
+        return GestureDetector(
+          onTap: () => setState(() => _insertTag(controller, tag)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: colors.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colors.accent.withValues(alpha: 0.3)),
+            ),
+            child: Text(tag, style: TextStyle(color: colors.accent, fontSize: 11.5, fontWeight: FontWeight.w700)),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   @override
@@ -29,7 +65,8 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
     final AppSettings settings = controller.settings;
 
     if (!_initialized) {
-      _templateController = TextEditingController(text: settings.smsReminderTemplate);
+      _dueTemplateController = TextEditingController(text: settings.smsReminderTemplate);
+      _thankYouTemplateController = TextEditingController(text: settings.fullPaymentThankYouTemplate);
       _initialized = true;
     }
 
@@ -37,7 +74,7 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "SMS রিমাইন্ডার টেমপ্লেট",
+          "SMS টেমপ্লেট",
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -48,8 +85,18 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Text(
+            "Due Reminder",
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "কাস্টমারের বকেয়া ৳0 এর বেশি থাকলে এই টেমপ্লেট ব্যবহার হবে",
+            style: TextStyle(fontSize: 12, color: colors.textSecondary),
+          ),
+          const SizedBox(height: 10),
           TextField(
-            controller: _templateController,
+            controller: _dueTemplateController,
             maxLines: 5,
             style: TextStyle(color: colors.textPrimary, fontSize: 13.5),
             decoration: InputDecoration(
@@ -71,46 +118,59 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              '{name}',
-              '{amount}',
-              '{due_date}',
-              '{business_name}',
-              '{phone}',
-            ].map((tag) {
-              return GestureDetector(
-                onTap: () {
-                  final text = _templateController.text;
-                  final selection = _templateController.selection;
-                  final insertPos = selection.start >= 0 ? selection.start : text.length;
-                  final newText = text.replaceRange(insertPos, insertPos, tag);
-                  _templateController.text = newText;
-                  _templateController.selection =
-                      TextSelection.collapsed(offset: insertPos + tag.length);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: colors.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: colors.accent.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(tag, style: TextStyle(color: colors.accent, fontSize: 11.5, fontWeight: FontWeight.w700)),
-                ),
-              );
-            }).toList(),
+          const SizedBox(height: 10),
+          _buildPlaceholderChips(colors, _dueTemplateController, AppSettings.smsPlaceholders),
+
+          const SizedBox(height: 28),
+          Divider(color: colors.borderColor, height: 1),
+          const SizedBox(height: 24),
+
+          Text(
+            "Full Payment Thank You",
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
+          Text(
+            "কাস্টমারের বকেয়া সম্পূর্ণ পরিশোধ (৳0) হয়ে গেলে এই টেমপ্লেট ব্যবহার হবে",
+            style: TextStyle(fontSize: 12, color: colors.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _thankYouTemplateController,
+            maxLines: 5,
+            style: TextStyle(color: colors.textPrimary, fontSize: 13.5),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: colors.surfaceAlt,
+              hintText: 'ধন্যবাদ জানানোর SMS টেমপ্লেট লিখুন...',
+              hintStyle: TextStyle(color: colors.hintColor),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: settings.accentColor, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildPlaceholderChips(colors, _thankYouTemplateController, AppSettings.thankYouPlaceholders),
+
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
                 controller.update(
-                  settings.copyWith(smsReminderTemplate: _templateController.text.trim()),
+                  settings.copyWith(
+                    smsReminderTemplate: _dueTemplateController.text.trim(),
+                    fullPaymentThankYouTemplate: _thankYouTemplateController.text.trim(),
+                  ),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('টেমপ্লেট সেভ হয়েছে')),

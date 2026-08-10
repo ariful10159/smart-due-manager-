@@ -42,7 +42,7 @@ class ReceiptPdfService {
 
     // ✅ আগের বকেয়া (এই transaction এর আগে ব্যালেন্স কত ছিল)
     final previousDue = isPayment
-        ? customer.totalDue + payment.amount
+        ? customer.totalDue + payment.amount + payment.discount
         : customer.totalDue - payment.amount;
 
     // ✅ বাংলা টেক্সট হতে পারে এমন সব field আগে থেকেই ছবি বানিয়ে রাখা হচ্ছে
@@ -54,6 +54,9 @@ class ReceiptPdfService {
     );
     final businessAddressImg = settings.businessAddress.isNotEmpty
         ? await bengaliTextImage(settings.businessAddress, fontSize: 9, color: const Color(0xFF6B7280))
+        : null;
+    final ownerNameImg = settings.ownerName.trim().isNotEmpty
+        ? await bengaliTextImage('Owner: ${settings.ownerName.trim()}', fontSize: 9, color: const Color(0xFF6B7280))
         : null;
     final customerNameImg = await bengaliTextImage(customer.name, fontSize: 12.5, fontWeight: FontWeight.bold);
     final customerAddressImg = (customer.address != null && customer.address!.trim().isNotEmpty)
@@ -90,6 +93,10 @@ class ReceiptPdfService {
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         businessNameImg,
+                        if (ownerNameImg != null) ...[
+                          pw.SizedBox(height: 2),
+                          ownerNameImg,
+                        ],
                         if (businessAddressImg != null) ...[
                           pw.SizedBox(height: 3),
                           businessAddressImg,
@@ -253,6 +260,22 @@ class ReceiptPdfService {
                             ),
                           ],
                         ),
+                        if (isPayment && payment.discount > 0) ...[
+                          pw.SizedBox(height: 6),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              pw.Text(
+                                'Discount',
+                                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                              ),
+                              pw.Text(
+                                '-${settings.currencySymbol}${currencyFmt.format(payment.discount)}',
+                                style: const pw.TextStyle(fontSize: 10, color: PdfColors.green700),
+                              ),
+                            ],
+                          ),
+                        ],
                         pw.SizedBox(height: 8),
                         pw.Divider(thickness: 1, color: PdfColors.grey400),
                         pw.SizedBox(height: 4),

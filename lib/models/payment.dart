@@ -9,6 +9,7 @@ class Payment {
   final String id;
   final String customerId;
   final double amount;
+  final double discount;
   final PaymentType type;
   final PaymentMethod? paymentMethod;
   final String? note;
@@ -23,6 +24,7 @@ class Payment {
     required this.amount,
     required this.type,
     required this.date,
+    this.discount = 0,
     this.paymentMethod,
     this.note,
     this.description,
@@ -93,6 +95,7 @@ class Payment {
     'id': id,
     'customerId': customerId,
     'amount': amount,
+    'discount': discount,
     'type': type.name,
     'paymentMethod': paymentMethod != null
         ? paymentMethodToString(paymentMethod!)
@@ -109,6 +112,7 @@ class Payment {
       id: _asString(map['id']),
       customerId: _asString(map['customerId']),
       amount: _asDouble(map['amount']),
+      discount: _asDouble(map['discount']),
       type: PaymentType.values.firstWhere(
         (value) => value.name == map['type'] || value.toString().split('.').last == map['type'],
         orElse: () => PaymentType.payment,
