@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/app_settings.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_settings_scope.dart';
 
-String fontScaleLabel(double scale) {
-  if (scale == 0.9) return "ছোট";
-  if (scale == 1.0) return "নরমাল";
-  if (scale == 1.1) return "মাঝারি";
-  if (scale == 1.2) return "বড়";
-  return "অতি বড়";
+String fontScaleLabel(BuildContext context, double scale) {
+  final l10n = AppLocalizations.of(context)!;
+  if (scale == 0.9) return l10n.fontScaleSmall;
+  if (scale == 1.0) return l10n.fontScaleNormal;
+  if (scale == 1.1) return l10n.fontScaleMedium;
+  if (scale == 1.2) return l10n.fontScaleLarge;
+  return l10n.fontScaleExtraLarge;
 }
 
 class FontSizeScreen extends StatelessWidget {
@@ -18,6 +20,7 @@ class FontSizeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final controller = AppSettingsScope.of(context);
     final settings = controller.settings;
 
@@ -25,7 +28,7 @@ class FontSizeScreen extends StatelessWidget {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "Font Size",
+          l10n.fontSize,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -55,7 +58,7 @@ class FontSizeScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          fontScaleLabel(scale),
+                          fontScaleLabel(context, scale),
                           style: TextStyle(
                             fontSize: 15 * scale,
                             fontWeight: FontWeight.w700,

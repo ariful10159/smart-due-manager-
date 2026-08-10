@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../screens/home_screen.dart';
 import '../screens/add_customer_screen.dart';
@@ -40,12 +41,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     Icons.notifications_outlined,
   ];
 
-  static const List<String> _labels = [
-    'Home',
-    'Add Customer',
-    'All Customers',
-    'Reminders',
-  ];
+  List<String> _labels(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [l10n.navHome, l10n.navAddCustomer, l10n.navAllCustomers, l10n.navReminders];
+  }
 
   static const double _barHeight = 64;
   static const double _bubbleSize = 52;
@@ -135,6 +134,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final labels = _labels(context);
 
     final double sinkDepth = _bubbleSize - _bubblePokeAbove;
     final double stackExtraHeight = _bubblePokeAbove + 4;
@@ -148,7 +148,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
           child: LayoutBuilder(
             builder: (context, constraints) {
               final barWidth = constraints.maxWidth;
-              final itemWidth = barWidth / _labels.length;
+              final itemWidth = barWidth / labels.length;
 
               return AnimatedBuilder(
                 animation: _controller,
@@ -177,7 +177,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
                             height: _barHeight,
                             width: barWidth,
                             child: Row(
-                              children: List.generate(_labels.length, (index) {
+                              children: List.generate(labels.length, (index) {
                                 final distance =
                                     (animatedIndex - index).abs();
                                 final opacity = distance.clamp(0.0, 1.0);
@@ -185,7 +185,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
                                 return Expanded(
                                   child: _NavItem(
                                     icon: _unselectedIcons[index],
-                                    label: _labels[index],
+                                    label: labels[index],
                                     opacity: opacity,
                                     color: colors.textSecondary,
                                     onTap: () => _onTap(context, index),

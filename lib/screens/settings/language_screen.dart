@@ -4,8 +4,8 @@ import '../../l10n/app_localizations.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_settings_scope.dart';
 
-class AppModeScreen extends StatelessWidget {
-  const AppModeScreen({super.key});
+class LanguageScreen extends StatelessWidget {
+  const LanguageScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class AppModeScreen extends StatelessWidget {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          l10n.appMode,
+          l10n.languageTitle,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -30,20 +30,18 @@ class AppModeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _ModeTile(
-              label: l10n.darkMode,
-              icon: Icons.dark_mode_rounded,
-              selected: settings.isDarkMode,
+            _LanguageTile(
+              label: l10n.bengali,
+              selected: settings.languageCode == 'bn',
               colors: colors,
-              onTap: () => controller.updateDarkMode(true),
+              onTap: () => controller.updateLanguage('bn'),
             ),
             const SizedBox(height: 12),
-            _ModeTile(
-              label: l10n.lightMode,
-              icon: Icons.light_mode_rounded,
-              selected: !settings.isDarkMode,
+            _LanguageTile(
+              label: l10n.english,
+              selected: settings.languageCode == 'en',
               colors: colors,
-              onTap: () => controller.updateDarkMode(false),
+              onTap: () => controller.updateLanguage('en'),
             ),
           ],
         ),
@@ -52,17 +50,15 @@ class AppModeScreen extends StatelessWidget {
   }
 }
 
-class _ModeTile extends StatelessWidget {
-  const _ModeTile({
+class _LanguageTile extends StatelessWidget {
+  const _LanguageTile({
     required this.label,
-    required this.icon,
     required this.selected,
     required this.colors,
     required this.onTap,
   });
 
   final String label;
-  final IconData icon;
   final bool selected;
   final AppColors colors;
   final VoidCallback onTap;
@@ -82,7 +78,7 @@ class _ModeTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: selected ? colors.accent : colors.textSecondary),
+            Icon(Icons.language_rounded, size: 20, color: selected ? colors.accent : colors.textSecondary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

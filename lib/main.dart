@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations;
 
+import 'l10n/app_localizations.dart';
 import 'providers/app_settings_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -77,12 +78,14 @@ class SmartDueApp extends StatelessWidget {
             ),
             themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             localizationsDelegates: const [
+              AppLocalizations.delegate,
               FlutterQuillLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            supportedLocales: const [Locale('en')],
+            supportedLocales: const [Locale('en'), Locale('bn')],
+            locale: Locale(settings.languageCode),
             builder: (context, child) {
               // ✅ Font scale পুরো অ্যাপে apply হচ্ছে
               final mediaQuery = MediaQuery.of(context);

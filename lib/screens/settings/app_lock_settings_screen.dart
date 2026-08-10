@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_settings_scope.dart';
 import '../app_lock_screen.dart';
@@ -10,6 +11,7 @@ class AppLockSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final controller = AppSettingsScope.of(context);
     final settings = controller.settings;
 
@@ -17,7 +19,7 @@ class AppLockSettingsScreen extends StatelessWidget {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "App Lock (নিরাপত্তা)",
+          l10n.appLock,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -41,7 +43,7 @@ class AppLockSettingsScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      settings.appLockEnabled ? "App Lock চালু আছে" : "App Lock বন্ধ আছে",
+                      settings.appLockEnabled ? l10n.appLockEnabledStatus : l10n.appLockDisabledStatus,
                       style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
                     ),
                   ),
@@ -100,7 +102,7 @@ class AppLockSettingsScreen extends StatelessWidget {
                   );
                 },
                 icon: Icon(Icons.password_rounded, color: settings.accentColor, size: 16),
-                label: Text("PIN পরিবর্তন করুন", style: TextStyle(color: settings.accentColor, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                label: Text(l10n.changePin, style: TextStyle(color: settings.accentColor, fontWeight: FontWeight.w700, fontSize: 12.5)),
               ),
             ],
           ],

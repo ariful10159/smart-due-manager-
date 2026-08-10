@@ -1,0 +1,906 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Bengali Bangla (`bn`).
+class AppLocalizationsBn extends AppLocalizations {
+  AppLocalizationsBn([String locale = 'bn']) : super(locale);
+
+  @override
+  String get appTitle => 'Smart Due';
+
+  @override
+  String get cancel => 'বাতিল';
+
+  @override
+  String get save => 'সেভ করুন';
+
+  @override
+  String get seeAll => 'সব দেখুন';
+
+  @override
+  String get logout => 'লগআউট';
+
+  @override
+  String get logoutConfirm => 'আপনি কি লগআউট করতে চান?';
+
+  @override
+  String get greetingMorning => 'শুভ সকাল';
+
+  @override
+  String get greetingAfternoon => 'শুভ বিকাল';
+
+  @override
+  String get greetingEvening => 'শুভ সন্ধ্যা';
+
+  @override
+  String get dataLoadError => 'ডেটা লোড করতে সমস্যা হয়েছে, আবার লগইন করুন';
+
+  @override
+  String get todaysCollection => 'আজকের Collection';
+
+  @override
+  String get weeksCollection => 'এই সপ্তাহের Collection';
+
+  @override
+  String get totalDue => 'মোট বকেয়া';
+
+  @override
+  String get totalCustomers => 'মোট কাস্টমার';
+
+  @override
+  String get overdueReminders => 'মেয়াদোত্তীর্ণ রিমাইন্ডার';
+
+  @override
+  String get fullyPaid => 'সম্পূর্ণ পরিশোধিত';
+
+  @override
+  String get withDue => 'বকেয়া আছে';
+
+  @override
+  String get upcomingReminders => 'আসন্ন রিমাইন্ডার';
+
+  @override
+  String get topDueCustomers => 'সর্বোচ্চ বকেয়া কাস্টমার';
+
+  @override
+  String get noOutstandingDues => 'কোনো বকেয়া নেই — সব পরিষ্কার! 🎉';
+
+  @override
+  String get noUpcomingReminders => 'কোনো upcoming reminder নেই';
+
+  @override
+  String get navHome => 'হোম';
+
+  @override
+  String get navAddCustomer => 'কাস্টমার যোগ';
+
+  @override
+  String get navAllCustomers => 'সব কাস্টমার';
+
+  @override
+  String get navReminders => 'রিমাইন্ডার';
+
+  @override
+  String get drawerHome => 'হোম';
+
+  @override
+  String get drawerNotebooks => 'নোটবুক';
+
+  @override
+  String get drawerReports => 'রিপোর্ট';
+
+  @override
+  String get drawerArchived => 'আর্কাইভড কাস্টমার';
+
+  @override
+  String get drawerSettings => 'সেটিংস';
+
+  @override
+  String get drawerHelp => 'হেল্প ও সাপোর্ট';
+
+  @override
+  String get drawerFeedback => 'ফিডব্যাক পাঠান';
+
+  @override
+  String get drawerRate => 'অ্যাপ রেট করুন';
+
+  @override
+  String get darkMode => 'ডার্ক মোড';
+
+  @override
+  String get lightMode => 'লাইট মোড';
+
+  @override
+  String get emailAppNotFound => 'ইমেইল অ্যাপ পাওয়া যায়নি';
+
+  @override
+  String get playStoreNotFound => 'Play Store খোলা যায়নি';
+
+  @override
+  String get settingsTitle => 'সেটিংস';
+
+  @override
+  String get groupAppearance => 'অ্যাপিয়ারেন্স';
+
+  @override
+  String get themeColor => 'থিম কালার';
+
+  @override
+  String get appMode => 'অ্যাপ মোড';
+
+  @override
+  String get fontSize => 'ফন্ট সাইজ';
+
+  @override
+  String get fontScaleSmall => 'ছোট';
+
+  @override
+  String get fontScaleNormal => 'নরমাল';
+
+  @override
+  String get fontScaleMedium => 'মাঝারি';
+
+  @override
+  String get fontScaleLarge => 'বড়';
+
+  @override
+  String get fontScaleExtraLarge => 'অতি বড়';
+
+  @override
+  String get language => 'ভাষা';
+
+  @override
+  String get groupBusiness => 'বিজনেস';
+
+  @override
+  String get currency => 'কারেন্সি';
+
+  @override
+  String get businessProfile => 'বিজনেস প্রোফাইল';
+
+  @override
+  String get logoUpdated => 'লোগো আপডেট হয়েছে';
+
+  @override
+  String get logoUploadFailed => 'লোগো আপলোড ব্যর্থ, আবার চেষ্টা করুন';
+
+  @override
+  String get businessInfoSaved => 'বিজনেস তথ্য সেভ হয়েছে';
+
+  @override
+  String get businessShopName => 'Business/Shop নাম';
+
+  @override
+  String get ownerNameLabel => 'মালিকের নাম';
+
+  @override
+  String get addressLabel => 'ঠিকানা';
+
+  @override
+  String get smsTemplate => 'SMS টেমপ্লেট';
+
+  @override
+  String get dueReminderLabel => 'Due Reminder';
+
+  @override
+  String get dueReminderDesc =>
+      'কাস্টমারের বকেয়া ৳0 এর বেশি থাকলে এই টেমপ্লেট ব্যবহার হবে';
+
+  @override
+  String get smsTemplateHint => 'আপনার SMS টেমপ্লেট লিখুন...';
+
+  @override
+  String get fullPaymentThankYouLabel => 'Full Payment Thank You';
+
+  @override
+  String get fullPaymentThankYouDesc =>
+      'কাস্টমারের বকেয়া সম্পূর্ণ পরিশোধ (৳0) হয়ে গেলে এই টেমপ্লেট ব্যবহার হবে';
+
+  @override
+  String get thankYouTemplateHint => 'ধন্যবাদ জানানোর SMS টেমপ্লেট লিখুন...';
+
+  @override
+  String get templateSaved => 'টেমপ্লেট সেভ হয়েছে';
+
+  @override
+  String get saveTemplate => 'টেমপ্লেট সেভ করুন';
+
+  @override
+  String get groupSecurity => 'নিরাপত্তা ও ডেটা';
+
+  @override
+  String get appLock => 'App Lock (নিরাপত্তা)';
+
+  @override
+  String get appLockEnabledStatus => 'App Lock চালু আছে';
+
+  @override
+  String get appLockDisabledStatus => 'App Lock বন্ধ আছে';
+
+  @override
+  String get changePin => 'PIN পরিবর্তন করুন';
+
+  @override
+  String get enabled => 'চালু আছে';
+
+  @override
+  String get disabled => 'বন্ধ আছে';
+
+  @override
+  String get dataBackup => 'ডেটা ব্যাকআপ';
+
+  @override
+  String get exportFailed => 'এক্সপোর্ট ব্যর্থ, আবার চেষ্টা করুন';
+
+  @override
+  String get noValidCustomersFound => 'ফাইলে কোনো বৈধ কাস্টমার পাওয়া যায়নি';
+
+  @override
+  String get confirmImportTitle => 'Import নিশ্চিত করুন';
+
+  @override
+  String confirmImportBody(int count) {
+    return '$count জন কাস্টমার পাওয়া গেছে। এগুলো আপনার অ্যাকাউন্টে যোগ করা হবে (যাদের ফোন নাম্বার ইতিমধ্যে আছে, তারা duplicate হিসেবে বাদ যাবে)। এগিয়ে যাবেন?';
+  }
+
+  @override
+  String get importAction => 'Import করুন';
+
+  @override
+  String importedResult(int imported) {
+    return '$imported জন import হয়েছে';
+  }
+
+  @override
+  String skippedSuffix(int skipped) {
+    return ', $skipped জন duplicate হিসেবে বাদ গেছে';
+  }
+
+  @override
+  String get importFailed => 'Import ব্যর্থ, আবার চেষ্টা করুন';
+
+  @override
+  String get dataBackupDesc =>
+      'সব কাস্টমারের তথ্য CSV ফাইল হিসেবে এক্সপোর্ট করুন — Excel/Google Sheets এ খোলা যাবে। আগে এক্সপোর্ট করা CSV ফাইল থেকে কাস্টমার ফিরিয়ে আনতেও (Restore) পারবেন।';
+
+  @override
+  String get exportingLabel => 'এক্সপোর্ট হচ্ছে...';
+
+  @override
+  String get exportCsv => 'CSV এক্সপোর্ট করুন';
+
+  @override
+  String get importingLabel => 'Import হচ্ছে...';
+
+  @override
+  String get restoreCsv => 'CSV থেকে Restore করুন';
+
+  @override
+  String get groupLegal => 'আইনি তথ্য';
+
+  @override
+  String get privacyPolicy => 'প্রাইভেসি পলিসি';
+
+  @override
+  String get termsOfService => 'শর্তাবলী';
+
+  @override
+  String get languageTitle => 'ভাষা';
+
+  @override
+  String get english => 'English (ইংরেজি)';
+
+  @override
+  String get bengali => 'বাংলা';
+
+  @override
+  String get createCustomer => 'কাস্টমার তৈরি করুন';
+
+  @override
+  String get addCustomField => 'কাস্টম ফিল্ড যোগ করুন';
+
+  @override
+  String get editCustomField => 'কাস্টম ফিল্ড এডিট করুন';
+
+  @override
+  String get customFieldLabelHint => 'যেমন NID নাম্বার, দোকানের নাম, রেফারেন্স';
+
+  @override
+  String get fieldType => 'ফিল্ড টাইপ';
+
+  @override
+  String get deleteField => 'ফিল্ড ডিলিট করুন';
+
+  @override
+  String get add => 'যোগ করুন';
+
+  @override
+  String alreadyDefaultField(String label) {
+    return '\"$label\" আগে থেকেই একটি ডিফল্ট ফিল্ড';
+  }
+
+  @override
+  String alreadyAdded(String label) {
+    return '\"$label\" আগে থেকেই যোগ করা আছে';
+  }
+
+  @override
+  String get photoTooLarge =>
+      'ছবিটা বেশি বড়, দয়া করে আরেকটু ছোট/হালকা ছবি বেছে নিন';
+
+  @override
+  String get userNotLoggedIn => 'ইউজার লগইন করা নেই';
+
+  @override
+  String get successTitle => 'সফল!';
+
+  @override
+  String customerAddedSuccess(String name) {
+    return '$name সফলভাবে যোগ করা হয়েছে।';
+  }
+
+  @override
+  String get saveFailed => 'সেভ করতে ব্যর্থ, আবার চেষ্টা করুন';
+
+  @override
+  String get fullName => 'পূর্ণ নাম';
+
+  @override
+  String get pleaseEnterName => 'নাম লিখুন';
+
+  @override
+  String get phoneNumber => 'ফোন নাম্বার';
+
+  @override
+  String get addressLocation => 'ঠিকানা';
+
+  @override
+  String get initialDueAmount => 'প্রাথমিক বকেয়া পরিমাণ';
+
+  @override
+  String get selectDate => 'তারিখ নির্বাচন করুন';
+
+  @override
+  String get additionalNotes => 'অতিরিক্ত নোট';
+
+  @override
+  String get addAnotherField => 'আরেকটি ফিল্ড যোগ করুন';
+
+  @override
+  String get saveCustomerAccount => 'কাস্টমার একাউন্ট সেভ করুন';
+
+  @override
+  String get fieldTypeText => 'টেক্সট';
+
+  @override
+  String get fieldTypeNumber => 'সংখ্যা';
+
+  @override
+  String get fieldTypeDate => 'তারিখ';
+
+  @override
+  String get fieldTypeAmount => 'পরিমাণ';
+
+  @override
+  String get fieldTypeLongText => 'লম্বা টেক্সট';
+
+  @override
+  String get fieldTypePhoto => 'ছবি';
+
+  @override
+  String get callFailed => 'কল করা যায়নি, ডায়ালার পাওয়া যায়নি';
+
+  @override
+  String get sendSms => 'Send SMS';
+
+  @override
+  String bulkSmsConfirmBody(int count) {
+    return 'নির্বাচিত $count জন কাস্টমারের জন্য একে একে SMS app খুলে দেওয়া হবে। প্রতিটা customer-এর জন্য আপনাকে নিজে Send বাটনে চাপতে হবে।';
+  }
+
+  @override
+  String get start => 'Start';
+
+  @override
+  String smsAppOpenedResult(int opened, int total) {
+    return '$opened/$total জনের জন্য SMS app খোলা হয়েছে';
+  }
+
+  @override
+  String sendingSmsProgress(int current, int total) {
+    return 'SMS পাঠান ($current/$total)';
+  }
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String get openSmsApp => 'Open SMS App';
+
+  @override
+  String get reminderSet => 'Reminder Set';
+
+  @override
+  String get noReminder => 'No Reminder';
+
+  @override
+  String get sortDueHighLow => 'Due: High to Low';
+
+  @override
+  String get sortDueLowHigh => 'Due: Low to High';
+
+  @override
+  String get sortNameAZ => 'Name: A to Z';
+
+  @override
+  String get sortNameZA => 'Name: Z to A';
+
+  @override
+  String get sortRecentlyAdded => 'Recently Added';
+
+  @override
+  String get sortDefault => 'Default';
+
+  @override
+  String selectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get selectAll => 'Select All';
+
+  @override
+  String get sort => 'Sort';
+
+  @override
+  String get selectCustomers => 'Select customers';
+
+  @override
+  String get searchNamePhoneHint => 'নাম বা ফোন নাম্বার দিয়ে খুঁজুন...';
+
+  @override
+  String get yearLabel => 'Year';
+
+  @override
+  String get monthLabel => 'Month';
+
+  @override
+  String get reminderLabel => 'Reminder';
+
+  @override
+  String get clearAllFilters => 'Clear All Filters';
+
+  @override
+  String customersFoundCount(int count) {
+    return '$count customer(s) found';
+  }
+
+  @override
+  String totalDueColon(String amount) {
+    return 'Total Due: $amount';
+  }
+
+  @override
+  String noSearchResults(String query) {
+    return '\'$query\' এর সাথে মিলে এমন কেউ নেই';
+  }
+
+  @override
+  String get noCustomersFound => 'কোনো কাস্টমার পাওয়া যায়নি';
+
+  @override
+  String dueDateLabel(String date) {
+    return 'Due date: $date';
+  }
+
+  @override
+  String get enterValidAmount => 'Enter a valid amount';
+
+  @override
+  String get discountAmountInvalid => 'Discount amount সঠিক নয়';
+
+  @override
+  String get amountOrDiscountRequired => 'Amount অথবা Discount amount দিন';
+
+  @override
+  String get recordPayment => 'Record Payment';
+
+  @override
+  String get addCharge => 'Add Charge';
+
+  @override
+  String currentDueLabel(String amount) {
+    return 'Current Due: $amount';
+  }
+
+  @override
+  String get enterAmountLabel => 'ENTER AMOUNT';
+
+  @override
+  String get discountAmountOptional => 'Discount Amount (Optional)';
+
+  @override
+  String get discountHelperText =>
+      'দিলে এই পরিমাণও বকেয়া থেকে বাদ যাবে, কিন্তু নগদ হিসেবে গণ্য হবে না';
+
+  @override
+  String get invalidDiscountAmount => 'সঠিক discount amount দিন';
+
+  @override
+  String get invalidAmount => 'সঠিক amount দিন';
+
+  @override
+  String get transactionDate => 'Transaction Date';
+
+  @override
+  String get paymentMethod => 'Payment Method';
+
+  @override
+  String get cashMethod => 'Cash';
+
+  @override
+  String get bankMethod => 'Bank';
+
+  @override
+  String get descriptionNote => 'Description / Note';
+
+  @override
+  String get addDetailsHint => 'Add additional details here...';
+
+  @override
+  String get transactionReceiptOptional => 'Transaction Receipt (Optional)';
+
+  @override
+  String get changeReceipt => 'Change Receipt';
+
+  @override
+  String get tapToUploadReceipt => 'Tap to upload billing paper/slip';
+
+  @override
+  String get confirmTransaction => 'Confirm Transaction';
+
+  @override
+  String get pdfSavedOpened => 'PDF saved and opened ✅';
+
+  @override
+  String get downloadFailed => 'Download failed, please try again';
+
+  @override
+  String get repeatReminderQuestion => 'Repeat Reminder?';
+
+  @override
+  String get repeatReminderDesc =>
+      'মাসিক কিস্তির মতো বকেয়া হলে auto-repeat চালু করুন';
+
+  @override
+  String get recurrenceNone => 'None (one-time)';
+
+  @override
+  String get recurrenceWeekly => 'Weekly';
+
+  @override
+  String get recurrenceBiweekly => 'Bi-weekly (every 2 weeks)';
+
+  @override
+  String get recurrenceBiweeklyShort => 'Bi-weekly';
+
+  @override
+  String get recurrenceMonthlyFull => 'Monthly (installment)';
+
+  @override
+  String get recurrenceMonthlyShort => 'Monthly';
+
+  @override
+  String nextReminderSetResult(String date) {
+    return 'পরের reminder সেট হয়েছে: $date';
+  }
+
+  @override
+  String get advanceReminderFailed =>
+      'Failed to advance reminder, please try again';
+
+  @override
+  String get addNoteOptional => 'Add Note (Optional)';
+
+  @override
+  String get reminderNoteHint => 'এই reminder নিয়ে কোনো নোট লিখুন...';
+
+  @override
+  String get reminderUpdatedSuccess => 'Reminder Updated ✅';
+
+  @override
+  String reminderUpdatedWithRepeat(String label) {
+    return 'Reminder Updated ✅ ($label এ auto-repeat হবে)';
+  }
+
+  @override
+  String get stopRecurringReminderTitle => 'Stop Recurring Reminder';
+
+  @override
+  String get cancelReminderTitle => 'Cancel Reminder';
+
+  @override
+  String stopRecurringConfirmBody(String label, String name) {
+    return '\'$name\' এর $label auto-repeat reminder পুরোপুরি বন্ধ করতে চান? শুধু এই সাইকেলটা skip করতে চাইলে \'Mark Done\' ব্যবহার করুন।';
+  }
+
+  @override
+  String cancelReminderConfirmBody(String name) {
+    return '\'$name\' এর জন্য সেট করা reminder টা বাতিল করতে চান?';
+  }
+
+  @override
+  String get stopRecurringAction => 'Stop Recurring';
+
+  @override
+  String get removeReminderAction => 'Remove Reminder';
+
+  @override
+  String get reminderRemovedSuccess => 'Reminder removed ✅';
+
+  @override
+  String get removeReminderFailed =>
+      'Failed to remove reminder, please try again';
+
+  @override
+  String get smsAppNotOpened => 'SMS app খোলা যায়নি';
+
+  @override
+  String get hideCustomerTitle => 'Hide Customer';
+
+  @override
+  String hideCustomerConfirmBody(String name) {
+    return 'আপনি কি নিশ্চিত \'$name\' কে হাইড করতে চান? এটি main list থেকে সরে যাবে, কিন্তু সব তথ্য ও payment history সংরক্ষিত থাকবে। প্রয়োজনে পরে Archived section থেকে আবার ফিরিয়ে আনা যাবে।';
+  }
+
+  @override
+  String get hideAction => 'Hide';
+
+  @override
+  String customerHiddenSuccess(String name) {
+    return '$name hidden successfully';
+  }
+
+  @override
+  String get hideFailed => 'Hide failed, please try again';
+
+  @override
+  String get editCustomerTitle => 'Edit Customer';
+
+  @override
+  String get nameLabel => 'Name';
+
+  @override
+  String get phoneLabel => 'Phone';
+
+  @override
+  String get dueAmountLabel => 'Due Amount';
+
+  @override
+  String get dueDateFieldLabel => 'Due Date';
+
+  @override
+  String get dueDateEditable => 'Due Date (এডিট করা যাবে)';
+
+  @override
+  String tapsToUnlock(int count) {
+    return 'আনলক করতে আরও $count বার ট্যাপ করুন';
+  }
+
+  @override
+  String get dateEditableWarning =>
+      'তারিখ পরিবর্তনযোগ্য — সরাসরি payment/charge এতে প্রভাব ফেলবে না';
+
+  @override
+  String get noteLabel => 'Note';
+
+  @override
+  String get customerUpdatedSuccess => 'Customer details updated ✅';
+
+  @override
+  String get smsSentHistoryTitle => 'SMS Sent History';
+
+  @override
+  String get noSmsSentYet => 'এখনো কোনো SMS পাঠানো হয়নি';
+
+  @override
+  String get reminderAutoSend => 'Reminder এর মাধ্যমে auto-send';
+
+  @override
+  String get manuallySent => 'ম্যানুয়ালি পাঠানো হয়েছে';
+
+  @override
+  String get callFailedShort => 'কল করা যায়নি';
+
+  @override
+  String get whatsappNotOpened => 'WhatsApp খোলা যায়নি';
+
+  @override
+  String dueDateWithDays(String date, String days) {
+    return 'Due date: $date ($days)';
+  }
+
+  @override
+  String smsSentCount(int count) {
+    return 'SMS পাঠানো হয়েছে: $count বার';
+  }
+
+  @override
+  String nextReminderLabel(String date) {
+    return 'Next Reminder: $date';
+  }
+
+  @override
+  String repeatsLabel(String label) {
+    return 'Repeats $label';
+  }
+
+  @override
+  String get markDoneTooltip => 'Mark Done (repeat continues)';
+
+  @override
+  String get setReminder => 'Set Reminder';
+
+  @override
+  String get paymentHistoryTitle => 'Payment History';
+
+  @override
+  String get noTransactionsYet => 'No transactions yet';
+
+  @override
+  String get todayLabel => 'আজকে';
+
+  @override
+  String get yesterdayLabel => 'গতকাল';
+
+  @override
+  String daysAgoLabel(int days) {
+    return '$days দিন আগে';
+  }
+
+  @override
+  String thankYouSmsConfirm(String name, String phone) {
+    return '\'$name\' কে ($phone) ধন্যবাদ SMS পাঠাতে চান?';
+  }
+
+  @override
+  String dueReminderSmsConfirm(String name, String phone) {
+    return '\'$name\' কে ($phone) due reminder SMS পাঠাতে চান?';
+  }
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get callCompleteTitle => 'Call Complete?';
+
+  @override
+  String callCompleteBody(String name) {
+    return '\'$name\' কে কল করা হয়েছে। এই reminder টা কি reminder list থেকে সরিয়ে দেবেন?';
+  }
+
+  @override
+  String get keepReminder => 'Keep Reminder';
+
+  @override
+  String reminderRemovedFor(String name) {
+    return 'Reminder removed for $name';
+  }
+
+  @override
+  String get deleteReminderTitle => 'Delete Reminder';
+
+  @override
+  String deleteReminderConfirmBody(String name) {
+    return '\'$name\' এর reminder টা মুছে দিতে চান?';
+  }
+
+  @override
+  String get deleteAction => 'Delete';
+
+  @override
+  String get snoozeReminderTitle => 'Snooze Reminder';
+
+  @override
+  String get oneHour => '1 Hour';
+
+  @override
+  String get tomorrowSameTime => 'Tomorrow (same time)';
+
+  @override
+  String get threeDays => '3 Days';
+
+  @override
+  String get oneWeek => '1 Week';
+
+  @override
+  String get customDateTime => 'Custom Date & Time';
+
+  @override
+  String get setCustomDateTitle => 'Set Custom Date';
+
+  @override
+  String get chooseDateTimeQuestion => 'তারিখ ও সময় বেছে নিন?';
+
+  @override
+  String get continueAction => 'Continue';
+
+  @override
+  String reminderSnoozedTo(String date) {
+    return 'Reminder snoozed to $date';
+  }
+
+  @override
+  String failedToSnooze(String error) {
+    return 'Failed to snooze: $error';
+  }
+
+  @override
+  String get remindersTitle => 'Reminders';
+
+  @override
+  String get noRemindersSet => 'No reminders set';
+
+  @override
+  String get selectReminders => 'Select reminders';
+
+  @override
+  String get sortDateNearestFirst => 'Date ↑ (Nearest First)';
+
+  @override
+  String get sortDateLatestFirst => 'Date ↓ (Latest First)';
+
+  @override
+  String get sortOverdueFirst => 'Overdue First';
+
+  @override
+  String get sortUpcomingFirst => 'Upcoming First';
+
+  @override
+  String get overdueLabel => 'Overdue';
+
+  @override
+  String get upcomingLabel => 'Upcoming';
+
+  @override
+  String get totalLabel => 'Total';
+
+  @override
+  String get selectedLabel => 'Selected';
+
+  @override
+  String get tapToSelect => 'Tap to select';
+
+  @override
+  String get markDone => 'Mark Done';
+
+  @override
+  String get snoozeAction => 'Snooze';
+
+  @override
+  String get stopAction => 'Stop';
+
+  @override
+  String get overdueCountdown => '⚠️ Overdue';
+
+  @override
+  String daysLeft(int days) {
+    return '$days day(s) left';
+  }
+
+  @override
+  String hoursLeft(int hours) {
+    return '$hours hour(s) left';
+  }
+
+  @override
+  String minutesLeft(int minutes) {
+    return '$minutes minute(s) left';
+  }
+}

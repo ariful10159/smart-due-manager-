@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_settings_scope.dart';
@@ -55,12 +56,12 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('লোগো আপডেট হয়েছে')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.logoUpdated)),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('লোগো আপলোড ব্যর্থ, আবার চেষ্টা করুন')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.logoUploadFailed)),
       );
     } finally {
       if (mounted) setState(() => _uploadingLogo = false);
@@ -77,13 +78,14 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('বিজনেস তথ্য সেভ হয়েছে')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.businessInfoSaved)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final controller = AppSettingsScope.of(context);
     final settings = controller.settings;
 
@@ -98,7 +100,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "বিজনেস প্রোফাইল",
+          l10n.businessProfile,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -149,7 +151,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
             controller: _nameController,
             style: TextStyle(color: colors.textPrimary),
             decoration: InputDecoration(
-              labelText: "Business/Shop নাম",
+              labelText: l10n.businessShopName,
               labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
               filled: true,
               fillColor: colors.surfaceAlt,
@@ -172,7 +174,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
             controller: _ownerNameController,
             style: TextStyle(color: colors.textPrimary),
             decoration: InputDecoration(
-              labelText: "মালিকের নাম",
+              labelText: l10n.ownerNameLabel,
               labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
               filled: true,
               fillColor: colors.surfaceAlt,
@@ -196,7 +198,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
             maxLines: 2,
             style: TextStyle(color: colors.textPrimary),
             decoration: InputDecoration(
-              labelText: "ঠিকানা",
+              labelText: l10n.addressLabel,
               labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
               filled: true,
               fillColor: colors.surfaceAlt,
@@ -225,7 +227,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text("সেভ করুন", style: TextStyle(fontWeight: FontWeight.w700)),
+              child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
         ],

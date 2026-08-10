@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
@@ -57,7 +58,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('কল করা যায়নি, ডায়ালার পাওয়া যায়নি')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.callFailed)),
       );
     }
   }
@@ -120,6 +121,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   // ব্যবহারকারী একে একে নিজে Send করবেন
   Future<void> _confirmSendBulkSms(List<Customer> customers) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final selected = customers.where((c) => _selectedIds.contains(c.id)).toList();
     if (selected.isEmpty) return;
 
@@ -131,20 +133,19 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Send SMS", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.sendSms, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
-          "নির্বাচিত ${selected.length} জন কাস্টমারের জন্য একে একে SMS app খুলে দেওয়া হবে। "
-          "প্রতিটা customer-এর জন্য আপনাকে নিজে Send বাটনে চাপতে হবে।",
+          l10n.bulkSmsConfirmBody(selected.length),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Start", style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
+            child: Text(l10n.start, style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -161,7 +162,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     setState(() => _selectedIds.clear());
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("$openedCount/${selected.length} জনের জন্য SMS app খোলা হয়েছে")),
+      SnackBar(content: Text(l10n.smsAppOpenedResult(openedCount, selected.length))),
     );
   }
 
@@ -179,6 +180,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
             final colors = AppColors.of(sheetContext);
+            final l10n = AppLocalizations.of(sheetContext)!;
             final customer = queue[index];
             final isLast = index + 1 >= queue.length;
 
@@ -210,7 +212,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "SMS পাঠান (${index + 1}/${queue.length})",
+                      l10n.sendingSmsProgress(index + 1, queue.length),
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -234,7 +236,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: advance,
-                            child: Text(isLast ? "Close" : "Skip"),
+                            child: Text(isLast ? l10n.close : l10n.skip),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -245,7 +247,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                               foregroundColor: Colors.white,
                             ),
                             icon: const Icon(Icons.sms_rounded),
-                            label: const Text("Open SMS App"),
+                            label: Text(l10n.openSmsApp),
                             onPressed: () async {
                               final uri = buildSmsComposeUri(
                                 customer.phone,
@@ -314,8 +316,9 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
           !c.nextReminderDate!.isAfter(DateTime.now()),
     );
 
-    if (hasReminderSet) options.add("Reminder Set");
-    if (hasNoReminder) options.add("No Reminder");
+    final l10n = AppLocalizations.of(context)!;
+    if (hasReminderSet) options.add(l10n.reminderSet);
+    if (hasNoReminder) options.add(l10n.noReminder);
 
     return options;
   }
@@ -395,20 +398,21 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     return sorted;
   }
 
-  String _sortLabel(CustomerSortOption option) {
+  String _sortLabel(BuildContext context, CustomerSortOption option) {
+    final l10n = AppLocalizations.of(context)!;
     switch (option) {
       case CustomerSortOption.dueHighToLow:
-        return "Due: High to Low";
+        return l10n.sortDueHighLow;
       case CustomerSortOption.dueLowToHigh:
-        return "Due: Low to High";
+        return l10n.sortDueLowHigh;
       case CustomerSortOption.nameAZ:
-        return "Name: A to Z";
+        return l10n.sortNameAZ;
       case CustomerSortOption.nameZA:
-        return "Name: Z to A";
+        return l10n.sortNameZA;
       case CustomerSortOption.recentlyAdded:
-        return "Recently Added";
+        return l10n.sortRecentlyAdded;
       case CustomerSortOption.none:
-        return "Default";
+        return l10n.sortDefault;
     }
   }
 
@@ -462,6 +466,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+    final l10n = AppLocalizations.of(context)!;
 
     return PopScope(
       canPop: false,
@@ -484,7 +489,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
             backgroundColor: colors.scaffoldBg,
             appBar: AppBar(
               title: Text(
-                "All Customers",
+                l10n.navAllCustomers,
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 20,
@@ -548,7 +553,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
             appBar: _selectionMode
                 ? AppBar(
                     title: Text(
-                      "${_selectedIds.length} selected",
+                      l10n.selectedCount(_selectedIds.length),
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
@@ -561,18 +566,18 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                     iconTheme: IconThemeData(color: colors.textPrimary),
                     leading: IconButton(
                       icon: const Icon(Icons.close_rounded),
-                      tooltip: "Cancel",
+                      tooltip: l10n.cancel,
                       onPressed: _exitSelectionMode,
                     ),
                     actions: [
                       IconButton(
                         icon: const Icon(Icons.select_all_rounded),
-                        tooltip: "Select All",
+                        tooltip: l10n.selectAll,
                         onPressed: () => _selectAll(result),
                       ),
                       IconButton(
                         icon: Icon(Icons.sms_rounded, color: colors.info),
-                        tooltip: "Send SMS",
+                        tooltip: l10n.sendSms,
                         onPressed: _selectedIds.isEmpty
                             ? null
                             : () => _confirmSendBulkSms(result),
@@ -581,7 +586,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                   )
                 : AppBar(
                     title: Text(
-                      "All Customers",
+                      l10n.navAllCustomers,
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 20,
@@ -597,7 +602,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                       // ✅ Sort menu
                       PopupMenuButton<CustomerSortOption>(
                         icon: Icon(Icons.sort_rounded, color: colors.textPrimary),
-                        tooltip: "Sort",
+                        tooltip: l10n.sort,
                         color: colors.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -619,7 +624,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                   const SizedBox(width: 18),
                                 const SizedBox(width: 8),
                                 Text(
-                                  _sortLabel(option),
+                                  _sortLabel(context, option),
                                   style: TextStyle(
                                     color: isSelected
                                         ? colors.accent
@@ -636,14 +641,14 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                       ),
                       IconButton(
                         icon: Icon(Icons.checklist_rounded, color: colors.textPrimary),
-                        tooltip: "Select customers",
+                        tooltip: l10n.selectCustomers,
                         onPressed: result.isEmpty
                             ? null
                             : () => _enterSelectionMode(result.first.id),
                       ),
                       IconButton(
                         icon: Icon(Icons.archive_outlined, color: colors.textPrimary),
-                        tooltip: "Archived Customers",
+                        tooltip: l10n.drawerArchived,
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -667,7 +672,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                   controller: _searchController,
                   style: TextStyle(color: colors.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: "নাম বা ফোন নাম্বার দিয়ে খুঁজুন...",
+                    hintText: l10n.searchNamePhoneHint,
                     hintStyle: TextStyle(
                       color: colors.hintColor,
                       fontSize: 13.5,
@@ -729,7 +734,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                 ? _selectedYear
                                 : null,
                             hint: Text(
-                              "Year",
+                              l10n.yearLabel,
                               style: TextStyle(color: colors.hintColor, fontSize: 13),
                             ),
                             dropdownColor: colors.surface,
@@ -785,7 +790,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                 ? _selectedMonth
                                 : null,
                             hint: Text(
-                              "Month",
+                              l10n.monthLabel,
                               style: TextStyle(color: colors.hintColor, fontSize: 13),
                             ),
                             dropdownColor: colors.surface,
@@ -845,7 +850,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                 ? _reminderFilter
                                 : null,
                             hint: Text(
-                              "Reminder",
+                              l10n.reminderLabel,
                               style: TextStyle(color: colors.hintColor, fontSize: 13),
                             ),
                             dropdownColor: colors.surface,
@@ -906,8 +911,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                             Icons.filter_alt_off_rounded,
                             size: 17,
                           ),
-                          label: const Text(
-                            "Clear All Filters",
+                          label: Text(
+                            l10n.clearAllFilters,
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
@@ -949,7 +954,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            "${result.length} customer(s) found",
+                            l10n.customersFoundCount(result.length),
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -959,7 +964,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                         ],
                       ),
                       Text(
-                        "Total Due: ${totalDueInView.toStringAsFixed(2)}",
+                        l10n.totalDueColon(totalDueInView.toStringAsFixed(2)),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -994,8 +999,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                             const SizedBox(height: 14),
                             Text(
                               _searchQuery.isNotEmpty
-                                  ? "'$_searchQuery' এর সাথে মিলে এমন কেউ নেই"
-                                  : "কোনো কাস্টমার পাওয়া যায়নি",
+                                  ? l10n.noSearchResults(_searchQuery)
+                                  : l10n.noCustomersFound,
                               style: TextStyle(
                                 color: colors.textSecondary,
                                 fontWeight: FontWeight.w600,
@@ -1134,7 +1139,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                           ),
                                           const SizedBox(height: 3),
                                           Text(
-                                            "Due date: ${_formatDate(customer.lastPaymentDate)}",
+                                            l10n.dueDateLabel(_formatDate(customer.lastPaymentDate)),
                                             style: TextStyle(
                                               fontSize: 11.5,
                                               color: colors.hintColor,

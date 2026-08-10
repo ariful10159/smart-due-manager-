@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_settings_scope.dart';
 import 'privacy_policy_screen.dart';
@@ -9,6 +10,7 @@ import 'settings/business_profile_screen.dart';
 import 'settings/currency_screen.dart';
 import 'settings/data_backup_screen.dart';
 import 'settings/font_size_screen.dart' show FontSizeScreen, fontScaleLabel;
+import 'settings/language_screen.dart';
 import 'settings/sms_template_screen.dart';
 import 'settings/theme_color_screen.dart';
 import 'terms_of_service_screen.dart';
@@ -19,6 +21,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+    final l10n = AppLocalizations.of(context)!;
     final controller = AppSettingsScope.of(context);
     final settings = controller.settings;
 
@@ -26,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "Settings",
+          l10n.settingsTitle,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -37,13 +40,13 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _GroupHeader(label: "অ্যাপিয়ারেন্স", colors: colors),
+          _GroupHeader(label: l10n.groupAppearance, colors: colors),
           _SettingsGroup(
             colors: colors,
             children: [
               _SettingsRow(
                 icon: Icons.palette_rounded,
-                title: "থিম কালার",
+                title: l10n.themeColor,
                 colors: colors,
                 trailing: Container(
                   width: 22,
@@ -56,7 +59,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsRow(
                 icon: Icons.dark_mode_rounded,
-                title: "অ্যাপ মোড",
+                title: l10n.appMode,
                 subtitle: settings.isDarkMode ? "Dark" : "Light",
                 colors: colors,
                 onTap: () => Navigator.of(context).push(
@@ -65,24 +68,33 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsRow(
                 icon: Icons.text_fields_rounded,
-                title: "Font Size",
-                subtitle: fontScaleLabel(settings.fontScale),
+                title: l10n.fontSize,
+                subtitle: fontScaleLabel(context, settings.fontScale),
+                colors: colors,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FontSizeScreen()),
+                ),
+              ),
+              _SettingsRow(
+                icon: Icons.language_rounded,
+                title: l10n.language,
+                subtitle: settings.languageCode == 'bn' ? l10n.bengali : l10n.english,
                 colors: colors,
                 isLast: true,
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const FontSizeScreen()),
+                  MaterialPageRoute(builder: (_) => const LanguageScreen()),
                 ),
               ),
             ],
           ),
 
-          _GroupHeader(label: "বিজনেস", colors: colors, topPadding: 24),
+          _GroupHeader(label: l10n.groupBusiness, colors: colors, topPadding: 24),
           _SettingsGroup(
             colors: colors,
             children: [
               _SettingsRow(
                 icon: Icons.currency_exchange_rounded,
-                title: "কারেন্সি",
+                title: l10n.currency,
                 subtitle: settings.currencySymbol,
                 colors: colors,
                 onTap: () => Navigator.of(context).push(
@@ -91,7 +103,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsRow(
                 icon: Icons.store_rounded,
-                title: "বিজনেস প্রোফাইল",
+                title: l10n.businessProfile,
                 subtitle: settings.businessName,
                 colors: colors,
                 onTap: () => Navigator.of(context).push(
@@ -100,7 +112,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsRow(
                 icon: Icons.sms_rounded,
-                title: "SMS টেমপ্লেট",
+                title: l10n.smsTemplate,
                 colors: colors,
                 isLast: true,
                 onTap: () => Navigator.of(context).push(
@@ -110,14 +122,14 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
 
-          _GroupHeader(label: "নিরাপত্তা ও ডেটা", colors: colors, topPadding: 24),
+          _GroupHeader(label: l10n.groupSecurity, colors: colors, topPadding: 24),
           _SettingsGroup(
             colors: colors,
             children: [
               _SettingsRow(
                 icon: Icons.lock_rounded,
-                title: "App Lock (নিরাপত্তা)",
-                subtitle: settings.appLockEnabled ? "চালু আছে" : "বন্ধ আছে",
+                title: l10n.appLock,
+                subtitle: settings.appLockEnabled ? l10n.enabled : l10n.disabled,
                 colors: colors,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
@@ -125,7 +137,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsRow(
                 icon: Icons.backup_rounded,
-                title: "Data Backup",
+                title: l10n.dataBackup,
                 colors: colors,
                 isLast: true,
                 onTap: () => Navigator.of(context).push(
@@ -135,13 +147,13 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
 
-          _GroupHeader(label: "আইনি তথ্য", colors: colors, topPadding: 24),
+          _GroupHeader(label: l10n.groupLegal, colors: colors, topPadding: 24),
           _SettingsGroup(
             colors: colors,
             children: [
               _SettingsRow(
                 icon: Icons.privacy_tip_outlined,
-                title: "Privacy Policy",
+                title: l10n.privacyPolicy,
                 colors: colors,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
@@ -149,7 +161,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsRow(
                 icon: Icons.description_outlined,
-                title: "Terms of Service",
+                title: l10n.termsOfService,
                 colors: colors,
                 isLast: true,
                 onTap: () => Navigator.of(context).push(

@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../theme/app_colors.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
@@ -21,20 +22,21 @@ enum CustomFieldType {
 }
 
 extension CustomFieldTypeX on CustomFieldType {
-  String get label {
+  String label(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     switch (this) {
       case CustomFieldType.text:
-        return 'Text';
+        return l10n.fieldTypeText;
       case CustomFieldType.number:
-        return 'Number';
+        return l10n.fieldTypeNumber;
       case CustomFieldType.date:
-        return 'Date';
+        return l10n.fieldTypeDate;
       case CustomFieldType.currency:
-        return 'Amount';
+        return l10n.fieldTypeAmount;
       case CustomFieldType.multiline:
-        return 'Long Text';
+        return l10n.fieldTypeLongText;
       case CustomFieldType.photo:
-        return 'Photo';
+        return l10n.fieldTypePhoto;
     }
   }
 
@@ -243,13 +245,13 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                       autofocus: true,
                       style: TextStyle(color: colors.textPrimary),
                       decoration: InputDecoration(
-                        hintText: 'e.g. NID Number, Shop Name, Reference',
+                        hintText: AppLocalizations.of(dialogContext)!.customFieldLabelHint,
                         hintStyle: TextStyle(color: colors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Field Type',
+                      AppLocalizations.of(dialogContext)!.fieldType,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -284,7 +286,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                             children: [
                               Icon(type.icon, size: 18, color: colors.textSecondary),
                               const SizedBox(width: 10),
-                              Text(type.label),
+                              Text(type.label(dialogContext)),
                             ],
                           ),
                         );
@@ -306,7 +308,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext, {'action': 'delete'}),
                     child: Text(
-                      'Delete Field',
+                      AppLocalizations.of(dialogContext)!.deleteField,
                       style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -315,7 +317,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext),
-                      child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+                      child: Text(AppLocalizations.of(dialogContext)!.cancel, style: TextStyle(color: colors.textSecondary)),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext, {
@@ -324,7 +326,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         'type': selectedType,
                       }),
                       child: Text(
-                        allowDelete ? 'Save' : 'Add',
+                        allowDelete ? AppLocalizations.of(dialogContext)!.save : AppLocalizations.of(dialogContext)!.add,
                         style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -339,7 +341,8 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   }
 
   Future<void> _addCustomField(AppColors colors) async {
-    final result = await _showCustomFieldDialog(colors, title: 'Add Custom Field');
+    final l10n = AppLocalizations.of(context)!;
+    final result = await _showCustomFieldDialog(colors, title: l10n.addCustomField);
     if (result == null || result['action'] != 'save') return;
 
     final trimmedLabel = (result['label'] as String).trim();
@@ -348,7 +351,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     if (_reservedFieldNames.contains(trimmedLabel.toLowerCase())) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"$trimmedLabel" is already a default field')),
+        SnackBar(content: Text(l10n.alreadyDefaultField(trimmedLabel))),
       );
       return;
     }
@@ -360,7 +363,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     if (alreadyExists) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"$trimmedLabel" is already added')),
+        SnackBar(content: Text(l10n.alreadyAdded(trimmedLabel))),
       );
       return;
     }
@@ -376,9 +379,10 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   }
 
   Future<void> _editCustomField(_CustomFieldEntry field, AppColors colors) async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await _showCustomFieldDialog(
       colors,
-      title: 'Edit Custom Field',
+      title: l10n.editCustomField,
       initialLabel: field.label,
       initialType: field.type,
       allowDelete: true,
@@ -397,7 +401,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     if (_reservedFieldNames.contains(trimmedLabel.toLowerCase())) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"$trimmedLabel" is already a default field')),
+        SnackBar(content: Text(l10n.alreadyDefaultField(trimmedLabel))),
       );
       return;
     }
@@ -409,7 +413,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     if (duplicateExists) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"$trimmedLabel" is already added')),
+        SnackBar(content: Text(l10n.alreadyAdded(trimmedLabel))),
       );
       return;
     }
@@ -485,9 +489,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     if (bytes.length > 700 * 1024) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ছবিটা বেশি বড়, দয়া করে আরেকটু ছোট/হালকা ছবি বেছে নিন'),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context)!.photoTooLarge)),
       );
       return;
     }
@@ -522,7 +524,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     if (currentUserId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User not logged in')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.userNotLoggedIn)),
         );
       }
       return;
@@ -577,6 +579,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
           .set(customer.toMap());
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       // ✅ সুন্দর সাকসেস মেসেজ দেখানো হচ্ছে
       ScaffoldMessenger.of(context).showSnackBar(
@@ -590,12 +593,12 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Success!',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                    Text(
+                      l10n.successTitle,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                     ),
                     Text(
-                      '${customer.name} has been added successfully.',
+                      l10n.customerAddedSuccess(customer.name),
                       style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9)),
                     ),
                   ],
@@ -617,7 +620,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to save, please try again'),
+          content: Text(AppLocalizations.of(context)!.saveFailed),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -679,7 +682,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
           Icon(type.icon, size: 11, color: colors.accent),
           const SizedBox(width: 4),
           Text(
-            type.label,
+            type.label(context),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
@@ -818,6 +821,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+    final l10n = AppLocalizations.of(context)!;
 
     return PopScope(
       canPop: false,
@@ -832,7 +836,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          'Create Customer',
+          l10n.createCustomer,
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 20,
@@ -846,7 +850,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           IconButton(
-            tooltip: 'Add Custom Field',
+            tooltip: l10n.addCustomField,
             icon: Badge(
               label: Text('${_customFields.length}'),
               isLabelVisible: _customFields.isNotEmpty,
@@ -956,11 +960,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
                           colors: colors,
-                          labelText: 'Full Name',
+                          labelText: l10n.fullName,
                           prefixIcon: Icons.badge_outlined,
                         ),
                         validator: (value) =>
-                            value == null || value.trim().isEmpty ? 'Please enter name' : null,
+                            value == null || value.trim().isEmpty ? l10n.pleaseEnterName : null,
                       ),
                       const SizedBox(height: 20),
 
@@ -969,7 +973,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
                           colors: colors,
-                          labelText: 'Phone Number',
+                          labelText: l10n.phoneNumber,
                           prefixIcon: Icons.phone_android_rounded,
                         ),
                         keyboardType: TextInputType.phone,
@@ -1015,7 +1019,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                                 ),
                                 decoration: _buildInputDecoration(
                                   colors: colors,
-                                  labelText: 'Address Location',
+                                  labelText: l10n.addressLocation,
                                   prefixIcon: Icons.map_outlined,
                                 ),
                               );
@@ -1103,7 +1107,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         ),
                         decoration: _buildInputDecoration(
                           colors: colors,
-                          labelText: 'Initial Due Amount',
+                          labelText: l10n.initialDueAmount,
                           prefixIcon: Icons.monetization_on_outlined,
                         ),
                         keyboardType: TextInputType.number,
@@ -1117,7 +1121,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
                           colors: colors,
-                          labelText: 'Select Date',
+                          labelText: l10n.selectDate,
                           prefixIcon: Icons.calendar_today_rounded,
                         ),
                       ),
@@ -1129,7 +1133,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         style: TextStyle(fontSize: 14, color: colors.textPrimary),
                         decoration: _buildInputDecoration(
                           colors: colors,
-                          labelText: 'Additional Notes',
+                          labelText: l10n.additionalNotes,
                           prefixIcon: Icons.description_outlined,
                         ),
                       ),
@@ -1150,7 +1154,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                         Icon(Icons.add_rounded, size: 18, color: colors.accent),
                         const SizedBox(width: 6),
                         Text(
-                          _customFields.isEmpty ? 'Add custom field' : 'Add another field',
+                          _customFields.isEmpty ? l10n.addCustomField : l10n.addAnotherField,
                           style: TextStyle(
                             color: colors.accent,
                             fontWeight: FontWeight.w700,
@@ -1182,16 +1186,16 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: _save,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 18),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 18),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.person_add_alt_1_rounded, size: 20, color: Colors.white),
-                                  SizedBox(width: 8),
+                                  const Icon(Icons.person_add_alt_1_rounded, size: 20, color: Colors.white),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'Save Customer Account',
-                                    style: TextStyle(
+                                    l10n.saveCustomerAccount,
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 0.3,

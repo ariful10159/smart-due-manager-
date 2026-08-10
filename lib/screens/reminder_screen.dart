@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../services/notification_service.dart';
@@ -119,6 +120,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
   // ব্যবহারকারী একে একে নিজে Send করবেন
   Future<void> _confirmSendBulkSms(List<Customer> customers) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final selected = customers.where((c) => _selectedIds.contains(c.id)).toList();
     if (selected.isEmpty) return;
 
@@ -130,20 +132,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Send SMS", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.sendSms, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
-          "নির্বাচিত ${selected.length} জন কাস্টমারের জন্য একে একে SMS app খুলে দেওয়া হবে। "
-          "প্রতিটা customer-এর জন্য আপনাকে নিজে Send বাটনে চাপতে হবে।",
+          l10n.bulkSmsConfirmBody(selected.length),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Start", style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
+            child: Text(l10n.start, style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -160,7 +161,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
     setState(() => _selectedIds.clear());
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("$openedCount/${selected.length} জনের জন্য SMS app খোলা হয়েছে")),
+      SnackBar(content: Text(l10n.smsAppOpenedResult(openedCount, selected.length))),
     );
   }
 
@@ -178,6 +179,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
             final colors = AppColors.of(sheetContext);
+            final l10n = AppLocalizations.of(sheetContext)!;
             final customer = queue[index];
             final isLast = index + 1 >= queue.length;
 
@@ -209,7 +211,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "SMS পাঠান (${index + 1}/${queue.length})",
+                      l10n.sendingSmsProgress(index + 1, queue.length),
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -233,7 +235,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: advance,
-                            child: Text(isLast ? "Close" : "Skip"),
+                            child: Text(isLast ? l10n.close : l10n.skip),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -244,7 +246,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                               foregroundColor: Colors.white,
                             ),
                             icon: const Icon(Icons.sms_rounded),
-                            label: const Text("Open SMS App"),
+                            label: Text(l10n.openSmsApp),
                             onPressed: () async {
                               final uri = buildSmsComposeUri(
                                 customer.phone,
@@ -285,12 +287,13 @@ class _ReminderScreenState extends State<ReminderScreen> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('কল করা যায়নি, ডায়ালার পাওয়া যায়নি')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.callFailed)),
       );
       return;
     }
 
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
 
     // ✅ Call করার পর জিজ্ঞাসা করা হচ্ছে reminder clear করবে কিনা
     final shouldClear = await showDialog<bool>(
@@ -301,20 +304,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Call Complete?", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.callCompleteTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
-          "'${customer.name}' কে কল করা হয়েছে। এই reminder টা কি "
-          "reminder list থেকে সরিয়ে দেবেন?",
+          l10n.callCompleteBody(customer.name),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Keep Reminder", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.keepReminder, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Remove Reminder", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
+            child: Text(l10n.removeReminderAction, style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -368,7 +370,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: Text("পরের reminder সেট হয়েছে: ${_formatDateTime(nextDate)}"),
+          content: Text(AppLocalizations.of(context)!.nextReminderSetResult(_formatDateTime(nextDate))),
         ),
       );
     } catch (_) {
@@ -376,21 +378,22 @@ class _ReminderScreenState extends State<ReminderScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Failed to advance reminder, please try again"),
+          content: Text(AppLocalizations.of(context)!.advanceReminderFailed),
         ),
       );
     }
   }
 
   String _recurrenceLabel(String recurrenceType) {
+    final l10n = AppLocalizations.of(context)!;
     switch (recurrenceType) {
       case 'weekly':
-        return "Weekly";
+        return l10n.recurrenceWeekly;
       case 'biweekly':
-        return "Bi-weekly";
+        return l10n.recurrenceBiweeklyShort;
       case 'monthly':
       default:
-        return "Monthly";
+        return l10n.recurrenceMonthlyShort;
     }
   }
 
@@ -405,7 +408,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: Text("Reminder removed for ${customer.name}"),
+          content: Text(AppLocalizations.of(context)!.reminderRemovedFor(customer.name)),
         ),
       );
     } catch (_) {
@@ -413,7 +416,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Failed to remove reminder, please try again"),
+          content: Text(AppLocalizations.of(context)!.removeReminderFailed),
         ),
       );
     }
@@ -421,6 +424,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
   Future<void> _confirmDelete(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -430,25 +434,27 @@ class _ReminderScreenState extends State<ReminderScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          customer.isRecurringReminder ? "Stop Recurring Reminder" : "Delete Reminder",
+          customer.isRecurringReminder ? l10n.stopRecurringReminderTitle : l10n.deleteReminderTitle,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: Text(
           customer.isRecurringReminder
-              ? "'${customer.name}' এর ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')} auto-repeat reminder পুরোপুরি বন্ধ করতে চান? "
-                  "শুধু এই সাইকেলটা skip করতে চাইলে 'Mark Done' ব্যবহার করুন।"
-              : "'${customer.name}' এর reminder টা মুছে দিতে চান?",
+              ? l10n.stopRecurringConfirmBody(
+                  _recurrenceLabel(customer.recurrenceType ?? 'monthly'),
+                  customer.name,
+                )
+              : l10n.deleteReminderConfirmBody(customer.name),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              customer.isRecurringReminder ? "Stop Recurring" : "Delete",
+              customer.isRecurringReminder ? l10n.stopRecurringAction : l10n.deleteAction,
               style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
             ),
           ),
@@ -463,6 +469,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
   Future<void> _snoozeReminder(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final choice = await showModalBottomSheet<Duration?>(
       context: context,
@@ -478,33 +485,33 @@ class _ReminderScreenState extends State<ReminderScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  "Snooze Reminder",
+                  l10n.snoozeReminderTitle,
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
                 ),
               ),
               ListTile(
                 leading: Icon(Icons.snooze, color: colors.accent),
-                title: Text("1 Hour", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.oneHour, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(hours: 1)),
               ),
               ListTile(
                 leading: Icon(Icons.snooze, color: colors.accent),
-                title: Text("Tomorrow (same time)", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.tomorrowSameTime, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(days: 1)),
               ),
               ListTile(
                 leading: Icon(Icons.snooze, color: colors.accent),
-                title: Text("3 Days", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.threeDays, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(days: 3)),
               ),
               ListTile(
                 leading: Icon(Icons.snooze, color: colors.accent),
-                title: Text("1 Week", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.oneWeek, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, const Duration(days: 7)),
               ),
               ListTile(
                 leading: Icon(Icons.edit_calendar, color: colors.accent),
-                title: Text("Custom Date & Time", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.customDateTime, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, null),
               ),
             ],
@@ -528,16 +535,16 @@ class _ReminderScreenState extends State<ReminderScreen> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: colors.borderColor),
           ),
-          title: Text("Set Custom Date", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
-          content: Text("তারিখ ও সময় বেছে নিন?", style: TextStyle(color: colors.textSecondary)),
+          title: Text(l10n.setCustomDateTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+          content: Text(l10n.chooseDateTimeQuestion, style: TextStyle(color: colors.textSecondary)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+              child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text("Continue", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
+              child: Text(l10n.continueAction, style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -616,6 +623,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
   Future<String?> _askReminderNote() async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
 
     return showDialog<String>(
@@ -627,7 +635,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          "Add Note (Optional)",
+          l10n.addNoteOptional,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: TextField(
@@ -636,7 +644,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
           maxLines: 3,
           style: TextStyle(color: colors.textPrimary),
           decoration: InputDecoration(
-            hintText: "এই reminder নিয়ে কোনো নোট লিখুন...",
+            hintText: l10n.reminderNoteHint,
             hintStyle: TextStyle(color: colors.textSecondary),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -651,11 +659,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, ''),
-            child: Text("Skip", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.skip, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: Text("Save", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
+            child: Text(l10n.save, style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -678,12 +686,13 @@ class _ReminderScreenState extends State<ReminderScreen> {
       );
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
           content: Text(
-            "Reminder snoozed to ${_formatDateTime(newDate)}",
+            l10n.reminderSnoozedTo(_formatDateTime(newDate)),
           ),
         ),
       );
@@ -692,7 +701,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: Text("Failed to snooze: $e"),
+          content: Text(AppLocalizations.of(context)!.failedToSnooze('$e')),
         ),
       );
     }
@@ -701,6 +710,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+    final l10n = AppLocalizations.of(context)!;
 
     return PopScope(
       canPop: false,
@@ -722,7 +732,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
           return Scaffold(
             backgroundColor: colors.scaffoldBg,
             appBar: AppBar(
-              title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
+              title: Text(l10n.remindersTitle, style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
               centerTitle: true,
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -772,14 +782,14 @@ class _ReminderScreenState extends State<ReminderScreen> {
             return Scaffold(
               backgroundColor: colors.scaffoldBg,
               appBar: AppBar(
-                title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
+                title: Text(l10n.remindersTitle, style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
                 centerTitle: true,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 iconTheme: IconThemeData(color: colors.textPrimary),
               ),
               body: Center(
-                child: Text("No reminders set", style: TextStyle(color: colors.textSecondary)),
+                child: Text(l10n.noRemindersSet, style: TextStyle(color: colors.textSecondary)),
               ),
               bottomNavigationBar: CustomBottomNavBar(selectedIndex: _selectedIndex),
             );
@@ -790,7 +800,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
             appBar: _selectionMode
                 ? AppBar(
                     title: Text(
-                      "${_selectedIds.length} selected",
+                      l10n.selectedCount(_selectedIds.length),
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
                     ),
                     centerTitle: false,
@@ -799,18 +809,18 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     iconTheme: IconThemeData(color: colors.textPrimary),
                     leading: IconButton(
                       icon: const Icon(Icons.close_rounded),
-                      tooltip: "Cancel",
+                      tooltip: l10n.cancel,
                       onPressed: _exitSelectionMode,
                     ),
                     actions: [
                       IconButton(
                         icon: const Icon(Icons.select_all_rounded),
-                        tooltip: "Select All",
+                        tooltip: l10n.selectAll,
                         onPressed: () => _selectAll(customers),
                       ),
                       IconButton(
                         icon: Icon(Icons.sms_rounded, color: colors.info),
-                        tooltip: "Send SMS",
+                        tooltip: l10n.sendSms,
                         onPressed: _selectedIds.isEmpty
                             ? null
                             : () => _confirmSendBulkSms(customers),
@@ -818,7 +828,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     ],
                   )
                 : AppBar(
-                    title: Text("Reminders", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
+                    title: Text(l10n.remindersTitle, style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
                     centerTitle: true,
                     backgroundColor: Colors.transparent,
                     elevation: 0,
@@ -826,7 +836,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     actions: [
                       IconButton(
                         icon: Icon(Icons.checklist_rounded, color: colors.textPrimary),
-                        tooltip: "Select reminders",
+                        tooltip: l10n.selectReminders,
                         onPressed: () => _enterSelectionMode(customers.first.id),
                       ),
                       PopupMenuButton<ReminderSortOption>(
@@ -843,19 +853,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
                         itemBuilder: (context) => [
                           PopupMenuItem(
                             value: ReminderSortOption.dateAscending,
-                            child: Text("Date ↑ (Nearest First)", style: TextStyle(color: colors.textPrimary)),
+                            child: Text(l10n.sortDateNearestFirst, style: TextStyle(color: colors.textPrimary)),
                           ),
                           PopupMenuItem(
                             value: ReminderSortOption.dateDescending,
-                            child: Text("Date ↓ (Latest First)", style: TextStyle(color: colors.textPrimary)),
+                            child: Text(l10n.sortDateLatestFirst, style: TextStyle(color: colors.textPrimary)),
                           ),
                           PopupMenuItem(
                             value: ReminderSortOption.overdueFirst,
-                            child: Text("Overdue First", style: TextStyle(color: colors.textPrimary)),
+                            child: Text(l10n.sortOverdueFirst, style: TextStyle(color: colors.textPrimary)),
                           ),
                           PopupMenuItem(
                             value: ReminderSortOption.upcomingFirst,
-                            child: Text("Upcoming First", style: TextStyle(color: colors.textPrimary)),
+                            child: Text(l10n.sortUpcomingFirst, style: TextStyle(color: colors.textPrimary)),
                           ),
                         ],
                         icon: Icon(Icons.sort, color: colors.textPrimary),
@@ -882,7 +892,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                   children: [
                     Expanded(
                       child: _ReminderStat(
-                        label: "Overdue",
+                        label: l10n.overdueLabel,
                         count: overdueCount,
                         amount: overdueAmount,
                         color: colors.due,
@@ -892,7 +902,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     Container(width: 1, height: 34, color: colors.borderColor),
                     Expanded(
                       child: _ReminderStat(
-                        label: "Upcoming",
+                        label: l10n.upcomingLabel,
                         count: upcomingCustomers.length,
                         amount: upcomingAmount,
                         color: colors.warn,
@@ -902,7 +912,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     Container(width: 1, height: 34, color: colors.borderColor),
                     Expanded(
                       child: _ReminderStat(
-                        label: "Total",
+                        label: l10n.totalLabel,
                         count: customers.length,
                         amount: totalAmount,
                         color: colors.textPrimary,
@@ -945,19 +955,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
                               borderRadius: BorderRadius.circular(16),
                               side: BorderSide(color: colors.borderColor),
                             ),
-                            title: Text("Delete Reminder", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+                            title: Text(l10n.deleteReminderTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
                             content: Text(
-                              "'${customer.name}' এর reminder টা মুছে দিতে চান?",
+                              l10n.deleteReminderConfirmBody(customer.name),
                               style: TextStyle(color: colors.textSecondary),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
-                                child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+                                child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                child: Text("Delete", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
+                                child: Text(l10n.deleteAction, style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
                               ),
                             ],
                           ),
@@ -1029,7 +1039,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                                       ),
                                                       const SizedBox(width: 8),
                                                       Text(
-                                                        isSelected ? "Selected" : "Tap to select",
+                                                        isSelected ? l10n.selectedLabel : l10n.tapToSelect,
                                                         style: TextStyle(
                                                           fontSize: 12,
                                                           fontWeight: FontWeight.w600,
@@ -1141,7 +1151,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                                     Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
                                                     const SizedBox(width: 6),
                                                     Text(
-                                                      "Repeats ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')}",
+                                                      l10n.repeatsLabel(_recurrenceLabel(customer.recurrenceType ?? 'monthly')),
                                                       style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
                                                     ),
                                                   ],
@@ -1162,7 +1172,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                               child: TextButton.icon(
                                                 onPressed: () => _markRecurringDone(customer),
                                                 icon: Icon(Icons.check_circle_outline_rounded, size: 18, color: colors.clear),
-                                                label: Text("Mark Done", style: TextStyle(color: colors.clear, fontWeight: FontWeight.w600)),
+                                                label: Text(l10n.markDone, style: TextStyle(color: colors.clear, fontWeight: FontWeight.w600)),
                                               ),
                                             )
                                           else
@@ -1170,7 +1180,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                               child: TextButton.icon(
                                                 onPressed: () => _snoozeReminder(customer),
                                                 icon: Icon(Icons.snooze_rounded, size: 18, color: colors.accent),
-                                                label: Text("Snooze", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600)),
+                                                label: Text(l10n.snoozeAction, style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600)),
                                               ),
                                             ),
                                           Expanded(
@@ -1178,7 +1188,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                               onPressed: () => _confirmDelete(customer),
                                               icon: Icon(Icons.delete_outline_rounded, size: 18, color: colors.due),
                                               label: Text(
-                                                customer.isRecurringReminder ? "Stop" : "Delete",
+                                                customer.isRecurringReminder ? l10n.stopAction : l10n.deleteAction,
                                                 style: TextStyle(color: colors.due, fontWeight: FontWeight.w600),
                                               ),
                                             ),
@@ -1211,22 +1221,23 @@ class _ReminderScreenState extends State<ReminderScreen> {
   }
 
   String _countdownText(DateTime reminderDate) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final difference = reminderDate.difference(now);
 
     if (difference.isNegative) {
-      return "⚠️ Overdue";
+      return l10n.overdueCountdown;
     }
 
     if (difference.inDays > 0) {
-      return "${difference.inDays} day(s) left";
+      return l10n.daysLeft(difference.inDays);
     }
 
     if (difference.inHours > 0) {
-      return "${difference.inHours} hour(s) left";
+      return l10n.hoursLeft(difference.inHours);
     }
 
-    return "${difference.inMinutes} minute(s) left";
+    return l10n.minutesLeft(difference.inMinutes);
   }
 
   List<Customer> _applySorting(List<Customer> customers) {

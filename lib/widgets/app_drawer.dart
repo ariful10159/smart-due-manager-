@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/legal_content.dart';
 import '../providers/app_settings_controller.dart';
 import '../screens/archived_customers_screen.dart';
@@ -25,6 +26,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final email = AuthService.currentUser?.email ?? '';
 
     return Drawer(
@@ -80,7 +82,7 @@ class AppDrawer extends StatelessWidget {
             const SizedBox(height: 8),
             _DrawerItem(
               icon: Icons.home_rounded,
-              label: "Home",
+              label: l10n.drawerHome,
               selected: currentRoute == 'home',
               onTap: () {
                 Navigator.pop(context);
@@ -94,7 +96,7 @@ class AppDrawer extends StatelessWidget {
             ),
             _DrawerItem(
               icon: Icons.menu_book_rounded,
-              label: "Notebooks",
+              label: l10n.drawerNotebooks,
               selected: currentRoute == 'notebooks',
               onTap: () {
                 Navigator.pop(context);
@@ -107,7 +109,7 @@ class AppDrawer extends StatelessWidget {
             ),
             _DrawerItem(
               icon: Icons.bar_chart_rounded,
-              label: "Reports",
+              label: l10n.drawerReports,
               selected: currentRoute == 'reports',
               onTap: () {
                 Navigator.pop(context);
@@ -120,7 +122,7 @@ class AppDrawer extends StatelessWidget {
             ),
             _DrawerItem(
               icon: Icons.archive_outlined,
-              label: "Archived Customers",
+              label: l10n.drawerArchived,
               selected: currentRoute == 'archived',
               onTap: () {
                 Navigator.pop(context);
@@ -133,7 +135,7 @@ class AppDrawer extends StatelessWidget {
             ),
             _DrawerItem(
               icon: Icons.settings_rounded,
-              label: "Settings",
+              label: l10n.drawerSettings,
               selected: currentRoute == 'settings',
               onTap: () {
                 Navigator.pop(context);
@@ -150,7 +152,7 @@ class AppDrawer extends StatelessWidget {
             const SizedBox(height: 8),
             _DrawerItem(
               icon: Icons.help_outline_rounded,
-              label: "Help & Support",
+              label: l10n.drawerHelp,
               selected: currentRoute == 'help',
               onTap: () {
                 Navigator.pop(context);
@@ -163,13 +165,13 @@ class AppDrawer extends StatelessWidget {
             ),
             _DrawerItem(
               icon: Icons.feedback_outlined,
-              label: "Send Feedback",
+              label: l10n.drawerFeedback,
               selected: false,
               onTap: () => _sendFeedback(context),
             ),
             _DrawerItem(
               icon: Icons.star_outline_rounded,
-              label: "Rate the App",
+              label: l10n.drawerRate,
               selected: false,
               onTap: () => _rateApp(context),
             ),
@@ -178,7 +180,7 @@ class AppDrawer extends StatelessWidget {
             const SizedBox(height: 4),
             _DrawerItem(
               icon: Icons.logout_rounded,
-              label: "Logout",
+              label: l10n.logout,
               selected: false,
               isDestructive: true,
               onTap: () => _confirmLogout(context, colors),
@@ -212,7 +214,7 @@ class AppDrawer extends StatelessWidget {
     } else {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ইমেইল অ্যাপ পাওয়া যায়নি')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.emailAppNotFound)),
       );
     }
   }
@@ -226,12 +228,13 @@ class AppDrawer extends StatelessWidget {
     } else {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Play Store খোলা যায়নি')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.playStoreNotFound)),
       );
     }
   }
 
   Future<void> _confirmLogout(BuildContext context, AppColors colors) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -241,22 +244,22 @@ class AppDrawer extends StatelessWidget {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          "Logout",
+          l10n.logout,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: Text(
-          "আপনি কি লগআউট করতে চান?",
+          l10n.logoutConfirm,
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              "Logout",
+              l10n.logout,
               style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
             ),
           ),
@@ -343,6 +346,7 @@ class _DarkModeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppSettingsController controller = AppSettingsScope.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final isDark = controller.settings.isDarkMode;
 
     return Padding(
@@ -365,7 +369,7 @@ class _DarkModeToggle extends StatelessWidget {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    isDark ? "Dark Mode" : "Light Mode",
+                    isDark ? l10n.darkMode : l10n.lightMode,
                     style: TextStyle(
                       color: colors.textSecondary,
                       fontWeight: FontWeight.w500,

@@ -9,6 +9,7 @@ import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/payment.dart';
 import '../models/customer_repository.dart';
@@ -61,10 +62,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   String _daysSincePayment(DateTime lastPaymentDate) {
+    final l10n = AppLocalizations.of(context)!;
     final days = DateTime.now().difference(lastPaymentDate).inDays;
-    if (days == 0) return "আজকে";
-    if (days == 1) return "গতকাল";
-    return "$days দিন আগে";
+    if (days == 0) return l10n.todayLabel;
+    if (days == 1) return l10n.yesterdayLabel;
+    return l10n.daysAgoLabel(days);
   }
 
   static final _base64Pattern = RegExp(r'^[A-Za-z0-9+/]+={0,2}$');
@@ -270,7 +272,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: const Text("PDF saved and opened ✅"),
+          content: Text(AppLocalizations.of(context)!.pdfSavedOpened),
         ),
       );
     } catch (_) {
@@ -278,7 +280,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Download failed, please try again"),
+          content: Text(AppLocalizations.of(context)!.downloadFailed),
         ),
       );
     }
@@ -364,13 +366,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     );
 
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           recurrenceType == null
-              ? "Reminder Updated ✅"
-              : "Reminder Updated ✅ (${_recurrenceLabel(recurrenceType)} এ auto-repeat হবে)",
+              ? l10n.reminderUpdatedSuccess
+              : l10n.reminderUpdatedWithRepeat(_recurrenceLabel(recurrenceType)),
         ),
       ),
     );
@@ -380,6 +383,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   // reminder ম্যানুয়ালি সেট না করেই নিজে থেকে পরের তারিখে চলে যাবে
   Future<String?> _askRecurrence() async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return showModalBottomSheet<String?>(
       context: context,
@@ -395,7 +399,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  "Repeat Reminder?",
+                  l10n.repeatReminderQuestion,
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
                 ),
               ),
@@ -404,7 +408,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "মাসিক কিস্তির মতো বকেয়া হলে auto-repeat চালু করুন",
+                    l10n.repeatReminderDesc,
                     style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
                 ),
@@ -412,22 +416,22 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               const SizedBox(height: 8),
               ListTile(
                 leading: Icon(Icons.event_busy_rounded, color: colors.textSecondary),
-                title: Text("None (one-time)", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.recurrenceNone, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, null),
               ),
               ListTile(
                 leading: Icon(Icons.repeat_rounded, color: colors.accent),
-                title: Text("Weekly", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.recurrenceWeekly, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, 'weekly'),
               ),
               ListTile(
                 leading: Icon(Icons.repeat_rounded, color: colors.accent),
-                title: Text("Bi-weekly (every 2 weeks)", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.recurrenceBiweekly, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, 'biweekly'),
               ),
               ListTile(
                 leading: Icon(Icons.repeat_rounded, color: colors.accent),
-                title: Text("Monthly (installment)", style: TextStyle(color: colors.textPrimary)),
+                title: Text(l10n.recurrenceMonthlyFull, style: TextStyle(color: colors.textPrimary)),
                 onTap: () => Navigator.pop(context, 'monthly'),
               ),
             ],
@@ -438,14 +442,15 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   String _recurrenceLabel(String recurrenceType) {
+    final l10n = AppLocalizations.of(context)!;
     switch (recurrenceType) {
       case 'weekly':
-        return "Weekly";
+        return l10n.recurrenceWeekly;
       case 'biweekly':
-        return "Bi-weekly";
+        return l10n.recurrenceBiweeklyShort;
       case 'monthly':
       default:
-        return "Monthly";
+        return l10n.recurrenceMonthlyShort;
     }
   }
 
@@ -468,7 +473,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: Text("পরের reminder সেট হয়েছে: ${_formatDateTime(nextDate)}"),
+          content: Text(AppLocalizations.of(context)!.nextReminderSetResult(_formatDateTime(nextDate))),
         ),
       );
     } catch (_) {
@@ -476,7 +481,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Failed to advance reminder, please try again"),
+          content: Text(AppLocalizations.of(context)!.advanceReminderFailed),
         ),
       );
     }
@@ -484,6 +489,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<String?> _askReminderNote() async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
 
     final note = await showDialog<String>(
@@ -495,7 +501,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          "Add Note (Optional)",
+          l10n.addNoteOptional,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: TextField(
@@ -504,7 +510,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           maxLines: 3,
           style: TextStyle(color: colors.textPrimary),
           decoration: InputDecoration(
-            hintText: "এই reminder নিয়ে কোনো নোট লিখুন...",
+            hintText: l10n.reminderNoteHint,
             hintStyle: TextStyle(color: colors.textSecondary),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -519,11 +525,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, ''),
-            child: Text("Skip", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.skip, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: Text("Save", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
+            child: Text(l10n.save, style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -554,6 +560,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<void> _confirmClearReminder(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -563,25 +570,27 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          customer.isRecurringReminder ? "Stop Recurring Reminder" : "Cancel Reminder",
+          customer.isRecurringReminder ? l10n.stopRecurringReminderTitle : l10n.cancelReminderTitle,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: Text(
           customer.isRecurringReminder
-              ? "'${customer.name}' এর ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')} auto-repeat reminder পুরোপুরি বন্ধ করতে চান? "
-                  "শুধু এই সাইকেলটা skip করতে চাইলে 'Mark Done' ব্যবহার করুন।"
-              : "'${customer.name}' এর জন্য সেট করা reminder টা বাতিল করতে চান?",
+              ? l10n.stopRecurringConfirmBody(
+                  _recurrenceLabel(customer.recurrenceType ?? 'monthly'),
+                  customer.name,
+                )
+              : l10n.cancelReminderConfirmBody(customer.name),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              customer.isRecurringReminder ? "Stop Recurring" : "Remove Reminder",
+              customer.isRecurringReminder ? l10n.stopRecurringAction : l10n.removeReminderAction,
               style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
             ),
           ),
@@ -605,7 +614,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: const Text("Reminder removed ✅"),
+          content: Text(AppLocalizations.of(context)!.reminderRemovedSuccess),
         ),
       );
     } catch (_) {
@@ -613,7 +622,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Failed to remove reminder, please try again"),
+          content: Text(AppLocalizations.of(context)!.removeReminderFailed),
         ),
       );
     }
@@ -621,6 +630,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<void> _confirmSendSms(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final message = _buildDueMessage(customer);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -630,7 +640,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Send SMS", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.sendSms, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -638,8 +648,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             children: [
               Text(
                 customer.totalDue <= 0
-                    ? "'${customer.name}' কে (${customer.phone}) ধন্যবাদ SMS পাঠাতে চান?"
-                    : "'${customer.name}' কে (${customer.phone}) due reminder SMS পাঠাতে চান?",
+                    ? l10n.thankYouSmsConfirm(customer.name, customer.phone)
+                    : l10n.dueReminderSmsConfirm(customer.name, customer.phone),
                 style: TextStyle(color: colors.textSecondary),
               ),
               const SizedBox(height: 12),
@@ -662,11 +672,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Send", style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
+            child: Text(l10n.send, style: TextStyle(color: colors.info, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -687,7 +697,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('SMS app খোলা যায়নি')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.smsAppNotOpened)),
         );
       }
     }
@@ -695,6 +705,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<void> _confirmDeleteCustomer(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -703,22 +714,19 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Hide Customer", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.hideCustomerTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
-          "আপনি কি নিশ্চিত '${customer.name}' কে হাইড করতে চান? "
-          "এটি main list থেকে সরে যাবে, কিন্তু সব তথ্য ও payment history "
-          "সংরক্ষিত থাকবে। প্রয়োজনে পরে Archived section থেকে আবার "
-          "ফিরিয়ে আনা যাবে।",
+          l10n.hideCustomerConfirmBody(customer.name),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Hide", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
+            child: Text(l10n.hideAction, style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -735,19 +743,20 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       await _customerRepo.hideCustomer(customer.id);
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: Text("${customer.name} hidden successfully"),
+          content: Text(l10n.customerHiddenSuccess(customer.name)),
         ),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: colors.due, content: const Text("Hide failed, please try again")),
+        SnackBar(backgroundColor: colors.due, content: Text(AppLocalizations.of(context)!.hideFailed)),
       );
     }
   }
@@ -758,11 +767,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     if (bytes.length > 700 * 1024) {
       if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'ছবিটা বেশি বড়, দয়া করে আরেকটু ছোট/হালকা ছবি বেছে নিন',
-          ),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context)!.photoTooLarge)),
       );
       return null;
     }
@@ -772,6 +777,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<void> _editCustomer(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final nameController = TextEditingController(text: customer.name);
     final phoneController = TextEditingController(text: customer.phone);
@@ -847,7 +853,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 borderRadius: BorderRadius.circular(18),
                 side: BorderSide(color: colors.borderColor),
               ),
-              title: Text("Edit Customer", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+              title: Text(l10n.editCustomerTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
               content: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -876,7 +882,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       controller: nameController,
                       style: TextStyle(color: colors.textPrimary),
                       decoration: InputDecoration(
-                        labelText: "Name",
+                        labelText: l10n.nameLabel,
                         labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                     ),
@@ -884,7 +890,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       controller: phoneController,
                       style: TextStyle(color: colors.textPrimary),
                       decoration: InputDecoration(
-                        labelText: "Phone",
+                        labelText: l10n.phoneLabel,
                         labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                       keyboardType: TextInputType.phone,
@@ -893,7 +899,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       controller: addressController,
                       style: TextStyle(color: colors.textPrimary),
                       decoration: InputDecoration(
-                        labelText: "Address",
+                        labelText: l10n.addressLabel,
                         labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                     ),
@@ -901,7 +907,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       controller: dueAmountController,
                       style: TextStyle(color: colors.textSecondary),
                       decoration: InputDecoration(
-                        labelText: "Due Amount",
+                        labelText: l10n.dueAmountLabel,
                         labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                       readOnly: true,
@@ -917,7 +923,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         color: dateUnlocked ? colors.textPrimary : colors.textSecondary,
                       ),
                       decoration: InputDecoration(
-                        labelText: dateUnlocked ? 'Due Date (এডিট করা যাবে)' : 'Due Date',
+                        labelText: dateUnlocked ? l10n.dueDateEditable : l10n.dueDateFieldLabel,
                         labelStyle: TextStyle(color: colors.textSecondary),
                         suffixIcon: Icon(
                           dateUnlocked ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
@@ -932,7 +938,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "আনলক করতে আরও ${7 - dateTapCount} বার ট্যাপ করুন",
+                            l10n.tapsToUnlock(7 - dateTapCount),
                             style: TextStyle(fontSize: 11, color: colors.warn),
                           ),
                         ),
@@ -943,7 +949,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "তারিখ পরিবর্তনযোগ্য — সরাসরি payment/charge এতে প্রভাব ফেলবে না",
+                            l10n.dateEditableWarning,
                             style: TextStyle(fontSize: 11, color: colors.clear),
                           ),
                         ),
@@ -953,7 +959,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       controller: noteController,
                       style: TextStyle(color: colors.textPrimary),
                       decoration: InputDecoration(
-                        labelText: "Note",
+                        labelText: l10n.noteLabel,
                         labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                     ),
@@ -965,7 +971,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   onPressed: isSavingEdit
                       ? null
                       : () => Navigator.pop(dialogContext),
-                  child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+                  child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -1022,7 +1028,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: colors.clear,
-                              content: const Text("Customer details updated ✅"),
+                              content: Text(l10n.customerUpdatedSuccess),
                             ),
                           );
                         },
@@ -1032,7 +1038,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text("Save"),
+                      : Text(l10n.save),
                 ),
               ],
             );
@@ -1044,6 +1050,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   void _showSmsHistory(Customer customer) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -1052,7 +1059,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("SMS Sent History", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.smsSentHistoryTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: SizedBox(
           width: double.maxFinite,
           child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -1072,7 +1079,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               if (logs.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Text("এখনো কোনো SMS পাঠানো হয়নি", style: TextStyle(color: colors.textSecondary)),
+                  child: Text(l10n.noSmsSentYet, style: TextStyle(color: colors.textSecondary)),
                 );
               }
 
@@ -1097,8 +1104,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       title: Text(_formatDateTime(sentAt), style: TextStyle(color: colors.textPrimary)),
                       subtitle: Text(
                         type == 'reminder'
-                            ? 'Reminder এর মাধ্যমে auto-send'
-                            : 'ম্যানুয়ালি পাঠানো হয়েছে',
+                            ? l10n.reminderAutoSend
+                            : l10n.manuallySent,
                         style: TextStyle(fontSize: 12, color: colors.textSecondary),
                       ),
                     );
@@ -1111,7 +1118,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Close", style: TextStyle(color: colors.accent)),
+            child: Text(l10n.close, style: TextStyle(color: colors.accent)),
           ),
         ],
       ),
@@ -1126,7 +1133,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('কল করা যায়নি')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.callFailedShort)),
       );
     }
   }
@@ -1147,7 +1154,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('WhatsApp খোলা যায়নি')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.whatsappNotOpened)),
       );
     }
   }
@@ -1155,6 +1162,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -1335,13 +1343,15 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
                 const SizedBox(height: 10),
                 Text(
-                  "Due date: ${_formatDateOnly(customer.lastPaymentDate)} "
-                  "(${_daysSincePayment(customer.lastPaymentDate)})",
+                  l10n.dueDateWithDays(
+                    _formatDateOnly(customer.lastPaymentDate),
+                    _daysSincePayment(customer.lastPaymentDate),
+                  ),
                   style: TextStyle(color: colors.textSecondary),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "Total Due: ${customer.totalDue.toStringAsFixed(2)}",
+                  l10n.totalDueColon(customer.totalDue.toStringAsFixed(2)),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: customer.totalDue > 0 ? colors.due : colors.clear,
@@ -1371,7 +1381,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             Icon(Icons.sms_outlined, size: 16, color: colors.info),
                             const SizedBox(width: 6),
                             Text(
-                              "SMS পাঠানো হয়েছে: $count বার",
+                              l10n.smsSentCount(count),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: colors.info,
@@ -1395,7 +1405,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}",
+                              l10n.nextReminderLabel(_formatDateTime(customer.nextReminderDate!)),
                               style: TextStyle(color: colors.warn),
                             ),
                             if (customer.isRecurringReminder) ...[
@@ -1405,7 +1415,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                                   Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
                                   const SizedBox(width: 4),
                                   Text(
-                                    "Repeats ${_recurrenceLabel(customer.recurrenceType ?? 'monthly')}",
+                                    l10n.repeatsLabel(_recurrenceLabel(customer.recurrenceType ?? 'monthly')),
                                     style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
                                   ),
                                 ],
@@ -1417,12 +1427,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       if (customer.isRecurringReminder)
                         IconButton(
                           icon: Icon(Icons.check_circle_outline_rounded, color: colors.clear, size: 20),
-                          tooltip: "Mark Done (repeat continues)",
+                          tooltip: l10n.markDoneTooltip,
                           onPressed: () => _markRecurringDone(customer),
                         ),
                       IconButton(
                         icon: Icon(Icons.cancel, color: colors.due, size: 20),
-                        tooltip: customer.isRecurringReminder ? "Stop Recurring" : "Remove Reminder",
+                        tooltip: customer.isRecurringReminder ? l10n.stopRecurringAction : l10n.removeReminderAction,
                         onPressed: () => _confirmClearReminder(customer),
                       ),
                     ],
@@ -1438,7 +1448,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         ),
                         onPressed: () =>
                             _addPayment(customer, PaymentType.payment),
-                        child: const Text("Record Payment"),
+                        child: Text(l10n.recordPayment),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -1450,7 +1460,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         ),
                         onPressed: () =>
                             _addPayment(customer, PaymentType.dueAdded),
-                        child: const Text("Add Charge"),
+                        child: Text(l10n.addCharge),
                       ),
                     ),
                   ],
@@ -1465,7 +1475,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     ),
                     onPressed: () => _setReminder(customer),
                     icon: const Icon(Icons.alarm),
-                    label: const Text("Set Reminder"),
+                    label: Text(l10n.setReminder),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1473,7 +1483,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Payment History",
+                      l10n.paymentHistoryTitle,
                       style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
                     ),
                     Row(
@@ -1516,7 +1526,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
                       if (payments.isEmpty) {
                         return Center(
-                          child: Text("No transactions yet", style: TextStyle(color: colors.textSecondary)),
+                          child: Text(l10n.noTransactionsYet, style: TextStyle(color: colors.textSecondary)),
                         );
                       }
 

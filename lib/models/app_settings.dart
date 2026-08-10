@@ -17,6 +17,8 @@ class AppSettings {
   final double fontScale;
   final bool appLockEnabled;
   final String? appLockPinHash;
+  // ✅ 'bn' বা 'en' — পুরো অ্যাপের ভাষা নিয়ন্ত্রণ করে
+  final String languageCode;
 
   const AppSettings({
     required this.accentColorValue,
@@ -31,6 +33,7 @@ class AppSettings {
     required this.fontScale,
     required this.appLockEnabled,
     this.appLockPinHash,
+    required this.languageCode,
   });
 
   Color get accentColor => Color(accentColorValue);
@@ -50,6 +53,7 @@ class AppSettings {
         fontScale: 1.0,
         appLockEnabled: false,
         appLockPinHash: null,
+        languageCode: 'bn',
       );
 
   factory AppSettings.fromMap(Map<String, dynamic> map) {
@@ -73,6 +77,7 @@ class AppSettings {
       appLockEnabled:
           map['appLockEnabled'] as bool? ?? defaults.appLockEnabled,
       appLockPinHash: map['appLockPinHash'] as String?,
+      languageCode: map['languageCode'] as String? ?? defaults.languageCode,
     );
   }
 
@@ -90,6 +95,7 @@ class AppSettings {
       'fontScale': fontScale,
       'appLockEnabled': appLockEnabled,
       'appLockPinHash': appLockPinHash,
+      'languageCode': languageCode,
     };
   }
 
@@ -107,6 +113,7 @@ class AppSettings {
     bool? appLockEnabled,
     String? appLockPinHash,
     bool clearPin = false,
+    String? languageCode,
   }) {
     return AppSettings(
       accentColorValue: accentColorValue ?? this.accentColorValue,
@@ -122,6 +129,7 @@ class AppSettings {
       fontScale: fontScale ?? this.fontScale,
       appLockEnabled: appLockEnabled ?? this.appLockEnabled,
       appLockPinHash: clearPin ? null : (appLockPinHash ?? this.appLockPinHash),
+      languageCode: languageCode ?? this.languageCode,
     );
   }
 

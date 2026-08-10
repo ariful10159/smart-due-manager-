@@ -36,6 +36,9 @@ class AppSettingsController extends ChangeNotifier {
   Future<void> updateCurrency(String symbol) =>
       update(_settings.copyWith(currencySymbol: symbol));
 
+  Future<void> updateLanguage(String languageCode) =>
+      update(_settings.copyWith(languageCode: languageCode));
+
   Future<void> updateBusinessInfo({
     required String name,
     required String address,

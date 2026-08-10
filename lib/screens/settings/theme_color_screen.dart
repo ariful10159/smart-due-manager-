@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/app_settings.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_settings_scope.dart';
@@ -10,6 +11,7 @@ class ThemeColorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final controller = AppSettingsScope.of(context);
     final settings = controller.settings;
 
@@ -17,7 +19,7 @@ class ThemeColorScreen extends StatelessWidget {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "থিম কালার",
+          l10n.themeColor,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: colors.textPrimary),
         ),
         centerTitle: true,

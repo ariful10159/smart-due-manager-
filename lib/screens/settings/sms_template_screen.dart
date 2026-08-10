@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/app_settings.dart';
 import '../../providers/app_settings_controller.dart';
 import '../../theme/app_colors.dart';
@@ -61,6 +62,7 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final AppSettingsController controller = AppSettingsScope.of(context);
     final AppSettings settings = controller.settings;
 
@@ -74,7 +76,7 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "SMS টেমপ্লেট",
+          l10n.smsTemplate,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -86,12 +88,12 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            "Due Reminder",
+            l10n.dueReminderLabel,
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
           ),
           const SizedBox(height: 4),
           Text(
-            "কাস্টমারের বকেয়া ৳0 এর বেশি থাকলে এই টেমপ্লেট ব্যবহার হবে",
+            l10n.dueReminderDesc,
             style: TextStyle(fontSize: 12, color: colors.textSecondary),
           ),
           const SizedBox(height: 10),
@@ -102,7 +104,7 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
             decoration: InputDecoration(
               filled: true,
               fillColor: colors.surfaceAlt,
-              hintText: 'আপনার SMS টেমপ্লেট লিখুন...',
+              hintText: l10n.smsTemplateHint,
               hintStyle: TextStyle(color: colors.hintColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -126,12 +128,12 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
           const SizedBox(height: 24),
 
           Text(
-            "Full Payment Thank You",
+            l10n.fullPaymentThankYouLabel,
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
           ),
           const SizedBox(height: 4),
           Text(
-            "কাস্টমারের বকেয়া সম্পূর্ণ পরিশোধ (৳0) হয়ে গেলে এই টেমপ্লেট ব্যবহার হবে",
+            l10n.fullPaymentThankYouDesc,
             style: TextStyle(fontSize: 12, color: colors.textSecondary),
           ),
           const SizedBox(height: 10),
@@ -142,7 +144,7 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
             decoration: InputDecoration(
               filled: true,
               fillColor: colors.surfaceAlt,
-              hintText: 'ধন্যবাদ জানানোর SMS টেমপ্লেট লিখুন...',
+              hintText: l10n.thankYouTemplateHint,
               hintStyle: TextStyle(color: colors.hintColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -173,7 +175,7 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
                   ),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('টেমপ্লেট সেভ হয়েছে')),
+                  SnackBar(content: Text(l10n.templateSaved)),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -182,7 +184,7 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text("টেমপ্লেট সেভ করুন", style: TextStyle(fontWeight: FontWeight.w700)),
+              child: Text(l10n.saveTemplate, style: const TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
         ],

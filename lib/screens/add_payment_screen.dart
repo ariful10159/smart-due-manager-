@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/payment.dart';
 import '../theme/app_colors.dart';
@@ -110,11 +111,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     if (bytes.length > 700 * 1024) {
       if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'ছবিটা বেশি বড়, দয়া করে আরেকটু ছোট/হালকা ছবি বেছে নিন',
-          ),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context)!.photoTooLarge)),
       );
       return null;
     }
@@ -124,13 +121,14 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
 
     final amountText = _amountController.text.trim();
     final amount = amountText.isEmpty ? 0.0 : double.tryParse(amountText);
     if (amount == null || amount < 0) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      ).showSnackBar(SnackBar(content: Text(l10n.enterValidAmount)));
       return;
     }
 
@@ -143,7 +141,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     if (discount < 0) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Discount amount সঠিক নয়')));
+      ).showSnackBar(SnackBar(content: Text(l10n.discountAmountInvalid)));
       return;
     }
 
@@ -151,7 +149,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isPayment ? 'Amount অথবা Discount amount দিন' : 'Enter a valid amount',
+            isPayment ? l10n.amountOrDiscountRequired : l10n.enterValidAmount,
           ),
         ),
       );
@@ -239,12 +237,13 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+    final l10n = AppLocalizations.of(context)!;
 
     final isPayment = widget.type == PaymentType.payment;
     final themeColor = isPayment
         ? const Color(0xFF10B981)
         : const Color(0xFFEF4444); // Emerald Green vs Crimson Red
-    final title = isPayment ? 'Record Payment' : 'Add Charge';
+    final title = isPayment ? l10n.recordPayment : l10n.addCharge;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -325,7 +324,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "Current Due: ৳${widget.customer.totalDue.toStringAsFixed(2)}",
+                              l10n.currentDueLabel('৳${widget.customer.totalDue.toStringAsFixed(2)}'),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: colors.due,
@@ -345,7 +344,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                   child: Column(
                     children: [
                       Text(
-                        isPayment ? 'ENTER AMOUNT ' : 'ENTER AMOUNT',
+                        l10n.enterAmountLabel,
                         style: TextStyle(
                           fontSize: 12,
                           letterSpacing: 1.5,
@@ -392,11 +391,11 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                               if (isPayment && discount != null && discount > 0) {
                                 return null;
                               }
-                              return 'Amount অথবা Discount amount দিন';
+                              return l10n.amountOrDiscountRequired;
                             }
                             final amount = double.tryParse(trimmed);
                             if (amount == null || amount < 0) {
-                              return 'সঠিক amount দিন';
+                              return l10n.invalidAmount;
                             }
                             return null;
                           },
@@ -419,7 +418,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 if (isPayment) ...[
                   const SizedBox(height: 20),
                   Text(
-                    'Discount Amount (Optional)',
+                    l10n.discountAmountOptional,
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                   ),
                   const SizedBox(height: 8),
@@ -451,14 +450,14 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                       if (value == null || value.trim().isEmpty) return null;
                       final discount = double.tryParse(value.trim());
                       if (discount == null || discount < 0) {
-                        return 'সঠিক discount amount দিন';
+                        return l10n.invalidDiscountAmount;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'দিলে এই পরিমাণও বকেয়া থেকে বাদ যাবে, কিন্তু নগদ হিসেবে গণ্য হবে না',
+                    l10n.discountHelperText,
                     style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
                   ),
                 ],
@@ -467,7 +466,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
                 // 📅 Date Selection Field
                 Text(
-                  'Transaction Date',
+                  l10n.transactionDate,
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 8),
@@ -503,7 +502,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
                 // 💳 Dynamic Selector Chips for Payment Method
                 Text(
-                  'Payment Method',
+                  l10n.paymentMethod,
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 10),
@@ -511,17 +510,17 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                   spacing: 10,
                   runSpacing: 6,
                   children: [
-                    _buildMethodChip(colors, PaymentMethod.handCash, 'Cash', Icons.payments_rounded, themeColor),
+                    _buildMethodChip(colors, PaymentMethod.handCash, l10n.cashMethod, Icons.payments_rounded, themeColor),
                     _buildMethodChip(colors, PaymentMethod.bKash, 'bKash', Icons.account_balance_wallet, themeColor),
                     _buildMethodChip(colors, PaymentMethod.nagad, 'Nagad', Icons.phonelink_ring_rounded, themeColor),
-                    _buildMethodChip(colors, PaymentMethod.bank, 'Bank', Icons.account_balance_rounded, themeColor),
+                    _buildMethodChip(colors, PaymentMethod.bank, l10n.bankMethod, Icons.account_balance_rounded, themeColor),
                   ],
                 ),
                 const SizedBox(height: 24),
 
                 // 📝 Note/Description Input Field
                 Text(
-                  'Description / Note',
+                  l10n.descriptionNote,
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 8),
@@ -530,7 +529,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                   maxLines: 2,
                   style: TextStyle(color: colors.textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Add additional details here...',
+                    hintText: l10n.addDetailsHint,
                     hintStyle: TextStyle(color: colors.hintColor, fontSize: 14),
                     filled: true,
                     fillColor: colors.surface,
@@ -553,7 +552,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
                 // 📸 Receipt Upload Frame
                 Text(
-                  'Transaction Receipt (Optional)',
+                  l10n.transactionReceiptOptional,
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 8),
@@ -599,14 +598,14 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                                       color: Colors.black.withValues(alpha: 0.6),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.edit_rounded, color: Colors.white, size: 16),
-                                        SizedBox(width: 6),
+                                        const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                                        const SizedBox(width: 6),
                                         Text(
-                                          'Change Receipt',
-                                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                          l10n.changeReceipt,
+                                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                                         ),
                                       ],
                                     ),
@@ -633,7 +632,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Tap to upload billing paper/slip',
+                                  l10n.tapToUploadReceipt,
                                   style: TextStyle(
                                     color: colors.textSecondary,
                                     fontSize: 12,
@@ -672,14 +671,14 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Row(
+                        : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.check_circle_rounded, size: 20),
-                              SizedBox(width: 10),
+                              const Icon(Icons.check_circle_rounded, size: 20),
+                              const SizedBox(width: 10),
                               Text(
-                                'Confirm Transaction',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                                l10n.confirmTransaction,
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                               ),
                             ],
                           ),

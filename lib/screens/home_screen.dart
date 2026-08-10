@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import 'report_screen.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
@@ -97,15 +98,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _greeting() {
+    final l10n = AppLocalizations.of(context)!;
     final hour = DateTime.now().hour;
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
-    return "Good Evening";
+    if (hour < 12) return l10n.greetingMorning;
+    if (hour < 17) return l10n.greetingAfternoon;
+    return l10n.greetingEvening;
   }
 
   Future<void> _handleLogout() async {
     if (!mounted) return;
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -117,22 +120,22 @@ class _HomeScreenState extends State<HomeScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          "Logout",
+          l10n.logout,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: Text(
-          "আপনি কি লগআউট করতে চান?",
+          l10n.logoutConfirm,
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              "Logout",
+              l10n.logout,
               style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
             ),
           ),
@@ -159,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
+    final l10n = AppLocalizations.of(context)!;
 
     return PopScope(
       // ✅ Logout প্রসেস চলাকালীন back বাটন সম্পূর্ণ ব্লক করা হচ্ছে
@@ -229,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          'ডেটা লোড করতে সমস্যা হয়েছে, আবার লগইন করুন',
+                          l10n.dataLoadError,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600),
                         ),
@@ -286,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded(
                               child: _CollectionCard(
                                 icon: Icons.today_rounded,
-                                label: "আজকের Collection",
+                                label: l10n.todaysCollection,
                                 value: _loadingCollection ? null : _todayCollection.toStringAsFixed(0),
                                 color: colors.accent,
                               ),
@@ -295,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded(
                               child: _CollectionCard(
                                 icon: Icons.calendar_view_week_rounded,
-                                label: "এই সপ্তাহের Collection",
+                                label: l10n.weeksCollection,
                                 value: _loadingCollection ? null : _weekCollection.toStringAsFixed(0),
                                 color: colors.accentAlt,
                               ),
@@ -315,25 +319,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             _StatCard(
                               icon: Icons.account_balance_wallet_rounded,
-                              label: "Total Due",
+                              label: l10n.totalDue,
                               value: totalDue.toStringAsFixed(0),
                               color: colors.due,
                             ),
                             _StatCard(
                               icon: Icons.groups_rounded,
-                              label: "Total Customers",
+                              label: l10n.totalCustomers,
                               value: totalCustomers.toString(),
                               color: colors.info,
                             ),
                             _StatCard(
                               icon: Icons.warning_amber_rounded,
-                              label: "Overdue Reminders",
+                              label: l10n.overdueReminders,
                               value: overdueReminders.toString(),
                               color: colors.warn,
                             ),
                             _StatCard(
                               icon: Icons.check_circle_rounded,
-                              label: "Fully Paid",
+                              label: l10n.fullyPaid,
                               value: fullyPaidCustomers.toString(),
                               color: colors.clear,
                             ),
@@ -346,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Expanded(
                               child: _MiniStat(
-                                label: "With Due",
+                                label: l10n.withDue,
                                 value: customersWithDue.toString(),
                                 color: colors.due,
                               ),
@@ -354,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: _MiniStat(
-                                label: "Upcoming Reminders",
+                                label: l10n.upcomingReminders,
                                 value: upcomingReminders.toString(),
                                 color: colors.accentAlt,
                               ),
@@ -365,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 20),
 
                         _SectionHeader(
-                          title: "Top Due Customers",
+                          title: l10n.topDueCustomers,
                           onSeeAll: _openAllCustomers,
                         ),
                         const SizedBox(height: 8),
@@ -373,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (topFive.isEmpty)
                           _EmptyCard(
                             icon: Icons.celebration_rounded,
-                            message: "কোনো বকেয়া নেই — সব পরিষ্কার! 🎉",
+                            message: l10n.noOutstandingDues,
                             color: colors.clear,
                           )
                         else
@@ -393,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 20),
 
                         _SectionHeader(
-                          title: "Upcoming Reminders",
+                          title: l10n.upcomingReminders,
                           onSeeAll: _openReminderScreen,
                         ),
                         const SizedBox(height: 8),
@@ -401,7 +405,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (upcomingPreview.isEmpty)
                           _EmptyCard(
                             icon: Icons.notifications_off_rounded,
-                            message: "কোনো upcoming reminder নেই",
+                            message: l10n.noUpcomingReminders,
                             color: colors.textSecondary,
                           )
                         else
@@ -753,6 +757,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -773,9 +778,9 @@ class _SectionHeader extends StatelessWidget {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text(
-            "See All",
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+          child: Text(
+            l10n.seeAll,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
           ),
         ),
       ],

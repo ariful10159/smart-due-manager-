@@ -1,0 +1,397 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Smart Due",
+
+  "cancel": "Cancel",
+  "save": "Save",
+  "seeAll": "See All",
+  "logout": "Logout",
+  "logoutConfirm": "Are you sure you want to logout?",
+
+  "greetingMorning": "Good Morning",
+  "greetingAfternoon": "Good Afternoon",
+  "greetingEvening": "Good Evening",
+  "dataLoadError": "Failed to load data, please login again",
+  "todaysCollection": "Today's Collection",
+  "weeksCollection": "This Week's Collection",
+  "totalDue": "Total Due",
+  "totalCustomers": "Total Customers",
+  "overdueReminders": "Overdue Reminders",
+  "fullyPaid": "Fully Paid",
+  "withDue": "With Due",
+  "upcomingReminders": "Upcoming Reminders",
+  "topDueCustomers": "Top Due Customers",
+  "noOutstandingDues": "No outstanding dues — all clear! 🎉",
+  "noUpcomingReminders": "No upcoming reminders",
+
+  "navHome": "Home",
+  "navAddCustomer": "Add Customer",
+  "navAllCustomers": "All Customers",
+  "navReminders": "Reminders",
+
+  "drawerHome": "Home",
+  "drawerNotebooks": "Notebooks",
+  "drawerReports": "Reports",
+  "drawerArchived": "Archived Customers",
+  "drawerSettings": "Settings",
+  "drawerHelp": "Help & Support",
+  "drawerFeedback": "Send Feedback",
+  "drawerRate": "Rate the App",
+  "darkMode": "Dark Mode",
+  "lightMode": "Light Mode",
+  "emailAppNotFound": "No email app found",
+  "playStoreNotFound": "Could not open Play Store",
+
+  "settingsTitle": "Settings",
+  "groupAppearance": "Appearance",
+  "themeColor": "Theme Color",
+  "appMode": "App Mode",
+  "fontSize": "Font Size",
+  "fontScaleSmall": "Small",
+  "fontScaleNormal": "Normal",
+  "fontScaleMedium": "Medium",
+  "fontScaleLarge": "Large",
+  "fontScaleExtraLarge": "Extra Large",
+  "language": "Language",
+  "groupBusiness": "Business",
+  "currency": "Currency",
+  "businessProfile": "Business Profile",
+  "logoUpdated": "Logo updated",
+  "logoUploadFailed": "Logo upload failed, please try again",
+  "businessInfoSaved": "Business info saved",
+  "businessShopName": "Business/Shop Name",
+  "ownerNameLabel": "Owner Name",
+  "addressLabel": "Address",
+  "smsTemplate": "SMS Template",
+  "dueReminderLabel": "Due Reminder",
+  "dueReminderDesc": "Used when the customer's due is more than ৳0",
+  "smsTemplateHint": "Write your SMS template...",
+  "fullPaymentThankYouLabel": "Full Payment Thank You",
+  "fullPaymentThankYouDesc": "Used when the customer's due becomes fully paid (৳0)",
+  "thankYouTemplateHint": "Write your thank-you SMS template...",
+  "templateSaved": "Template saved",
+  "saveTemplate": "Save Template",
+  "groupSecurity": "Security & Data",
+  "appLock": "App Lock (Security)",
+  "appLockEnabledStatus": "App Lock is enabled",
+  "appLockDisabledStatus": "App Lock is disabled",
+  "changePin": "Change PIN",
+  "enabled": "Enabled",
+  "disabled": "Disabled",
+  "dataBackup": "Data Backup",
+  "exportFailed": "Export failed, please try again",
+  "noValidCustomersFound": "No valid customers found in the file",
+  "confirmImportTitle": "Confirm Import",
+  "confirmImportBody": "{count} customers found. They'll be added to your account (numbers that already exist will be skipped as duplicates). Continue?",
+  "@confirmImportBody": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "importAction": "Import",
+  "importedResult": "{imported} imported",
+  "@importedResult": {
+    "placeholders": { "imported": { "type": "int" } }
+  },
+  "skippedSuffix": ", {skipped} skipped as duplicates",
+  "@skippedSuffix": {
+    "placeholders": { "skipped": { "type": "int" } }
+  },
+  "importFailed": "Import failed, please try again",
+  "dataBackupDesc": "Export all customer data as a CSV file — openable in Excel/Google Sheets. You can also restore customers from a previously exported CSV file.",
+  "exportingLabel": "Exporting...",
+  "exportCsv": "Export CSV",
+  "importingLabel": "Importing...",
+  "restoreCsv": "Restore from CSV",
+  "groupLegal": "Legal",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfService": "Terms of Service",
+
+  "languageTitle": "Language",
+  "english": "English",
+  "bengali": "বাংলা (Bengali)",
+
+  "createCustomer": "Create Customer",
+  "addCustomField": "Add Custom Field",
+  "editCustomField": "Edit Custom Field",
+  "customFieldLabelHint": "e.g. NID Number, Shop Name, Reference",
+  "fieldType": "Field Type",
+  "deleteField": "Delete Field",
+  "add": "Add",
+  "alreadyDefaultField": "\"{label}\" is already a default field",
+  "@alreadyDefaultField": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "alreadyAdded": "\"{label}\" is already added",
+  "@alreadyAdded": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "photoTooLarge": "Photo is too large, please choose a smaller/lighter photo",
+  "userNotLoggedIn": "User not logged in",
+  "successTitle": "Success!",
+  "customerAddedSuccess": "{name} has been added successfully.",
+  "@customerAddedSuccess": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "saveFailed": "Failed to save, please try again",
+  "fullName": "Full Name",
+  "pleaseEnterName": "Please enter name",
+  "phoneNumber": "Phone Number",
+  "addressLocation": "Address Location",
+  "initialDueAmount": "Initial Due Amount",
+  "selectDate": "Select Date",
+  "additionalNotes": "Additional Notes",
+  "addAnotherField": "Add another field",
+  "saveCustomerAccount": "Save Customer Account",
+  "fieldTypeText": "Text",
+  "fieldTypeNumber": "Number",
+  "fieldTypeDate": "Date",
+  "fieldTypeAmount": "Amount",
+  "fieldTypeLongText": "Long Text",
+  "fieldTypePhoto": "Photo",
+
+  "callFailed": "Could not call, no dialer app found",
+  "sendSms": "Send SMS",
+  "bulkSmsConfirmBody": "The SMS app will open one by one for the selected {count} customers. You'll need to press Send yourself for each customer.",
+  "@bulkSmsConfirmBody": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "start": "Start",
+  "smsAppOpenedResult": "SMS app opened for {opened}/{total} customers",
+  "@smsAppOpenedResult": {
+    "placeholders": { "opened": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "sendingSmsProgress": "Send SMS ({current}/{total})",
+  "@sendingSmsProgress": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "close": "Close",
+  "skip": "Skip",
+  "openSmsApp": "Open SMS App",
+  "reminderSet": "Reminder Set",
+  "noReminder": "No Reminder",
+  "sortDueHighLow": "Due: High to Low",
+  "sortDueLowHigh": "Due: Low to High",
+  "sortNameAZ": "Name: A to Z",
+  "sortNameZA": "Name: Z to A",
+  "sortRecentlyAdded": "Recently Added",
+  "sortDefault": "Default",
+  "selectedCount": "{count} selected",
+  "@selectedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "selectAll": "Select All",
+  "sort": "Sort",
+  "selectCustomers": "Select customers",
+  "searchNamePhoneHint": "Search by name or phone number...",
+  "yearLabel": "Year",
+  "monthLabel": "Month",
+  "reminderLabel": "Reminder",
+  "clearAllFilters": "Clear All Filters",
+  "customersFoundCount": "{count} customer(s) found",
+  "@customersFoundCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "totalDueColon": "Total Due: {amount}",
+  "@totalDueColon": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "noSearchResults": "No one matches '{query}'",
+  "@noSearchResults": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "noCustomersFound": "No customers found",
+  "dueDateLabel": "Due date: {date}",
+  "@dueDateLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "enterValidAmount": "Enter a valid amount",
+  "discountAmountInvalid": "Discount amount is not valid",
+  "amountOrDiscountRequired": "Enter Amount or Discount amount",
+  "recordPayment": "Record Payment",
+  "addCharge": "Add Charge",
+  "currentDueLabel": "Current Due: {amount}",
+  "@currentDueLabel": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "enterAmountLabel": "ENTER AMOUNT",
+  "discountAmountOptional": "Discount Amount (Optional)",
+  "discountHelperText": "If given, this amount will also be deducted from due, but won't count as cash",
+  "invalidDiscountAmount": "Enter a valid discount amount",
+  "invalidAmount": "Enter a valid amount",
+  "transactionDate": "Transaction Date",
+  "paymentMethod": "Payment Method",
+  "cashMethod": "Cash",
+  "bankMethod": "Bank",
+  "descriptionNote": "Description / Note",
+  "addDetailsHint": "Add additional details here...",
+  "transactionReceiptOptional": "Transaction Receipt (Optional)",
+  "changeReceipt": "Change Receipt",
+  "tapToUploadReceipt": "Tap to upload billing paper/slip",
+  "confirmTransaction": "Confirm Transaction",
+
+  "pdfSavedOpened": "PDF saved and opened",
+  "downloadFailed": "Download failed, please try again",
+  "repeatReminderQuestion": "Repeat Reminder?",
+  "repeatReminderDesc": "Turn on auto-repeat for installment-style dues",
+  "recurrenceNone": "None (one-time)",
+  "recurrenceWeekly": "Weekly",
+  "recurrenceBiweekly": "Bi-weekly (every 2 weeks)",
+  "recurrenceBiweeklyShort": "Bi-weekly",
+  "recurrenceMonthlyFull": "Monthly (installment)",
+  "recurrenceMonthlyShort": "Monthly",
+  "nextReminderSetResult": "Next reminder set: {date}",
+  "@nextReminderSetResult": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "advanceReminderFailed": "Failed to advance reminder, please try again",
+  "addNoteOptional": "Add Note (Optional)",
+  "reminderNoteHint": "Write a note about this reminder...",
+  "reminderUpdatedSuccess": "Reminder Updated",
+  "reminderUpdatedWithRepeat": "Reminder Updated (auto-repeats {label})",
+  "@reminderUpdatedWithRepeat": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "stopRecurringReminderTitle": "Stop Recurring Reminder",
+  "cancelReminderTitle": "Cancel Reminder",
+  "stopRecurringConfirmBody": "Stop the {label} auto-repeat reminder for '{name}' completely? To skip just this cycle, use 'Mark Done' instead.",
+  "@stopRecurringConfirmBody": {
+    "placeholders": { "label": { "type": "String" }, "name": { "type": "String" } }
+  },
+  "cancelReminderConfirmBody": "Cancel the reminder set for '{name}'?",
+  "@cancelReminderConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "stopRecurringAction": "Stop Recurring",
+  "removeReminderAction": "Remove Reminder",
+  "reminderRemovedSuccess": "Reminder removed",
+  "removeReminderFailed": "Failed to remove reminder, please try again",
+  "smsAppNotOpened": "Could not open SMS app",
+  "hideCustomerTitle": "Hide Customer",
+  "hideCustomerConfirmBody": "Are you sure you want to hide '{name}'? It will be removed from the main list, but all data and payment history will be preserved. You can bring it back later from the Archived section.",
+  "@hideCustomerConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "hideAction": "Hide",
+  "customerHiddenSuccess": "{name} hidden successfully",
+  "@customerHiddenSuccess": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "hideFailed": "Hide failed, please try again",
+  "editCustomerTitle": "Edit Customer",
+  "nameLabel": "Name",
+  "phoneLabel": "Phone",
+  "dueAmountLabel": "Due Amount",
+  "dueDateFieldLabel": "Due Date",
+  "dueDateEditable": "Due Date (editable)",
+  "tapsToUnlock": "Tap {count} more times to unlock",
+  "@tapsToUnlock": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "dateEditableWarning": "Date is now editable — this won't directly affect payment/charge records",
+  "noteLabel": "Note",
+  "customerUpdatedSuccess": "Customer details updated",
+  "smsSentHistoryTitle": "SMS Sent History",
+  "noSmsSentYet": "No SMS sent yet",
+  "reminderAutoSend": "Auto-sent via reminder",
+  "manuallySent": "Sent manually",
+  "callFailedShort": "Could not make call",
+  "whatsappNotOpened": "Could not open WhatsApp",
+  "dueDateWithDays": "Due date: {date} ({days})",
+  "@dueDateWithDays": {
+    "placeholders": { "date": { "type": "String" }, "days": { "type": "String" } }
+  },
+  "smsSentCount": "SMS sent: {count} times",
+  "@smsSentCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "nextReminderLabel": "Next Reminder: {date}",
+  "@nextReminderLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "repeatsLabel": "Repeats {label}",
+  "@repeatsLabel": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "markDoneTooltip": "Mark Done (repeat continues)",
+  "setReminder": "Set Reminder",
+  "paymentHistoryTitle": "Payment History",
+  "noTransactionsYet": "No transactions yet",
+  "todayLabel": "Today",
+  "yesterdayLabel": "Yesterday",
+  "daysAgoLabel": "{days} days ago",
+  "@daysAgoLabel": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "thankYouSmsConfirm": "Send a thank-you SMS to '{name}' ({phone})?",
+  "@thankYouSmsConfirm": {
+    "placeholders": { "name": { "type": "String" }, "phone": { "type": "String" } }
+  },
+  "dueReminderSmsConfirm": "Send a due reminder SMS to '{name}' ({phone})?",
+  "@dueReminderSmsConfirm": {
+    "placeholders": { "name": { "type": "String" }, "phone": { "type": "String" } }
+  },
+  "send": "Send",
+
+  "callCompleteTitle": "Call Complete?",
+  "callCompleteBody": "You called '{name}'. Do you want to remove this reminder from the list?",
+  "@callCompleteBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "keepReminder": "Keep Reminder",
+  "reminderRemovedFor": "Reminder removed for {name}",
+  "@reminderRemovedFor": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deleteReminderTitle": "Delete Reminder",
+  "deleteReminderConfirmBody": "Delete the reminder for '{name}'?",
+  "@deleteReminderConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deleteAction": "Delete",
+  "snoozeReminderTitle": "Snooze Reminder",
+  "oneHour": "1 Hour",
+  "tomorrowSameTime": "Tomorrow (same time)",
+  "threeDays": "3 Days",
+  "oneWeek": "1 Week",
+  "customDateTime": "Custom Date & Time",
+  "setCustomDateTitle": "Set Custom Date",
+  "chooseDateTimeQuestion": "Choose date and time?",
+  "continueAction": "Continue",
+  "reminderSnoozedTo": "Reminder snoozed to {date}",
+  "@reminderSnoozedTo": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "failedToSnooze": "Failed to snooze: {error}",
+  "@failedToSnooze": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "remindersTitle": "Reminders",
+  "noRemindersSet": "No reminders set",
+  "selectReminders": "Select reminders",
+  "sortDateNearestFirst": "Date ↑ (Nearest First)",
+  "sortDateLatestFirst": "Date ↓ (Latest First)",
+  "sortOverdueFirst": "Overdue First",
+  "sortUpcomingFirst": "Upcoming First",
+  "overdueLabel": "Overdue",
+  "upcomingLabel": "Upcoming",
+  "totalLabel": "Total",
+  "selectedLabel": "Selected",
+  "tapToSelect": "Tap to select",
+  "markDone": "Mark Done",
+  "snoozeAction": "Snooze",
+  "stopAction": "Stop",
+  "overdueCountdown": "⚠️ Overdue",
+  "daysLeft": "{days} day(s) left",
+  "@daysLeft": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "hoursLeft": "{hours} hour(s) left",
+  "@hoursLeft": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "minutesLeft": "{minutes} minute(s) left",
+  "@minutesLeft": {
+    "placeholders": { "minutes": { "type": "int" } }
+  }
+}
