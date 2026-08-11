@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import 'login_screen.dart';
@@ -100,6 +101,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -170,7 +172,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // --- Title & Subtitle Hero Section ---
                       Text(
-                        "Create Account",
+                        l10n.createAccountTitle,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
@@ -181,7 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Join us and manage your transactions smartly",
+                        l10n.joinUsDesc,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: colors.textSecondary,
@@ -219,10 +221,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
                                 decoration: _fieldDecoration(
                                   colors: colors,
-                                  label: "Full Name",
+                                  label: l10n.fullName,
                                   icon: Icons.person_outline_rounded,
                                 ),
-                                validator: (v) => v == null || v.trim().isEmpty ? "আপনার নাম দিন" : null,
+                                validator: (v) => v == null || v.trim().isEmpty ? l10n.enterYourName : null,
                               ),
                               const SizedBox(height: 20),
 
@@ -234,13 +236,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
                                 decoration: _fieldDecoration(
                                   colors: colors,
-                                  label: "Phone Number",
-                                  hint: "01XXXXXXXXX",
+                                  label: l10n.phoneNumber,
+                                  hint: l10n.phoneHintExample,
                                   icon: Icons.phone_outlined,
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.trim().isEmpty) return "ফোন নাম্বার দিন";
-                                  if (v.trim().length < 11) return "সঠিক ১১ ডিজিটের ফোন নাম্বার দিন";
+                                  if (v == null || v.trim().isEmpty) return l10n.enterPhoneNumber;
+                                  if (v.trim().length < 11) return l10n.enterValid11DigitPhone;
                                   return null;
                                 },
                               ),
@@ -254,7 +256,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
                                 decoration: _fieldDecoration(
                                   colors: colors,
-                                  label: "Password",
+                                  label: l10n.passwordLabel,
                                   icon: Icons.lock_outline_rounded,
                                   suffixIcon: IconButton(
                                     icon: Icon(
@@ -269,8 +271,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return "পাসওয়ার্ড দিন";
-                                  if (v.length < 6) return "কমপক্ষে ৬ ক্যারেক্টার দিন";
+                                  if (v == null || v.isEmpty) return l10n.enterPassword;
+                                  if (v.length < 6) return l10n.minSixCharacters;
                                   return null;
                                 },
                               ),
@@ -284,7 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
                                 decoration: _fieldDecoration(
                                   colors: colors,
-                                  label: "Confirm Password",
+                                  label: l10n.confirmPasswordLabel,
                                   icon: Icons.lock_reset_rounded,
                                   suffixIcon: IconButton(
                                     icon: Icon(
@@ -300,7 +302,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 validator: (v) {
                                   if (v != _passwordController.text) {
-                                    return "পাসওয়ার্ড মিলছে না";
+                                    return l10n.passwordsDontMatch;
                                   }
                                   return null;
                                 },
@@ -347,8 +349,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
-                              : const Text(
-                                  "Get Started",
+                              : Text(
+                                  l10n.getStarted,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -365,7 +367,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "আগে থেকেই অ্যাকাউন্ট আছে? ",
+                            l10n.alreadyHaveAccount,
                             style: TextStyle(color: colors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
                           ),
                           GestureDetector(
@@ -379,7 +381,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     );
                                   },
                             child: Text(
-                              "Login করুন",
+                              l10n.loginNow,
                               style: TextStyle(
                                 color: colors.accent,
                                 fontWeight: FontWeight.bold,

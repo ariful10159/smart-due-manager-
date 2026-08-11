@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/notebook.dart';
 import '../models/notebook_page.dart';
 import '../models/notebook_repository.dart';
@@ -100,7 +101,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
       if (!mounted) return;
       setState(() => _status = _SaveStatus.unsaved);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Save failed, your changes are kept locally — will retry")),
+        SnackBar(content: Text(AppLocalizations.of(context)!.saveFailedLocalRetry)),
       );
     }
   }
@@ -119,7 +120,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
       _currentPage = NotebookPage(
         id: page.id,
         notebookId: page.notebookId,
-        title: title.trim().isEmpty ? 'Untitled Page' : title.trim(),
+        title: title.trim().isEmpty ? AppLocalizations.of(context)!.untitledPage : title.trim(),
         contentJson: page.contentJson,
         order: page.order,
         createdAt: page.createdAt,
@@ -129,7 +130,10 @@ class _NotebookScreenState extends State<NotebookScreen> {
   }
 
   Future<void> _createPage() async {
-    final page = await _repo.createPage(notebookId: widget.notebookId, title: 'Untitled Page');
+    final page = await _repo.createPage(
+      notebookId: widget.notebookId,
+      title: AppLocalizations.of(context)!.untitledPage,
+    );
     _selectPage(page);
   }
 
@@ -139,6 +143,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
 
   Future<void> _deletePage(NotebookPage page, List<NotebookPage> allPages) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -147,16 +152,16 @@ class _NotebookScreenState extends State<NotebookScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Delete Page", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
-        content: Text('"${page.title}" মুছে দিতে চান?', style: TextStyle(color: colors.textSecondary)),
+        title: Text(l10n.deletePageTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(l10n.deletePageConfirmBody(page.title), style: TextStyle(color: colors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Delete", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -183,6 +188,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
 
   Future<void> _renamePageDialog(NotebookPage page) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: page.title);
 
     final newTitle = await showDialog<String>(
@@ -193,7 +199,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Rename Page", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.renamePageTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -212,11 +218,11 @@ class _NotebookScreenState extends State<NotebookScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: Text("Save", style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
+            child: Text(l10n.save, style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -243,6 +249,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
 
   Future<String?> _pickAndUploadImage(BuildContext context) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: colors.surface,
@@ -255,12 +262,12 @@ class _NotebookScreenState extends State<NotebookScreen> {
           children: [
             ListTile(
               leading: Icon(Icons.photo_library_outlined, color: colors.accent),
-              title: Text("Choose from Gallery", style: TextStyle(color: colors.textPrimary)),
+              title: Text(l10n.chooseFromGallery, style: TextStyle(color: colors.textPrimary)),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             ListTile(
               leading: Icon(Icons.photo_camera_outlined, color: colors.accent),
-              title: Text("Take a Photo", style: TextStyle(color: colors.textPrimary)),
+              title: Text(l10n.takeAPhoto, style: TextStyle(color: colors.textPrimary)),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
           ],
@@ -275,7 +282,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
 
     if (!context.mounted) return null;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Uploading image..."), duration: Duration(seconds: 1)),
+      SnackBar(content: Text(l10n.uploadingImage), duration: const Duration(seconds: 1)),
     );
 
     try {
@@ -287,7 +294,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Image upload failed, please try again")),
+          SnackBar(content: Text(l10n.imageUploadFailed)),
         );
       }
       return null;
@@ -297,6 +304,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -319,7 +327,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
           builder: (context, snapshot) {
             final notebook = snapshot.data?.where((n) => n.id == widget.notebookId).firstOrNull;
             return Text(
-              notebook?.title ?? "Notebook",
+              notebook?.title ?? l10n.notebookFallbackTitle,
               style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary),
               overflow: TextOverflow.ellipsis,
             );
@@ -333,7 +341,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
           Builder(
             builder: (context) => IconButton(
               icon: Icon(Icons.view_sidebar_outlined, color: colors.textPrimary),
-              tooltip: "Pages",
+              tooltip: l10n.pagesLabel,
               onPressed: () => Scaffold.of(context).openEndDrawer(),
             ),
           ),
@@ -347,7 +355,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  "Page লোড করা যায়নি: ${snapshot.error}",
+                  l10n.pageLoadFailed('${snapshot.error}'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.textSecondary),
                 ),
@@ -401,10 +409,10 @@ class _NotebookScreenState extends State<NotebookScreen> {
                           fontWeight: FontWeight.w800,
                           color: colors.textPrimary,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: InputBorder.none,
                           isDense: true,
-                          hintText: "Page title",
+                          hintText: l10n.pageTitleHint,
                         ),
                       ),
                     ),
@@ -454,7 +462,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
                             config: QuillEditorConfig(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               embedBuilders: FlutterQuillEmbeds.editorBuilders(),
-                              placeholder: "লিখতে শুরু করুন...",
+                              placeholder: l10n.startWritingPlaceholder,
                             ),
                           ),
                         ),
@@ -483,11 +491,12 @@ class _SaveStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final (label, color) = switch (status) {
-      _SaveStatus.saved => ("Saved", colors.clear),
-      _SaveStatus.saving => ("Saving...", colors.warn),
-      _SaveStatus.unsaved => ("Unsaved changes", colors.textSecondary),
+      _SaveStatus.saved => (l10n.savedStatus, colors.clear),
+      _SaveStatus.saving => (l10n.savingStatus, colors.warn),
+      _SaveStatus.unsaved => (l10n.unsavedStatus, colors.textSecondary),
     };
 
     return Container(
@@ -512,6 +521,7 @@ class _EmptyPageState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -521,12 +531,12 @@ class _EmptyPageState extends StatelessWidget {
             Icon(Icons.note_add_outlined, size: 40, color: colors.accent),
             const SizedBox(height: 12),
             Text(
-              "This notebook is empty",
+              l10n.notebookEmptyTitle,
               style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary),
             ),
             const SizedBox(height: 6),
             Text(
-              "Create your first page to start writing.",
+              l10n.createFirstPageDesc,
               style: TextStyle(color: colors.textSecondary),
             ),
             const SizedBox(height: 16),
@@ -537,7 +547,7 @@ class _EmptyPageState extends StatelessWidget {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text("+ New Page"),
+              child: Text(l10n.newPagePlus),
             ),
           ],
         ),
@@ -570,6 +580,7 @@ class _PagesDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Drawer(
       backgroundColor: colors.scaffoldBg,
@@ -583,13 +594,13 @@ class _PagesDrawer extends StatelessWidget {
                   Icon(Icons.view_sidebar_outlined, color: colors.accent),
                   const SizedBox(width: 8),
                   Text(
-                    "Pages",
+                    l10n.pagesLabel,
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: colors.textPrimary),
                   ),
                   const Spacer(),
                   IconButton(
                     icon: Icon(Icons.add_rounded, color: colors.accent),
-                    tooltip: "New Page",
+                    tooltip: l10n.newPageTooltip,
                     onPressed: onCreatePage,
                   ),
                 ],
@@ -619,7 +630,7 @@ class _PagesDrawer extends StatelessWidget {
 
                   if (pages.isEmpty) {
                     return Center(
-                      child: Text("কোনো page নেই", style: TextStyle(color: colors.textSecondary)),
+                      child: Text(l10n.noPagesYet, style: TextStyle(color: colors.textSecondary)),
                     );
                   }
 
@@ -676,9 +687,9 @@ class _PagesDrawer extends StatelessWidget {
                             }
                           },
                           itemBuilder: (context) => [
-                            PopupMenuItem(value: 'rename', child: Text("Rename", style: TextStyle(color: colors.textPrimary))),
-                            PopupMenuItem(value: 'duplicate', child: Text("Duplicate", style: TextStyle(color: colors.textPrimary))),
-                            PopupMenuItem(value: 'delete', child: Text("Delete", style: TextStyle(color: colors.due))),
+                            PopupMenuItem(value: 'rename', child: Text(l10n.renameAction, style: TextStyle(color: colors.textPrimary))),
+                            PopupMenuItem(value: 'duplicate', child: Text(l10n.duplicateAction, style: TextStyle(color: colors.textPrimary))),
+                            PopupMenuItem(value: 'delete', child: Text(l10n.deleteAction, style: TextStyle(color: colors.due))),
                           ],
                         ),
                       );

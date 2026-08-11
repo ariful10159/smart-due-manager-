@@ -8,7 +8,8 @@ class LegalSection {
 /// ✅ Privacy Policy ও Terms of Service এর কনটেন্ট — এই অ্যাপ আসলে যা যা করে
 /// (Firebase Auth/Firestore ব্যবহার, রিমাইন্ডারে ফোনের নিজস্ব SMS app prefilled
 /// অবস্থায় খোলা — app নিজে SMS পাঠায় না, কোনো third-party ad/analytics SDK নেই)
-/// তার উপর ভিত্তি করে লেখা।
+/// তার উপর ভিত্তি করে লেখা। bn ও en দুই ভাষাতেই আছে, App Settings-এর language
+/// অনুযায়ী কোনটা দেখাতে হবে তা [privacyPolicy]/[termsOfService] ঠিক করে।
 ///
 /// ⚠️ এটা একটা draft — আইনি পরামর্শ নয়। Play Store এ পাবলিশ করার আগে
 /// [supportEmail] বাস্তব যোগাযোগ ইমেইল দিয়ে বদলে দিন, এবং সম্ভব হলে একজন
@@ -16,9 +17,19 @@ class LegalSection {
 class LegalContent {
   static const String appName = 'Smart Due';
   static const String supportEmail = 'arifulislammasum97@gmail.com';
-  static const String lastUpdated = '৫ আগস্ট, ২০২৬';
+  static const String _lastUpdatedBn = '৫ আগস্ট, ২০২৬';
+  static const String _lastUpdatedEn = 'August 5, 2026';
 
-  static const List<LegalSection> privacyPolicy = [
+  static String lastUpdated(String languageCode) =>
+      languageCode == 'en' ? _lastUpdatedEn : _lastUpdatedBn;
+
+  static List<LegalSection> privacyPolicy(String languageCode) =>
+      languageCode == 'en' ? _privacyPolicyEn : _privacyPolicyBn;
+
+  static List<LegalSection> termsOfService(String languageCode) =>
+      languageCode == 'en' ? _termsOfServiceEn : _termsOfServiceBn;
+
+  static const List<LegalSection> _privacyPolicyBn = [
     LegalSection(
       'আমরা যা সংগ্রহ করি',
       'আপনার নাম, ফোন নাম্বার (লগইন হিসেবে ব্যবহৃত), এবং ইচ্ছে করলে বিজনেসের নাম, '
@@ -83,7 +94,79 @@ class LegalContent {
     ),
   ];
 
-  static const List<LegalSection> termsOfService = [
+  static const List<LegalSection> _privacyPolicyEn = [
+    LegalSection(
+      'What We Collect',
+      'Your name, phone number (used as login), and optionally your business '
+      'name, address, and logo. We also store the customer information you '
+      'add in the app — name, phone number, address, due amount, and '
+      'payment history.',
+    ),
+    LegalSection(
+      'Responsibility for Customer Data',
+      'You enter customer information yourself. It is your responsibility '
+      'to ensure this information is accurate and that you have the lawful '
+      'right to collect it. $appName is just a tool for storing and '
+      'organizing this information.',
+    ),
+    LegalSection(
+      'How SMS Reminders Work',
+      'When a reminder is due, the app opens your phone\'s own SMS app with '
+      'the message prefilled — you press Send yourself. We never send any '
+      'message automatically or through any server/third-party SMS '
+      'gateway. Only the schedule of when to show which customer\'s '
+      'reminder is stored in your account.',
+    ),
+    LegalSection(
+      'Where Your Data Is Stored',
+      'All data is stored on Google\'s Firebase platform (Authentication, '
+      'Cloud Firestore), protected by Google Cloud\'s security '
+      'infrastructure. A copy of some settings is also cached on your '
+      'phone for faster loading. We don\'t operate any separate server of '
+      'our own.',
+    ),
+    LegalSection(
+      'Data Sharing',
+      'We never sell your or your customers\' information, nor share it '
+      'with anyone for advertising. This app contains no ads or '
+      'analytics/tracking SDKs. Relevant information may only be shared if '
+      'legally required (such as a government order).',
+    ),
+    LegalSection(
+      'Permissions This App Requests',
+      'Notification (to show reminders), Exact Alarm (to trigger reminders '
+      'at the exact time), Camera/Gallery (for customer photos or business '
+      'logo), and Biometric (for the optional App Lock feature). This app '
+      'never requests permission to directly send SMS, read call logs, or '
+      'access your contact list.',
+    ),
+    LegalSection(
+      'Security',
+      'Your password is secured with Firebase Authentication. The App Lock '
+      'PIN is hashed locally on your phone with salted PBKDF2 — it is '
+      'never stored in plain text. That said, no method of data '
+      'transmission over the internet is 100% secure — we cannot '
+      'guarantee that.',
+    ),
+    LegalSection(
+      'Deleting Your Data',
+      'You can export all your customer data as CSV anytime from '
+      'Settings. To request complete deletion of your account and all '
+      'related data, contact the email below.',
+    ),
+    LegalSection(
+      'Changes',
+      'This Privacy Policy may change from time to time. We will try to '
+      'notify you through the app for any major changes. You can check '
+      'the "Last Updated" date above to see when it was last revised.',
+    ),
+    LegalSection(
+      'Contact',
+      'For any questions or data-related requests, contact: $supportEmail',
+    ),
+  ];
+
+  static const List<LegalSection> _termsOfServiceBn = [
     LegalSection(
       'অ্যাপ ব্যবহারের শর্ত',
       '$appName ব্যবহার করে আপনি নিচের শর্তগুলোতে সম্মত হচ্ছেন। এই অ্যাপ ব্যবহার '
@@ -127,6 +210,59 @@ class LegalContent {
     LegalSection(
       'যোগাযোগ',
       'এই শর্তাবলী সম্পর্কে কোনো প্রশ্ন থাকলে যোগাযোগ করুন: $supportEmail',
+    ),
+  ];
+
+  static const List<LegalSection> _termsOfServiceEn = [
+    LegalSection(
+      'Terms of Use',
+      'By using $appName, you agree to the terms below. Please read the '
+      'entire terms carefully before using this app.',
+    ),
+    LegalSection(
+      'Account Responsibility',
+      'It is entirely your responsibility to keep your login password and '
+      'App Lock PIN confidential. $appName will not be liable for any '
+      'damage caused by this information being leaked.',
+    ),
+    LegalSection(
+      'Responsibility for Customer Data and Sending SMS',
+      'It is your responsibility to ensure you have the lawful right to '
+      'contact the customers whose information you add to the app and to '
+      'whom you send SMS reminders. $appName will not be liable for '
+      'incorrect or unauthorized use.',
+    ),
+    LegalSection(
+      'No Guarantee of Service',
+      'The app is provided "as-is". No guarantee is given that '
+      'notifications will arrive on time or that the app will run '
+      'uninterrupted at all times. This depends on your device\'s network, '
+      'battery optimization settings, or carrier.',
+    ),
+    LegalSection(
+      'No Payment Processing',
+      'This app only tracks due/payment records — it is not a money '
+      'transfer service, payment gateway, or financial institution. The '
+      'actual exchange of money happens entirely outside the app (cash, '
+      'mobile banking, etc.), and verifying its accuracy is the user\'s '
+      'responsibility.',
+    ),
+    LegalSection(
+      'Limitation of Liability',
+      '$appName and its developer will not be liable for any direct or '
+      'indirect damage caused by data loss, incorrect calculations, or '
+      'missed reminders. We recommend taking regular CSV backups for '
+      'important data.',
+    ),
+    LegalSection(
+      'Service Changes or Discontinuation',
+      'We reserve the right to change, add, or discontinue app features '
+      'at any time. For any major changes, we will try to notify you in '
+      'advance as much as possible.',
+    ),
+    LegalSection(
+      'Contact',
+      'If you have any questions about these terms, contact: $supportEmail',
     ),
   ];
 }

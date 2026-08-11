@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -8,6 +9,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -68,7 +70,7 @@ class SplashScreen extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              "আপনার হিসাব, আপনার নিয়ন্ত্রণে",
+              l10n.loginTagline,
               style: TextStyle(
                 fontSize: 13,
                 color: colors.textSecondary,

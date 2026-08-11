@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/legal_content.dart';
+import '../widgets/app_settings_scope.dart';
 import '../widgets/legal_document_view.dart';
 
 class TermsOfServiceScreen extends StatelessWidget {
@@ -8,9 +10,10 @@ class TermsOfServiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const LegalDocumentView(
-      title: "Terms of Service",
-      sections: LegalContent.termsOfService,
+    final languageCode = AppSettingsScope.settingsOf(context).languageCode;
+    return LegalDocumentView(
+      title: AppLocalizations.of(context)!.termsOfServiceTitle,
+      sections: LegalContent.termsOfService(languageCode),
       icon: Icons.gavel_rounded,
     );
   }

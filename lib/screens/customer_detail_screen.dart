@@ -78,6 +78,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   Future<pw.Document> _generatePdf(Customer customer) async {
     final payments = await _customerRepo.streamPayments(customer.id).first;
     final settings = AppSettingsScope.of(context).settings;
+    final isBn = settings.languageCode != 'en';
+    // ✅ PDF widget tree-এর ভেতর BuildContext না থাকায় AppLocalizations ব্যবহার
+    // করা যায় না, তাই ভাষা অনুযায়ী লেবেল বেছে নেওয়ার ছোট হেল্পার
+    String t(String bn, String en) => isBn ? bn : en;
 
     final bengaliRegular = await rootBundle.load(
       'assets/fonts/NotoSerifBengali_Condensed-Regular.ttf',
@@ -126,7 +130,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           if (businessAddressImg != null) businessAddressImg,
           pw.SizedBox(height: 12),
           pw.Text(
-            'Customer Payment History',
+            t('কাস্টমার পেমেন্ট হিস্ট্রি', 'Customer Payment History'),
             style: pw.TextStyle(
               fontSize: 22,
               fontWeight: pw.FontWeight.bold,
@@ -137,37 +141,37 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
           pw.Row(
             children: [
-              pw.Text('Name: ', style: pw.TextStyle(font: regularFont)),
+              pw.Text(t('নাম: ', 'Name: '), style: pw.TextStyle(font: regularFont)),
               customerNameImg,
             ],
           ),
           pw.Text(
-            'Phone: ${customer.phone}',
+            '${t('ফোন', 'Phone')}: ${customer.phone}',
             style: pw.TextStyle(font: regularFont),
           ),
           if (customerAddressImg != null)
             pw.Row(
               children: [
-                pw.Text('Address: ', style: pw.TextStyle(font: regularFont)),
+                pw.Text(t('ঠিকানা: ', 'Address: '), style: pw.TextStyle(font: regularFont)),
                 customerAddressImg,
               ],
             ),
           pw.Text(
-            'Due Date: ${_formatDateOnly(customer.lastPaymentDate)}',
+            '${t('বকেয়ার তারিখ', 'Due Date')}: ${_formatDateOnly(customer.lastPaymentDate)}',
             style: pw.TextStyle(font: regularFont),
           ),
           pw.Text(
-            'Total Due: ${settings.currencySymbol}${customer.totalDue.toStringAsFixed(2)}',
+            '${t('মোট বকেয়া', 'Total Due')}: ${settings.currencySymbol}${customer.totalDue.toStringAsFixed(2)}',
             style: pw.TextStyle(font: regularFont),
           ),
           if (customer.nextReminderDate != null)
             pw.Text(
-              'Next Reminder: ${_formatDateTime(customer.nextReminderDate!)}',
+              '${t('পরবর্তী রিমাইন্ডার', 'Next Reminder')}: ${_formatDateTime(customer.nextReminderDate!)}',
               style: pw.TextStyle(font: regularFont),
             ),
           pw.SizedBox(height: 20),
           pw.Text(
-            'Payment History',
+            t('পেমেন্ট হিস্ট্রি', 'Payment History'),
             style: pw.TextStyle(
               fontSize: 18,
               fontWeight: pw.FontWeight.bold,
@@ -178,7 +182,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
           if (payments.isEmpty)
             pw.Text(
-              'No transactions yet',
+              t('এখনো কোনো লেনদেন নেই', 'No transactions yet'),
               style: pw.TextStyle(font: regularFont),
             )
           else
@@ -186,7 +190,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               border: pw.TableBorder.all(width: 0.5),
               children: [
                 pw.TableRow(
-                  children: ['Date', 'Type', 'Amount', 'Note'].map((h) {
+                  children: [
+                    t('তারিখ', 'Date'),
+                    t('ধরন', 'Type'),
+                    t('পরিমাণ', 'Amount'),
+                    t('নোট', 'Note'),
+                  ].map((h) {
                     return pw.Padding(
                       padding: const pw.EdgeInsets.all(4),
                       child: pw.Text(
@@ -211,8 +220,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         padding: const pw.EdgeInsets.all(4),
                         child: pw.Text(
                           payment.type == PaymentType.payment
-                              ? 'Record Payment'
-                              : 'Add Charge',
+                              ? t('পেমেন্ট রেকর্ড', 'Record Payment')
+                              : t('চার্জ যোগ', 'Add Charge'),
                           style: pw.TextStyle(font: regularFont, fontSize: 9),
                         ),
                       ),

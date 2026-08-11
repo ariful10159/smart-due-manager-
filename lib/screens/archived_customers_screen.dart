@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
@@ -17,6 +18,7 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
 
   Future<void> _confirmRestore(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -27,21 +29,21 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          "Restore Customer",
+          l10n.restoreCustomerTitle,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: Text(
-          "'${customer.name}' কে আবার active list এ ফিরিয়ে আনতে চান?",
+          l10n.restoreConfirmBody(customer.name),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Restore", style: TextStyle(color: colors.clear, fontWeight: FontWeight.w700)),
+            child: Text(l10n.restoreAction, style: TextStyle(color: colors.clear, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -58,11 +60,12 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
       await _customerRepo.restoreCustomer(customer.id);
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: Text("${customer.name} restored successfully"),
+          content: Text(l10n.customerRestoredSuccess(customer.name)),
         ),
       );
     } catch (_) {
@@ -70,7 +73,7 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Restore failed, please try again"),
+          content: Text(AppLocalizations.of(context)!.restoreFailed),
         ),
       );
     }
@@ -78,6 +81,7 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
 
   Future<void> _confirmPermanentDelete(Customer customer) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     // ধাপ ১ — প্রথম confirmation
     final firstConfirm = await showDialog<bool>(
@@ -89,24 +93,22 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          "Delete Permanently",
+          l10n.deletePermanentlyTitle,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: Text(
-          "'${customer.name}' কে স্থায়ীভাবে ডিলিট করতে চান? "
-          "এর সব payment history ও reminder ডেটা সম্পূর্ণ মুছে যাবে। "
-          "এটি আর কখনো ফেরত পাওয়া যাবে না।",
+          l10n.deletePermanentlyConfirmBody(customer.name),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              "Continue",
+              l10n.continueAction,
               style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
             ),
           ),
@@ -127,22 +129,22 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
           side: BorderSide(color: colors.borderColor),
         ),
         title: Text(
-          "একদম নিশ্চিত?",
+          l10n.areYouAbsolutelySure,
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         content: Text(
-          "এই কাজটি Undo করা যাবে না। সত্যিই স্থায়ীভাবে ডিলিট করতে চান?",
+          l10n.undoWarningBody,
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              "Yes, Delete Forever",
+              l10n.yesDeleteForever,
               style: TextStyle(color: colors.due, fontWeight: FontWeight.w800),
             ),
           ),
@@ -161,11 +163,12 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
       await _customerRepo.deleteCustomerPermanently(customer.id);
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.clear,
-          content: Text("${customer.name} permanently deleted"),
+          content: Text(l10n.customerPermanentlyDeleted(customer.name)),
         ),
       );
     } catch (_) {
@@ -173,7 +176,7 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Delete failed, please try again"),
+          content: Text(AppLocalizations.of(context)!.deleteFailedGeneric),
         ),
       );
     }
@@ -182,12 +185,13 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "Archived Customers",
+          l10n.drawerArchived,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -216,7 +220,7 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    "কোনো Archived customer নেই",
+                    l10n.noArchivedCustomers,
                     style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13.5),
                   ),
                 ],
@@ -282,7 +286,7 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              "Total Due: ${customer.totalDue.toStringAsFixed(2)}",
+                              l10n.totalDueColon(customer.totalDue.toStringAsFixed(2)),
                               style: TextStyle(color: colors.due, fontWeight: FontWeight.w800, fontSize: 12),
                             ),
                           ),

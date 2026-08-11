@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/legal_content.dart';
+import '../widgets/app_settings_scope.dart';
 import '../widgets/legal_document_view.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
@@ -8,9 +10,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const LegalDocumentView(
-      title: "Privacy Policy",
-      sections: LegalContent.privacyPolicy,
+    final languageCode = AppSettingsScope.settingsOf(context).languageCode;
+    return LegalDocumentView(
+      title: AppLocalizations.of(context)!.privacyPolicyTitle,
+      sections: LegalContent.privacyPolicy(languageCode),
       icon: Icons.privacy_tip_rounded,
     );
   }

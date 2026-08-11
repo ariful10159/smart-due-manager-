@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/pin_lockout_service.dart';
 import '../services/pin_service.dart';
 import '../theme/app_colors.dart';
@@ -83,6 +84,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
   }
 
   Future<void> _tryBiometricUnlock() async {
+    final unlockReason = AppLocalizations.of(context)!.unlockToVerify;
     try {
       final canCheck = await _localAuth.canCheckBiometrics;
       final isSupported = await _localAuth.isDeviceSupported();
@@ -90,7 +92,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
 
       setState(() => _checkingBiometric = true);
       final didAuth = await _localAuth.authenticate(
-        localizedReason: 'অ্যাপ আনলক করতে যাচাই করুন',
+        localizedReason: unlockReason,
         options: const AuthenticationOptions(biometricOnly: true),
       );
       if (didAuth && mounted) {
@@ -127,6 +129,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
   Future<void> _handleComplete() async {
     final controller = AppSettingsScope.of(context);
     final settings = controller.settings;
+    final l10n = AppLocalizations.of(context)!;
 
     if (widget.mode == AppLockMode.unlock) {
       final storedHash = settings.appLockPinHash;
@@ -150,8 +153,8 @@ class _AppLockScreenState extends State<AppLockScreen> {
         if (lockoutUntil != null) _startLockoutTicker();
         setState(() {
           _errorText = lockoutUntil != null
-              ? 'অনেকবার ভুল PIN দেওয়া হয়েছে, কিছুক্ষণ পর আবার চেষ্টা করুন'
-              : 'ভুল PIN, আবার চেষ্টা করুন';
+              ? l10n.tooManyFailedPinAttempts
+              : l10n.wrongPinTryAgain;
           _enteredPin = '';
         });
       }
@@ -175,7 +178,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
       if (mounted) Navigator.pop(context, true);
     } else {
       setState(() {
-        _errorText = 'PIN মিলছে না, আবার চেষ্টা করুন';
+        _errorText = l10n.pinMismatchTryAgain;
         _firstPin = null;
         _enteredPin = '';
       });
@@ -183,22 +186,24 @@ class _AppLockScreenState extends State<AppLockScreen> {
   }
 
   String _formatLockoutRemaining() {
+    final l10n = AppLocalizations.of(context)!;
     final total = _lockoutRemaining.inSeconds;
-    if (total < 60) return '$total সেকেন্ড';
+    if (total < 60) return l10n.lockoutSeconds(total);
     final minutes = total ~/ 60;
     final seconds = total % 60;
     return seconds == 0
-        ? '$minutes মিনিট'
-        : '$minutes মিনিট $seconds সেকেন্ড';
+        ? l10n.lockoutMinutes(minutes)
+        : l10n.lockoutMinutesSeconds(minutes, seconds);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final isSetup = widget.mode == AppLockMode.setup;
     final title = isSetup
-        ? (_firstPin == null ? 'নতুন PIN সেট করুন' : 'PIN আবার লিখুন')
-        : 'PIN দিয়ে আনলক করুন';
+        ? (_firstPin == null ? l10n.setNewPinTitle : l10n.reEnterPinTitle)
+        : l10n.unlockWithPinTitle;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -244,7 +249,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
               if (_isLockedOut) ...[
                 const SizedBox(height: 14),
                 Text(
-                  'অনেকবার ভুল PIN — ${_formatLockoutRemaining()} পর আবার চেষ্টা করুন',
+                  l10n.tooManyAttemptsCountdown(_formatLockoutRemaining()),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.due, fontSize: 12.5, fontWeight: FontWeight.w600),
                 ),
@@ -278,7 +283,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
                 TextButton.icon(
                   onPressed: _checkingBiometric ? null : _tryBiometricUnlock,
                   icon: Icon(Icons.fingerprint_rounded, color: colors.accent),
-                  label: Text('Fingerprint দিয়ে চেষ্টা করুন', style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
+                  label: Text(l10n.tryFingerprint, style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
                 ),
               ],
 

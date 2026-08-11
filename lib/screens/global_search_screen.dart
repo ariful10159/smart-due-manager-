@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' show Document;
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../models/notebook.dart';
@@ -201,6 +202,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final hasQuery = _query.trim().isNotEmpty;
 
     final matchedCustomers = _matchedCustomers;
@@ -212,7 +214,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "Global Search",
+          l10n.globalSearchTitle,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -229,7 +231,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
               autofocus: true,
               style: TextStyle(color: colors.textPrimary, fontSize: 14),
               decoration: InputDecoration(
-                hintText: "কাস্টমার, পেমেন্ট বা নোটবুকে খুঁজুন...",
+                hintText: l10n.globalSearchHint,
                 hintStyle: TextStyle(color: colors.hintColor, fontSize: 13.5),
                 prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
                 suffixIcon: hasQuery
@@ -267,31 +269,31 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                 : _loadError
                     ? _MessageState(
                         icon: Icons.error_outline_rounded,
-                        title: "ডেটা লোড করা যায়নি",
-                        subtitle: "আবার চেষ্টা করুন",
+                        title: l10n.dataLoadFailedShort,
+                        subtitle: l10n.tryAgainMessage,
                         colors: colors,
-                        actionLabel: "Retry",
+                        actionLabel: l10n.retryAction,
                         onAction: _loadAll,
                       )
                     : !hasQuery
                         ? _MessageState(
                             icon: Icons.travel_explore_rounded,
-                            title: "টাইপ শুরু করুন খুঁজতে",
-                            subtitle: "কাস্টমার, পেমেন্ট হিস্ট্রি ও নোটবুক — সবকিছু একসাথে সার্চ হবে",
+                            title: l10n.startTypingToSearch,
+                            subtitle: l10n.searchEverythingDesc,
                             colors: colors,
                           )
                         : totalResults == 0
                             ? _MessageState(
                                 icon: Icons.search_off_rounded,
-                                title: "কোনো ফলাফল পাওয়া যায়নি",
-                                subtitle: '"$_query" এর সাথে মিলে এমন কিছু নেই',
+                                title: l10n.noResultsFound,
+                                subtitle: l10n.noMatchesFor(_query),
                                 colors: colors,
                               )
                             : ListView(
                                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                                 children: [
                                   if (matchedCustomers.isNotEmpty) ...[
-                                    _SectionLabel(label: "Customers", count: matchedCustomers.length, colors: colors),
+                                    _SectionLabel(label: l10n.customersSectionLabel, count: matchedCustomers.length, colors: colors),
                                     const SizedBox(height: 8),
                                     for (final customer in matchedCustomers) ...[
                                       _CustomerResultTile(customer: customer, colors: colors),
@@ -300,7 +302,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                                     const SizedBox(height: 12),
                                   ],
                                   if (matchedPayments.isNotEmpty) ...[
-                                    _SectionLabel(label: "Payment History", count: matchedPayments.length, colors: colors),
+                                    _SectionLabel(label: l10n.paymentHistoryTitle, count: matchedPayments.length, colors: colors),
                                     const SizedBox(height: 8),
                                     for (final entry in matchedPayments) ...[
                                       _PaymentResultTile(entry: entry, colors: colors),
@@ -309,7 +311,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                                     const SizedBox(height: 12),
                                   ],
                                   if (matchedNotebooks.isNotEmpty) ...[
-                                    _SectionLabel(label: "Notebooks", count: matchedNotebooks.length, colors: colors),
+                                    _SectionLabel(label: l10n.drawerNotebooks, count: matchedNotebooks.length, colors: colors),
                                     const SizedBox(height: 8),
                                     for (final match in matchedNotebooks) ...[
                                       _NotebookResultTile(match: match, colors: colors),
@@ -430,6 +432,7 @@ class _NotebookResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final coverColor = Color(match.notebook.coverColor);
 
     return _ResultCard(
@@ -447,7 +450,7 @@ class _NotebookResultTile extends StatelessWidget {
         child: Icon(Icons.menu_book_rounded, color: coverColor, size: 18),
       ),
       title: match.page != null ? "${match.notebook.title} · ${match.page!.title}" : match.notebook.title,
-      subtitle: match.snippet.isNotEmpty ? match.snippet : (match.page != null ? "Page title matched" : "Notebook matched"),
+      subtitle: match.snippet.isNotEmpty ? match.snippet : (match.page != null ? l10n.pageTitleMatched : l10n.notebookMatched),
     );
   }
 }

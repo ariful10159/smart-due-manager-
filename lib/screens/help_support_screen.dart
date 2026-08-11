@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/legal_content.dart';
 import '../theme/app_colors.dart';
 
@@ -14,46 +15,15 @@ class _FaqItem {
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
-  static const List<_FaqItem> _faqs = [
-    _FaqItem(
-      'SMS রিমাইন্ডার কীভাবে কাজ করে?',
-      'রিমাইন্ডার SMS আপনার ফোনের নিজস্ব SIM থেকে পাঠানো হয়। অ্যাপ প্রতিটা কাস্টমারের জন্য '
-      'আলাদাভাবে SMS app খুলে মেসেজ prefilled অবস্থায় দেখায়, আপনাকে নিজে Send বাটনে চাপতে হয় '
-      '— Play Store নীতি অনুযায়ী অ্যাপ নিজে থেকে bulk SMS পাঠাতে পারে না।',
-    ),
-    _FaqItem(
-      'আমার ডেটা কি নিরাপদ?',
-      'হ্যাঁ। সব ডেটা Firebase (Google Cloud) এ সংরক্ষিত হয়। App Lock এর জন্য ব্যবহৃত PIN '
-      'ফোনেই সল্টেড হ্যাশ আকারে রাখা হয়, প্লেইনটেক্সটে কখনো সংরক্ষিত হয় না।',
-    ),
-    _FaqItem(
-      'ডেটা ব্যাকআপ কীভাবে নেব?',
-      'Settings → Data Backup এ গিয়ে আপনার কাস্টমার ও পেমেন্ট ডেটা CSV ফাইল হিসেবে '
-      'এক্সপোর্ট করতে পারবেন।',
-    ),
-    _FaqItem(
-      'App Lock কীভাবে চালু করব?',
-      'Settings → App Lock এ গিয়ে একটা PIN সেট করুন। এরপর থেকে অ্যাপ ব্যাকগ্রাউন্ডে গেলে বা '
-      'বন্ধ করে আবার খুললে PIN বা বায়োমেট্রিক দিয়ে আনলক করতে হবে।',
-    ),
-    _FaqItem(
-      'কাস্টমার Archive করলে কী হয়?',
-      'Archive করা কাস্টমার active list থেকে সরে যায় কিন্তু ডেটা মুছে যায় না। Drawer এর '
-      '"Archived Customers" থেকে যেকোনো সময় আবার Restore করতে পারবেন, অথবা চাইলে স্থায়ীভাবে '
-      'ডিলিট করতে পারবেন।',
-    ),
-    _FaqItem(
-      'কারেন্সি বা থিম কালার পরিবর্তন করব কীভাবে?',
-      'Settings → কারেন্সি থেকে টাকার চিহ্ন, আর Settings → থিম কালার থেকে অ্যাপের রঙ '
-      'পরিবর্তন করা যাবে। Dark/Light মোডও Settings → অ্যাপ মোড থেকে বদলানো যায় (অথবা Drawer '
-      'এর কুইক টগল থেকেও)।',
-    ),
-    _FaqItem(
-      'Notebook ফিচারটা কী কাজে লাগে?',
-      'হিসাব-নিকাশের বাইরেও যদি কোনো নোট, মনে রাখার তথ্য লিখে রাখতে চান, তার জন্যই Notebook '
-      'ফিচার — এটি কাস্টমার ডেটা থেকে সম্পূর্ণ আলাদা।',
-    ),
-  ];
+  List<_FaqItem> _faqs(AppLocalizations l10n) => [
+        _FaqItem(l10n.faq1Q, l10n.faq1A),
+        _FaqItem(l10n.faq2Q, l10n.faq2A),
+        _FaqItem(l10n.faq3Q, l10n.faq3A),
+        _FaqItem(l10n.faq4Q, l10n.faq4A),
+        _FaqItem(l10n.faq5Q, l10n.faq5A),
+        _FaqItem(l10n.faq6Q, l10n.faq6A),
+        _FaqItem(l10n.faq7Q, l10n.faq7A),
+      ];
 
   Future<void> _sendFeedback(BuildContext context) async {
     final uri = Uri(
@@ -67,7 +37,7 @@ class HelpSupportScreen extends StatelessWidget {
     } else {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ইমেইল অ্যাপ পাওয়া যায়নি')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.emailAppNotFound)),
       );
     }
   }
@@ -75,12 +45,14 @@ class HelpSupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final faqs = _faqs(l10n);
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "Help & Support",
+          l10n.drawerHelp,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -92,7 +64,7 @@ class HelpSupportScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
           Text(
-            "প্রায়ই জিজ্ঞাসিত প্রশ্ন",
+            l10n.frequentlyAskedQuestions,
             style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 15),
           ),
           const SizedBox(height: 12),
@@ -110,24 +82,24 @@ class HelpSupportScreen extends StatelessWidget {
               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: Column(
                 children: [
-                  for (int i = 0; i < _faqs.length; i++) ...[
+                  for (int i = 0; i < faqs.length; i++) ...[
                     ExpansionTile(
                       iconColor: colors.accent,
                       collapsedIconColor: colors.textSecondary,
                       title: Text(
-                        _faqs[i].question,
+                        faqs[i].question,
                         style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5),
                       ),
                       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       expandedAlignment: Alignment.topLeft,
                       children: [
                         Text(
-                          _faqs[i].answer,
+                          faqs[i].answer,
                           style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.55),
                         ),
                       ],
                     ),
-                    if (i != _faqs.length - 1) Divider(color: colors.borderColor, height: 1, indent: 16, endIndent: 16),
+                    if (i != faqs.length - 1) Divider(color: colors.borderColor, height: 1, indent: 16, endIndent: 16),
                   ],
                 ],
               ),
@@ -137,7 +109,7 @@ class HelpSupportScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           Text(
-            "আরও সাহায্য দরকার?",
+            l10n.needMoreHelp,
             style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 15),
           ),
           const SizedBox(height: 12),
@@ -158,7 +130,7 @@ class HelpSupportScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "সরাসরি যোগাযোগ করুন: ${LegalContent.supportEmail}",
+                        l10n.contactDirectly(LegalContent.supportEmail),
                         style: TextStyle(color: colors.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.5),
                       ),
                     ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/payment.dart';
 import '../services/receipt_pdf_service.dart';
@@ -30,6 +31,7 @@ class PaymentHistoryTile extends StatelessWidget {
         customer: customer,
         payment: payment,
         settings: settings,
+        languageCode: settings.languageCode,
       );
 
       await Printing.sharePdf(
@@ -41,7 +43,7 @@ class PaymentHistoryTile extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: colors.due,
-          content: const Text("Receipt তৈরি করা যায়নি, আবার চেষ্টা করুন"),
+          content: Text(AppLocalizations.of(context)!.receiptGenerationFailed),
         ),
       );
     } finally {
@@ -51,6 +53,7 @@ class PaymentHistoryTile extends StatelessWidget {
 
   void _showPaymentDetail(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     showDialog(
       context: context,
@@ -67,7 +70,7 @@ class PaymentHistoryTile extends StatelessWidget {
                 side: BorderSide(color: colors.borderColor),
               ),
               title: Text(
-                payment.type == PaymentType.payment ? 'Payment' : 'Charge Added',
+                payment.type == PaymentType.payment ? l10n.paymentTypeLabel : l10n.chargeAddedLabel,
                 style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
               ),
               content: SizedBox(
@@ -84,7 +87,7 @@ class PaymentHistoryTile extends StatelessWidget {
                           payment.receiptImageUrl!.isNotEmpty)
                         const SizedBox(height: 16),
                       Text(
-                        "Amount: ${payment.amount.toStringAsFixed(2)}",
+                        l10n.amountColonLabel(payment.amount.toStringAsFixed(2)),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -94,7 +97,7 @@ class PaymentHistoryTile extends StatelessWidget {
                       if (payment.discount > 0) ...[
                         const SizedBox(height: 4),
                         Text(
-                          "Discount: ${payment.discount.toStringAsFixed(2)}",
+                          l10n.discountColonLabel(payment.discount.toStringAsFixed(2)),
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13.5,
@@ -104,13 +107,13 @@ class PaymentHistoryTile extends StatelessWidget {
                       ],
                       const SizedBox(height: 6),
                       Text(
-                        "Date: ${_formatDateTime(payment.date)}",
+                        l10n.dateColonLabel(_formatDateTime(payment.date)),
                         style: TextStyle(color: colors.textSecondary),
                       ),
                       if (payment.paymentMethod != null) ...[
                         const SizedBox(height: 6),
                         Text(
-                          "Method: ${Payment.paymentMethodToString(payment.paymentMethod!)}",
+                          l10n.methodColonLabel(Payment.paymentMethodToString(payment.paymentMethod!)),
                           style: TextStyle(color: colors.textSecondary),
                         ),
                       ],
@@ -118,7 +121,7 @@ class PaymentHistoryTile extends StatelessWidget {
                           payment.description!.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Text(
-                          "Description:",
+                          l10n.descriptionColonLabel,
                           style: TextStyle(fontWeight: FontWeight.w600, color: colors.textPrimary),
                         ),
                         const SizedBox(height: 4),
@@ -144,13 +147,13 @@ class PaymentHistoryTile extends StatelessWidget {
                         )
                       : Icon(Icons.share_rounded, size: 16, color: colors.accent),
                   label: Text(
-                    generating ? "তৈরি হচ্ছে..." : "Share Receipt",
+                    generating ? l10n.generatingLabel : l10n.shareReceiptAction,
                     style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700),
                   ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text("Close", style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w700)),
+                  child: Text(l10n.close, style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w700)),
                 ),
               ],
             );
@@ -174,7 +177,7 @@ class PaymentHistoryTile extends StatelessWidget {
             gaplessPlayback: true,
             errorBuilder: (context, error, stackTrace) {
               return Center(
-                child: Text('ছবি লোড করা যায়নি', style: TextStyle(color: colors.textSecondary)),
+                child: Text(AppLocalizations.of(context)!.imageLoadFailed, style: TextStyle(color: colors.textSecondary)),
               );
             },
           ),
@@ -188,6 +191,7 @@ class PaymentHistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final isPayment = payment.type == PaymentType.payment;
     final amountColor = isPayment ? colors.clear : colors.due;
 
@@ -244,7 +248,7 @@ class PaymentHistoryTile extends StatelessWidget {
                           if (payment.discount > 0) ...[
                             const SizedBox(width: 6),
                             Text(
-                              "-${payment.discount.toStringAsFixed(2)} discount",
+                              l10n.discountAppliedLabel(payment.discount.toStringAsFixed(2)),
                               style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: colors.clear),
                             ),
                           ],
@@ -254,7 +258,7 @@ class PaymentHistoryTile extends StatelessWidget {
                       Text(
                         payment.description?.isNotEmpty == true
                             ? payment.description!
-                            : (isPayment ? 'Payment' : 'Charge Added'),
+                            : (isPayment ? l10n.paymentTypeLabel : l10n.chargeAddedLabel),
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 12, color: colors.textSecondary),
                       ),

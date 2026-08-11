@@ -1723,6 +1723,1014 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{minutes} minute(s) left'**
   String minutesLeft(int minutes);
+
+  /// No description provided for @failedToLoadReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load report, please try again'**
+  String get failedToLoadReport;
+
+  /// No description provided for @collectionReportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection Reports'**
+  String get collectionReportsTitle;
+
+  /// No description provided for @customerPdfReportTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer PDF Report'**
+  String get customerPdfReportTooltip;
+
+  /// No description provided for @downloadPdfTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF'**
+  String get downloadPdfTooltip;
+
+  /// No description provided for @dashboardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get dashboardLabel;
+
+  /// No description provided for @periodDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get periodDaily;
+
+  /// No description provided for @periodWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get periodWeekly;
+
+  /// No description provided for @periodMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get periodMonthly;
+
+  /// No description provided for @ownerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner: {name}'**
+  String ownerLabel(String name);
+
+  /// No description provided for @customerPaymentDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Payment Details'**
+  String get customerPaymentDetails;
+
+  /// No description provided for @noTransactionsForPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions found for this period.'**
+  String get noTransactionsForPeriod;
+
+  /// No description provided for @otherMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get otherMethod;
+
+  /// No description provided for @paymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentLabel;
+
+  /// No description provided for @remainingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get remainingLabel;
+
+  /// No description provided for @collectionSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection Summary'**
+  String get collectionSummaryLabel;
+
+  /// No description provided for @otherNagadBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Other (Nagad/Bank)'**
+  String get otherNagadBank;
+
+  /// No description provided for @totalCollectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Collection'**
+  String get totalCollectionLabel;
+
+  /// No description provided for @monthlyCollectionTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Collection Trend'**
+  String get monthlyCollectionTrend;
+
+  /// No description provided for @last6Months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 6 months'**
+  String get last6Months;
+
+  /// No description provided for @noPaymentRecordsPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment records in this period'**
+  String get noPaymentRecordsPeriod;
+
+  /// No description provided for @topDefaultersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Defaulters'**
+  String get topDefaultersLabel;
+
+  /// No description provided for @topDefaultersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers with the highest outstanding dues'**
+  String get topDefaultersDesc;
+
+  /// No description provided for @allClearCelebration.
+  ///
+  /// In en, this message translates to:
+  /// **'🎉 No dues — all customers clear'**
+  String get allClearCelebration;
+
+  /// No description provided for @poweredByApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered by {app}'**
+  String poweredByApp(String app);
+
+  /// No description provided for @notebookDuplicated.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" duplicated'**
+  String notebookDuplicated(String title);
+
+  /// No description provided for @deleteNotebookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Notebook'**
+  String get deleteNotebookTitle;
+
+  /// No description provided for @deleteNotebookConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" and all its pages will be permanently deleted. Are you sure?'**
+  String deleteNotebookConfirmBody(String title);
+
+  /// No description provided for @openAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openAction;
+
+  /// No description provided for @renameEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename / Edit'**
+  String get renameEditAction;
+
+  /// No description provided for @duplicateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateAction;
+
+  /// No description provided for @sortRecentlyUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently Updated'**
+  String get sortRecentlyUpdated;
+
+  /// No description provided for @sortRecentlyCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently Created'**
+  String get sortRecentlyCreated;
+
+  /// No description provided for @notebookSortNameAZ.
+  ///
+  /// In en, this message translates to:
+  /// **'Name A-Z'**
+  String get notebookSortNameAZ;
+
+  /// No description provided for @notebookSortNameZA.
+  ///
+  /// In en, this message translates to:
+  /// **'Name Z-A'**
+  String get notebookSortNameZA;
+
+  /// No description provided for @newNotebook.
+  ///
+  /// In en, this message translates to:
+  /// **'New Notebook'**
+  String get newNotebook;
+
+  /// No description provided for @searchNotebooksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search notebooks...'**
+  String get searchNotebooksHint;
+
+  /// No description provided for @notebookLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load notebooks'**
+  String get notebookLoadFailed;
+
+  /// No description provided for @createFirstNotebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first notebook'**
+  String get createFirstNotebook;
+
+  /// No description provided for @notebooksDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Notebooks let you write, organize and format notes freely.'**
+  String get notebooksDesc;
+
+  /// No description provided for @newNotebookPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'+ New Notebook'**
+  String get newNotebookPlus;
+
+  /// No description provided for @noNotebooksFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No notebooks found'**
+  String get noNotebooksFound;
+
+  /// No description provided for @noResultsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'No results for \"{query}\"'**
+  String noResultsFor(String query);
+
+  /// No description provided for @newNotebookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Notebook'**
+  String get newNotebookTitle;
+
+  /// No description provided for @editNotebookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Notebook'**
+  String get editNotebookTitle;
+
+  /// No description provided for @notebookNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Notebook name'**
+  String get notebookNameHint;
+
+  /// No description provided for @descriptionOptionalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get descriptionOptionalHint;
+
+  /// No description provided for @coverColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover color'**
+  String get coverColorLabel;
+
+  /// No description provided for @createAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createAction;
+
+  /// No description provided for @updatedOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {date}'**
+  String updatedOnLabel(String date);
+
+  /// No description provided for @saveFailedLocalRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed, your changes are kept locally — will retry'**
+  String get saveFailedLocalRetry;
+
+  /// No description provided for @untitledPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled Page'**
+  String get untitledPage;
+
+  /// No description provided for @deletePageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Page'**
+  String get deletePageTitle;
+
+  /// No description provided for @deletePageConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\"?'**
+  String deletePageConfirmBody(String title);
+
+  /// No description provided for @renamePageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Page'**
+  String get renamePageTitle;
+
+  /// No description provided for @chooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get chooseFromGallery;
+
+  /// No description provided for @takeAPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a Photo'**
+  String get takeAPhoto;
+
+  /// No description provided for @uploadingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading image...'**
+  String get uploadingImage;
+
+  /// No description provided for @imageUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Image upload failed, please try again'**
+  String get imageUploadFailed;
+
+  /// No description provided for @notebookFallbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notebook'**
+  String get notebookFallbackTitle;
+
+  /// No description provided for @pagesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get pagesLabel;
+
+  /// No description provided for @pageLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load page: {error}'**
+  String pageLoadFailed(String error);
+
+  /// No description provided for @pageTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Page title'**
+  String get pageTitleHint;
+
+  /// No description provided for @startWritingPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Start writing...'**
+  String get startWritingPlaceholder;
+
+  /// No description provided for @savedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get savedStatus;
+
+  /// No description provided for @savingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get savingStatus;
+
+  /// No description provided for @unsavedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedStatus;
+
+  /// No description provided for @notebookEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This notebook is empty'**
+  String get notebookEmptyTitle;
+
+  /// No description provided for @createFirstPageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first page to start writing.'**
+  String get createFirstPageDesc;
+
+  /// No description provided for @newPagePlus.
+  ///
+  /// In en, this message translates to:
+  /// **'+ New Page'**
+  String get newPagePlus;
+
+  /// No description provided for @newPageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'New Page'**
+  String get newPageTooltip;
+
+  /// No description provided for @noPagesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No pages yet'**
+  String get noPagesYet;
+
+  /// No description provided for @renameAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get renameAction;
+
+  /// No description provided for @restoreCustomerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Customer'**
+  String get restoreCustomerTitle;
+
+  /// No description provided for @restoreConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to restore \'{name}\' to the active list?'**
+  String restoreConfirmBody(String name);
+
+  /// No description provided for @restoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restoreAction;
+
+  /// No description provided for @customerRestoredSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} restored successfully'**
+  String customerRestoredSuccess(String name);
+
+  /// No description provided for @restoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed, please try again'**
+  String get restoreFailed;
+
+  /// No description provided for @deletePermanentlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Permanently'**
+  String get deletePermanentlyTitle;
+
+  /// No description provided for @deletePermanentlyConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete \'{name}\'? All payment history and reminder data will be completely erased. This cannot be undone.'**
+  String deletePermanentlyConfirmBody(String name);
+
+  /// No description provided for @areYouAbsolutelySure.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you absolutely sure?'**
+  String get areYouAbsolutelySure;
+
+  /// No description provided for @undoWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. Do you really want to delete it permanently?'**
+  String get undoWarningBody;
+
+  /// No description provided for @yesDeleteForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, Delete Forever'**
+  String get yesDeleteForever;
+
+  /// No description provided for @customerPermanentlyDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} permanently deleted'**
+  String customerPermanentlyDeleted(String name);
+
+  /// No description provided for @deleteFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete failed, please try again'**
+  String get deleteFailedGeneric;
+
+  /// No description provided for @noArchivedCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived customers'**
+  String get noArchivedCustomers;
+
+  /// No description provided for @globalSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Search'**
+  String get globalSearchTitle;
+
+  /// No description provided for @globalSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customers, payments or notebooks...'**
+  String get globalSearchHint;
+
+  /// No description provided for @dataLoadFailedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load data'**
+  String get dataLoadFailedShort;
+
+  /// No description provided for @tryAgainMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again'**
+  String get tryAgainMessage;
+
+  /// No description provided for @retryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryAction;
+
+  /// No description provided for @startTypingToSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Start typing to search'**
+  String get startTypingToSearch;
+
+  /// No description provided for @searchEverythingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers, payment history and notebooks — everything is searched together'**
+  String get searchEverythingDesc;
+
+  /// No description provided for @noResultsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get noResultsFound;
+
+  /// No description provided for @noMatchesFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches \"{query}\"'**
+  String noMatchesFor(String query);
+
+  /// No description provided for @customersSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers'**
+  String get customersSectionLabel;
+
+  /// No description provided for @pageTitleMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'Page title matched'**
+  String get pageTitleMatched;
+
+  /// No description provided for @notebookMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'Notebook matched'**
+  String get notebookMatched;
+
+  /// No description provided for @reminderHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder History'**
+  String get reminderHistoryTitle;
+
+  /// No description provided for @noReminderHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminder history'**
+  String get noReminderHistory;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get statusExpired;
+
+  /// No description provided for @recurringLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring · {label}'**
+  String recurringLabel(String label);
+
+  /// No description provided for @loginTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your accounts, in your control'**
+  String get loginTagline;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome Back'**
+  String get welcomeBack;
+
+  /// No description provided for @loginToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Login to continue'**
+  String get loginToContinue;
+
+  /// No description provided for @phoneHintExample.
+  ///
+  /// In en, this message translates to:
+  /// **'01XXXXXXXXX'**
+  String get phoneHintExample;
+
+  /// No description provided for @enterPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter phone number'**
+  String get enterPhoneNumber;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @enterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter password'**
+  String get enterPassword;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password?'**
+  String get forgotPassword;
+
+  /// No description provided for @loginAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get loginAction;
+
+  /// No description provided for @newAccountQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'New account? '**
+  String get newAccountQuestion;
+
+  /// No description provided for @registerNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get registerNow;
+
+  /// No description provided for @createAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get createAccountTitle;
+
+  /// No description provided for @joinUsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Join us and manage your transactions smartly'**
+  String get joinUsDesc;
+
+  /// No description provided for @enterYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your name'**
+  String get enterYourName;
+
+  /// No description provided for @enterValid11DigitPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 11-digit phone number'**
+  String get enterValid11DigitPhone;
+
+  /// No description provided for @minSixCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 6 characters'**
+  String get minSixCharacters;
+
+  /// No description provided for @confirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get confirmPasswordLabel;
+
+  /// No description provided for @passwordsDontMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDontMatch;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get getStarted;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? '**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @loginNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get loginNow;
+
+  /// No description provided for @unlockToVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify to unlock the app'**
+  String get unlockToVerify;
+
+  /// No description provided for @tooManyFailedPinAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong PIN attempts, please try again later'**
+  String get tooManyFailedPinAttempts;
+
+  /// No description provided for @wrongPinTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong PIN, please try again'**
+  String get wrongPinTryAgain;
+
+  /// No description provided for @pinMismatchTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN doesn\'t match, please try again'**
+  String get pinMismatchTryAgain;
+
+  /// No description provided for @lockoutSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} seconds'**
+  String lockoutSeconds(int n);
+
+  /// No description provided for @lockoutMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} minutes'**
+  String lockoutMinutes(int n);
+
+  /// No description provided for @lockoutMinutesSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} minutes {s} seconds'**
+  String lockoutMinutesSeconds(int n, int s);
+
+  /// No description provided for @setNewPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new PIN'**
+  String get setNewPinTitle;
+
+  /// No description provided for @reEnterPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter PIN'**
+  String get reEnterPinTitle;
+
+  /// No description provided for @unlockWithPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with PIN'**
+  String get unlockWithPinTitle;
+
+  /// No description provided for @tooManyAttemptsCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong attempts — try again after {remaining}'**
+  String tooManyAttemptsCountdown(String remaining);
+
+  /// No description provided for @tryFingerprint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try with Fingerprint'**
+  String get tryFingerprint;
+
+  /// No description provided for @frequentlyAskedQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently Asked Questions'**
+  String get frequentlyAskedQuestions;
+
+  /// No description provided for @faq1Q.
+  ///
+  /// In en, this message translates to:
+  /// **'How do SMS reminders work?'**
+  String get faq1Q;
+
+  /// No description provided for @faq1A.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder SMS are sent from your phone\'s own SIM. The app opens the SMS app separately for each customer with the message prefilled — you have to press Send yourself. This is because Play Store policy doesn\'t allow the app to send bulk SMS on its own.'**
+  String get faq1A;
+
+  /// No description provided for @faq2Q.
+  ///
+  /// In en, this message translates to:
+  /// **'Is my data safe?'**
+  String get faq2Q;
+
+  /// No description provided for @faq2A.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes. All data is stored in Firebase (Google Cloud). The PIN used for App Lock is kept on your phone as a salted hash, never stored in plain text.'**
+  String get faq2A;
+
+  /// No description provided for @faq3Q.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I back up my data?'**
+  String get faq3Q;
+
+  /// No description provided for @faq3A.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Settings → Data Backup to export your customer and payment data as a CSV file.'**
+  String get faq3A;
+
+  /// No description provided for @faq4Q.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I turn on App Lock?'**
+  String get faq4Q;
+
+  /// No description provided for @faq4A.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Settings → App Lock and set a PIN. After that, whenever the app goes to background or is reopened, you\'ll need to unlock it with your PIN or biometrics.'**
+  String get faq4A;
+
+  /// No description provided for @faq5Q.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens when I archive a customer?'**
+  String get faq5Q;
+
+  /// No description provided for @faq5A.
+  ///
+  /// In en, this message translates to:
+  /// **'An archived customer is removed from the active list but the data isn\'t deleted. You can restore it anytime from \"Archived Customers\" in the drawer, or permanently delete it if you want.'**
+  String get faq5A;
+
+  /// No description provided for @faq6Q.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I change the currency or theme color?'**
+  String get faq6Q;
+
+  /// No description provided for @faq6A.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change the currency symbol from Settings → Currency, and the app\'s color from Settings → Theme Color. Dark/Light mode can also be switched from Settings → App Mode (or the quick toggle in the Drawer).'**
+  String get faq6A;
+
+  /// No description provided for @faq7Q.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the Notebook feature for?'**
+  String get faq7Q;
+
+  /// No description provided for @faq7A.
+  ///
+  /// In en, this message translates to:
+  /// **'The Notebook feature is for writing notes or things you want to remember, separate from your accounting — it\'s completely independent from customer data.'**
+  String get faq7A;
+
+  /// No description provided for @needMoreHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Need more help?'**
+  String get needMoreHelp;
+
+  /// No description provided for @contactDirectly.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us directly: {email}'**
+  String contactDirectly(String email);
+
+  /// No description provided for @privacyPolicyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicyTitle;
+
+  /// No description provided for @termsOfServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfServiceTitle;
+
+  /// No description provided for @lastUpdatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String lastUpdatedLabel(String date);
+
+  /// No description provided for @contactForQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact for questions: {email}'**
+  String contactForQuestions(String email);
+
+  /// No description provided for @receiptGenerationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not generate receipt, please try again'**
+  String get receiptGenerationFailed;
+
+  /// No description provided for @paymentTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentTypeLabel;
+
+  /// No description provided for @chargeAddedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Charge Added'**
+  String get chargeAddedLabel;
+
+  /// No description provided for @amountColonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount: {amount}'**
+  String amountColonLabel(String amount);
+
+  /// No description provided for @discountColonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount: {amount}'**
+  String discountColonLabel(String amount);
+
+  /// No description provided for @dateColonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date: {date}'**
+  String dateColonLabel(String date);
+
+  /// No description provided for @methodColonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Method: {method}'**
+  String methodColonLabel(String method);
+
+  /// No description provided for @descriptionColonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description:'**
+  String get descriptionColonLabel;
+
+  /// No description provided for @generatingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating...'**
+  String get generatingLabel;
+
+  /// No description provided for @shareReceiptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Receipt'**
+  String get shareReceiptAction;
+
+  /// No description provided for @imageLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load image'**
+  String get imageLoadFailed;
+
+  /// No description provided for @discountAppliedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'-{amount} discount'**
+  String discountAppliedLabel(String amount);
 }
 
 class _AppLocalizationsDelegate

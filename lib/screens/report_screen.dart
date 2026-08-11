@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../models/legal_content.dart';
@@ -85,8 +86,8 @@ class _ReportScreenState extends State<ReportScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to load report, please try again'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.failedToLoadReport),
         ),
       );
     }
@@ -464,12 +465,13 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "Collection Reports",
+          l10n.collectionReportsTitle,
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 18,
@@ -484,7 +486,7 @@ class _ReportScreenState extends State<ReportScreen> {
           // কাস্টম পিডিএফ স্ক্রিন বাটন
           IconButton(
             icon: Icon(Icons.picture_as_pdf_rounded, color: colors.textPrimary),
-            tooltip: "Customer PDF Report",
+            tooltip: l10n.customerPdfReportTooltip,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -496,7 +498,7 @@ class _ReportScreenState extends State<ReportScreen> {
           // ডাইরেক্ট এক্সপোর্ট পিডিএফ বাটন
           IconButton(
             icon: Icon(Icons.download_rounded, color: colors.textPrimary),
-            tooltip: "Download PDF",
+            tooltip: l10n.downloadPdfTooltip,
             onPressed: _loading ? null : _exportPdf,
           ),
         ],
@@ -512,6 +514,7 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Widget _buildContent(AppColors colors) {
+    final l10n = AppLocalizations.of(context)!;
     final (start, end) = _dateRange();
     final rangePayments = _paymentsInRange(start, end);
     final reportData = _getCustomerReportData(rangePayments);
@@ -531,7 +534,7 @@ class _ReportScreenState extends State<ReportScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          "Dashboard",
+          l10n.dashboardLabel,
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 16,
@@ -565,21 +568,21 @@ class _ReportScreenState extends State<ReportScreen> {
             selectedForegroundColor: Colors.white,
             side: BorderSide(color: colors.borderColor),
           ),
-          segments: const [
+          segments: [
             ButtonSegment(
               value: ReportPeriod.daily,
-              label: Text("Daily"),
-              icon: Icon(Icons.today),
+              label: Text(l10n.periodDaily),
+              icon: const Icon(Icons.today),
             ),
             ButtonSegment(
               value: ReportPeriod.weekly,
-              label: Text("Weekly"),
-              icon: Icon(Icons.view_week),
+              label: Text(l10n.periodWeekly),
+              icon: const Icon(Icons.view_week),
             ),
             ButtonSegment(
               value: ReportPeriod.monthly,
-              label: Text("Monthly"),
-              icon: Icon(Icons.calendar_view_month),
+              label: Text(l10n.periodMonthly),
+              icon: const Icon(Icons.calendar_view_month),
             ),
           ],
           selected: {_period},
@@ -608,7 +611,7 @@ class _ReportScreenState extends State<ReportScreen> {
           const SizedBox(height: 2),
           Center(
             child: Text(
-              "Owner: $ownerName",
+              l10n.ownerLabel(ownerName),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
@@ -647,7 +650,7 @@ class _ReportScreenState extends State<ReportScreen> {
         const SizedBox(height: 20),
 
         Text(
-          "Customer Payment Details",
+          l10n.customerPaymentDetails,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -667,7 +670,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             child: Center(
               child: Text(
-                "No transactions found for this period.",
+                l10n.noTransactionsForPeriod,
                 style: TextStyle(color: colors.textSecondary),
               ),
             ),
@@ -720,14 +723,14 @@ class _ReportScreenState extends State<ReportScreen> {
                         runSpacing: 6,
                         children: [
                           if ((row['cash'] as double) > 0)
-                            _MethodChip(label: "Cash", color: colors.clear),
+                            _MethodChip(label: l10n.cashMethod, color: colors.clear),
                           if ((row['bkash'] as double) > 0)
                             _MethodChip(
                               label: "bKash",
                               color: const Color(0xFFE2136E),
                             ),
                           if ((row['other'] as double) > 0)
-                            _MethodChip(label: "Other", color: colors.warn),
+                            _MethodChip(label: l10n.otherMethod, color: colors.warn),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -735,19 +738,19 @@ class _ReportScreenState extends State<ReportScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _AmountInfo(
-                            label: "Total Due",
+                            label: l10n.totalDue,
                             amount: row['totalDue'],
                             color: colors.warn,
                             textColor: colors.textSecondary,
                           ),
                           _AmountInfo(
-                            label: "Payment",
+                            label: l10n.paymentLabel,
                             amount: row['paid'],
                             color: colors.clear,
                             textColor: colors.textSecondary,
                           ),
                           _AmountInfo(
-                            label: "Remaining",
+                            label: l10n.remainingLabel,
                             amount: row['remaining'],
                             color: colors.due,
                             textColor: colors.textSecondary,
@@ -764,7 +767,7 @@ class _ReportScreenState extends State<ReportScreen> {
         const SizedBox(height: 24),
 
         Text(
-          "Collection Summary",
+          l10n.collectionSummaryLabel,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -792,7 +795,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             child: Column(
               children: [
-                _BreakdownRow(label: "Cash", amount: cashTotal, colors: colors),
+                _BreakdownRow(label: l10n.cashMethod, amount: cashTotal, colors: colors),
                 const SizedBox(height: 10),
                 _BreakdownRow(
                   label: "bKash",
@@ -802,7 +805,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 if (otherTotal > 0) ...[
                   const SizedBox(height: 10),
                   _BreakdownRow(
-                    label: "Other (Nagad/Bank)",
+                    label: l10n.otherNagadBank,
                     amount: otherTotal,
                     colors: colors,
                   ),
@@ -811,7 +814,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 Divider(color: colors.borderColor),
                 const SizedBox(height: 6),
                 Text(
-                  "Total Collection",
+                  l10n.totalCollectionLabel,
                   style: TextStyle(fontSize: 14, color: colors.textSecondary),
                 ),
                 const SizedBox(height: 6),
@@ -839,7 +842,7 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                "Powered by ${LegalContent.appName}",
+                l10n.poweredByApp(LegalContent.appName),
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
@@ -983,6 +986,7 @@ class _MonthlyTrendCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final currencyFmt = NumberFormat('#,##0');
     final hasData = trend.any((entry) => entry.$2 > 0);
     final rawMax = trend.fold<double>(0, (m, e) => e.$2 > m ? e.$2 : m);
@@ -1012,7 +1016,7 @@ class _MonthlyTrendCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Monthly Collection Trend",
+                      l10n.monthlyCollectionTrend,
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14.5,
@@ -1021,7 +1025,7 @@ class _MonthlyTrendCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Last 6 months",
+                      l10n.last6Months,
                       style: TextStyle(
                         fontSize: 11.5,
                         color: colors.textSecondary,
@@ -1060,7 +1064,7 @@ class _MonthlyTrendCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 30),
               child: Center(
                 child: Text(
-                  "এই সময়ে কোনো পেমেন্ট রেকর্ড নেই",
+                  l10n.noPaymentRecordsPeriod,
                   style: TextStyle(color: colors.textSecondary, fontSize: 12.5),
                 ),
               ),
@@ -1193,6 +1197,7 @@ class _TopDefaultersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final currencyFmt = NumberFormat('#,##0');
     final maxDue = defaulters.isEmpty
         ? 0.0
@@ -1214,7 +1219,7 @@ class _TopDefaultersCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Top Defaulters",
+            l10n.topDefaultersLabel,
             style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 14.5,
@@ -1223,7 +1228,7 @@ class _TopDefaultersCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            "সবচেয়ে বেশি বকেয়া থাকা কাস্টমার",
+            l10n.topDefaultersDesc,
             style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
           ),
           const SizedBox(height: 16),
@@ -1232,7 +1237,7 @@ class _TopDefaultersCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: Text(
-                  "🎉 কোনো বকেয়া নেই, সব কাস্টমার ক্লিয়ার",
+                  l10n.allClearCelebration,
                   style: TextStyle(
                     color: colors.clear,
                     fontSize: 12.5,

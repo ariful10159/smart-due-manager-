@@ -393,5 +393,263 @@
   "minutesLeft": "{minutes} minute(s) left",
   "@minutesLeft": {
     "placeholders": { "minutes": { "type": "int" } }
+  },
+
+  "failedToLoadReport": "Failed to load report, please try again",
+  "collectionReportsTitle": "Collection Reports",
+  "customerPdfReportTooltip": "Customer PDF Report",
+  "downloadPdfTooltip": "Download PDF",
+  "dashboardLabel": "Dashboard",
+  "periodDaily": "Daily",
+  "periodWeekly": "Weekly",
+  "periodMonthly": "Monthly",
+  "ownerLabel": "Owner: {name}",
+  "@ownerLabel": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "customerPaymentDetails": "Customer Payment Details",
+  "noTransactionsForPeriod": "No transactions found for this period.",
+  "otherMethod": "Other",
+  "paymentLabel": "Payment",
+  "remainingLabel": "Remaining",
+  "collectionSummaryLabel": "Collection Summary",
+  "otherNagadBank": "Other (Nagad/Bank)",
+  "totalCollectionLabel": "Total Collection",
+  "monthlyCollectionTrend": "Monthly Collection Trend",
+  "last6Months": "Last 6 months",
+  "noPaymentRecordsPeriod": "No payment records in this period",
+  "topDefaultersLabel": "Top Defaulters",
+  "topDefaultersDesc": "Customers with the highest outstanding dues",
+  "allClearCelebration": "🎉 No dues — all customers clear",
+  "poweredByApp": "Powered by {app}",
+  "@poweredByApp": {
+    "placeholders": { "app": { "type": "String" } }
+  },
+
+  "notebookDuplicated": "\"{title}\" duplicated",
+  "@notebookDuplicated": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "deleteNotebookTitle": "Delete Notebook",
+  "deleteNotebookConfirmBody": "\"{title}\" and all its pages will be permanently deleted. Are you sure?",
+  "@deleteNotebookConfirmBody": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "openAction": "Open",
+  "renameEditAction": "Rename / Edit",
+  "duplicateAction": "Duplicate",
+  "sortRecentlyUpdated": "Recently Updated",
+  "sortRecentlyCreated": "Recently Created",
+  "notebookSortNameAZ": "Name A-Z",
+  "notebookSortNameZA": "Name Z-A",
+  "newNotebook": "New Notebook",
+  "searchNotebooksHint": "Search notebooks...",
+  "notebookLoadFailed": "Could not load notebooks",
+  "createFirstNotebook": "Create your first notebook",
+  "notebooksDesc": "Notebooks let you write, organize and format notes freely.",
+  "newNotebookPlus": "+ New Notebook",
+  "noNotebooksFound": "No notebooks found",
+  "noResultsFor": "No results for \"{query}\"",
+  "@noResultsFor": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "newNotebookTitle": "New Notebook",
+  "editNotebookTitle": "Edit Notebook",
+  "notebookNameHint": "Notebook name",
+  "descriptionOptionalHint": "Description (optional)",
+  "coverColorLabel": "Cover color",
+  "createAction": "Create",
+  "updatedOnLabel": "Updated {date}",
+  "@updatedOnLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "saveFailedLocalRetry": "Save failed, your changes are kept locally — will retry",
+  "untitledPage": "Untitled Page",
+  "deletePageTitle": "Delete Page",
+  "deletePageConfirmBody": "Delete \"{title}\"?",
+  "@deletePageConfirmBody": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "renamePageTitle": "Rename Page",
+  "chooseFromGallery": "Choose from Gallery",
+  "takeAPhoto": "Take a Photo",
+  "uploadingImage": "Uploading image...",
+  "imageUploadFailed": "Image upload failed, please try again",
+  "notebookFallbackTitle": "Notebook",
+  "pagesLabel": "Pages",
+  "pageLoadFailed": "Could not load page: {error}",
+  "@pageLoadFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "pageTitleHint": "Page title",
+  "startWritingPlaceholder": "Start writing...",
+  "savedStatus": "Saved",
+  "savingStatus": "Saving...",
+  "unsavedStatus": "Unsaved changes",
+  "notebookEmptyTitle": "This notebook is empty",
+  "createFirstPageDesc": "Create your first page to start writing.",
+  "newPagePlus": "+ New Page",
+  "newPageTooltip": "New Page",
+  "noPagesYet": "No pages yet",
+  "renameAction": "Rename",
+
+  "restoreCustomerTitle": "Restore Customer",
+  "restoreConfirmBody": "Do you want to restore '{name}' to the active list?",
+  "@restoreConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "restoreAction": "Restore",
+  "customerRestoredSuccess": "{name} restored successfully",
+  "@customerRestoredSuccess": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "restoreFailed": "Restore failed, please try again",
+  "deletePermanentlyTitle": "Delete Permanently",
+  "deletePermanentlyConfirmBody": "Permanently delete '{name}'? All payment history and reminder data will be completely erased. This cannot be undone.",
+  "@deletePermanentlyConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "areYouAbsolutelySure": "Are you absolutely sure?",
+  "undoWarningBody": "This action cannot be undone. Do you really want to delete it permanently?",
+  "yesDeleteForever": "Yes, Delete Forever",
+  "customerPermanentlyDeleted": "{name} permanently deleted",
+  "@customerPermanentlyDeleted": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deleteFailedGeneric": "Delete failed, please try again",
+  "noArchivedCustomers": "No archived customers",
+
+  "globalSearchTitle": "Global Search",
+  "globalSearchHint": "Search customers, payments or notebooks...",
+  "dataLoadFailedShort": "Could not load data",
+  "tryAgainMessage": "Please try again",
+  "retryAction": "Retry",
+  "startTypingToSearch": "Start typing to search",
+  "searchEverythingDesc": "Customers, payment history and notebooks — everything is searched together",
+  "noResultsFound": "No results found",
+  "noMatchesFor": "Nothing matches \"{query}\"",
+  "@noMatchesFor": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "customersSectionLabel": "Customers",
+  "pageTitleMatched": "Page title matched",
+  "notebookMatched": "Notebook matched",
+
+  "reminderHistoryTitle": "Reminder History",
+  "noReminderHistory": "No reminder history",
+  "statusActive": "Active",
+  "statusExpired": "Expired",
+  "recurringLabel": "Recurring · {label}",
+  "@recurringLabel": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+
+  "loginTagline": "Your accounts, in your control",
+  "welcomeBack": "Welcome Back",
+  "loginToContinue": "Login to continue",
+  "phoneHintExample": "01XXXXXXXXX",
+  "enterPhoneNumber": "Enter phone number",
+  "passwordLabel": "Password",
+  "enterPassword": "Enter password",
+  "forgotPassword": "Forgot Password?",
+  "loginAction": "Login",
+  "newAccountQuestion": "New account? ",
+  "registerNow": "Register",
+
+  "createAccountTitle": "Create Account",
+  "joinUsDesc": "Join us and manage your transactions smartly",
+  "enterYourName": "Enter your name",
+  "enterValid11DigitPhone": "Enter a valid 11-digit phone number",
+  "minSixCharacters": "Enter at least 6 characters",
+  "confirmPasswordLabel": "Confirm Password",
+  "passwordsDontMatch": "Passwords do not match",
+  "getStarted": "Get Started",
+  "alreadyHaveAccount": "Already have an account? ",
+  "loginNow": "Login",
+
+  "unlockToVerify": "Verify to unlock the app",
+  "tooManyFailedPinAttempts": "Too many wrong PIN attempts, please try again later",
+  "wrongPinTryAgain": "Wrong PIN, please try again",
+  "pinMismatchTryAgain": "PIN doesn't match, please try again",
+  "lockoutSeconds": "{n} seconds",
+  "@lockoutSeconds": {
+    "placeholders": { "n": { "type": "int" } }
+  },
+  "lockoutMinutes": "{n} minutes",
+  "@lockoutMinutes": {
+    "placeholders": { "n": { "type": "int" } }
+  },
+  "lockoutMinutesSeconds": "{n} minutes {s} seconds",
+  "@lockoutMinutesSeconds": {
+    "placeholders": { "n": { "type": "int" }, "s": { "type": "int" } }
+  },
+  "setNewPinTitle": "Set a new PIN",
+  "reEnterPinTitle": "Re-enter PIN",
+  "unlockWithPinTitle": "Unlock with PIN",
+  "tooManyAttemptsCountdown": "Too many wrong attempts — try again after {remaining}",
+  "@tooManyAttemptsCountdown": {
+    "placeholders": { "remaining": { "type": "String" } }
+  },
+  "tryFingerprint": "Try with Fingerprint",
+
+  "frequentlyAskedQuestions": "Frequently Asked Questions",
+  "faq1Q": "How do SMS reminders work?",
+  "faq1A": "Reminder SMS are sent from your phone's own SIM. The app opens the SMS app separately for each customer with the message prefilled — you have to press Send yourself. This is because Play Store policy doesn't allow the app to send bulk SMS on its own.",
+  "faq2Q": "Is my data safe?",
+  "faq2A": "Yes. All data is stored in Firebase (Google Cloud). The PIN used for App Lock is kept on your phone as a salted hash, never stored in plain text.",
+  "faq3Q": "How do I back up my data?",
+  "faq3A": "Go to Settings → Data Backup to export your customer and payment data as a CSV file.",
+  "faq4Q": "How do I turn on App Lock?",
+  "faq4A": "Go to Settings → App Lock and set a PIN. After that, whenever the app goes to background or is reopened, you'll need to unlock it with your PIN or biometrics.",
+  "faq5Q": "What happens when I archive a customer?",
+  "faq5A": "An archived customer is removed from the active list but the data isn't deleted. You can restore it anytime from \"Archived Customers\" in the drawer, or permanently delete it if you want.",
+  "faq6Q": "How do I change the currency or theme color?",
+  "faq6A": "You can change the currency symbol from Settings → Currency, and the app's color from Settings → Theme Color. Dark/Light mode can also be switched from Settings → App Mode (or the quick toggle in the Drawer).",
+  "faq7Q": "What is the Notebook feature for?",
+  "faq7A": "The Notebook feature is for writing notes or things you want to remember, separate from your accounting — it's completely independent from customer data.",
+  "needMoreHelp": "Need more help?",
+  "contactDirectly": "Contact us directly: {email}",
+  "@contactDirectly": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+
+  "privacyPolicyTitle": "Privacy Policy",
+  "termsOfServiceTitle": "Terms of Service",
+  "lastUpdatedLabel": "Last updated: {date}",
+  "@lastUpdatedLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "contactForQuestions": "Contact for questions: {email}",
+  "@contactForQuestions": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+
+  "receiptGenerationFailed": "Could not generate receipt, please try again",
+  "paymentTypeLabel": "Payment",
+  "chargeAddedLabel": "Charge Added",
+  "amountColonLabel": "Amount: {amount}",
+  "@amountColonLabel": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "discountColonLabel": "Discount: {amount}",
+  "@discountColonLabel": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "dateColonLabel": "Date: {date}",
+  "@dateColonLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "methodColonLabel": "Method: {method}",
+  "@methodColonLabel": {
+    "placeholders": { "method": { "type": "String" } }
+  },
+  "descriptionColonLabel": "Description:",
+  "generatingLabel": "Generating...",
+  "shareReceiptAction": "Share Receipt",
+  "imageLoadFailed": "Could not load image",
+  "discountAppliedLabel": "-{amount} discount",
+  "@discountAppliedLabel": {
+    "placeholders": { "amount": { "type": "String" } }
   }
 }

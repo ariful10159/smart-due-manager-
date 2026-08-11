@@ -24,7 +24,13 @@ class ReceiptPdfService {
     required Customer customer,
     required Payment payment,
     required AppSettings settings,
+    String languageCode = 'bn',
   }) async {
+    final isBn = languageCode != 'en';
+    // ✅ ভাষা অনুযায়ী লেবেল বেছে নেওয়ার ছোট হেল্পার — PDF widget tree-এর ভেতর
+    // BuildContext না থাকায় AppLocalizations ব্যবহার করা যায় না
+    String t(String bn, String en) => isBn ? bn : en;
+
     final bengaliRegular = await rootBundle.load(
       'assets/fonts/NotoSerifBengali_Condensed-Regular.ttf',
     );
@@ -65,7 +71,7 @@ class ReceiptPdfService {
 
     final descriptionText = (payment.description != null && payment.description!.trim().isNotEmpty)
         ? payment.description!.trim()
-        : (isPayment ? 'Payment Received' : 'Charge Added');
+        : (isPayment ? t('পেমেন্ট গৃহীত', 'Payment Received') : t('চার্জ যোগ হয়েছে', 'Charge Added'));
     final descriptionImg = await bengaliTextImage(descriptionText, fontSize: 10.5);
 
     final noteImg = (payment.note != null && payment.note!.trim().isNotEmpty)
@@ -108,7 +114,7 @@ class ReceiptPdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Text(
-                        isPayment ? 'RECEIPT' : 'DEBIT NOTE',
+                        isPayment ? t('রিসিট', 'RECEIPT') : t('ডেবিট নোট', 'DEBIT NOTE'),
                         style: pw.TextStyle(font: boldFont, fontSize: 20, color: _navy),
                       ),
                       pw.SizedBox(height: 2),
@@ -133,7 +139,7 @@ class ReceiptPdfService {
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(
-                          'BILL TO',
+                          t('যাকে দেওয়া হলো', 'BILL TO'),
                           style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey500, letterSpacing: 1),
                         ),
                         pw.SizedBox(height: 3),
@@ -155,7 +161,7 @@ class ReceiptPdfService {
                     children: [
                       pw.Row(
                         children: [
-                          pw.Text('Date: ', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+                          pw.Text(t('তারিখ: ', 'Date: '), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
                           pw.Text(
                             dateFmt.format(payment.date),
                             style: pw.TextStyle(font: boldFont, fontSize: 9.5),
@@ -170,7 +176,7 @@ class ReceiptPdfService {
                           borderRadius: pw.BorderRadius.circular(4),
                         ),
                         child: pw.Text(
-                          isFullyPaid ? 'PAID' : 'DUE',
+                          isFullyPaid ? t('পরিশোধিত', 'PAID') : t('বকেয়া', 'DUE'),
                           style: pw.TextStyle(font: boldFont, fontSize: 9, color: PdfColors.white),
                         ),
                       ),
@@ -189,12 +195,12 @@ class ReceiptPdfService {
                   children: [
                     pw.Expanded(
                       child: pw.Text(
-                        'Description',
+                        t('বিবরণ', 'Description'),
                         style: pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
                       ),
                     ),
                     pw.Text(
-                      'Amount (${settings.currencySymbol})',
+                      '${t('পরিমাণ', 'Amount')} (${settings.currencySymbol})',
                       style: pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
                     ),
                   ],
@@ -204,7 +210,7 @@ class ReceiptPdfService {
               if (payment.paymentMethod != null)
                 _receiptRow(
                   description: pw.Text(
-                    'Payment Method: ${Payment.paymentMethodToString(payment.paymentMethod!)}',
+                    '${t('পেমেন্ট মাধ্যম', 'Payment Method')}: ${Payment.paymentMethodToString(payment.paymentMethod!)}',
                     style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey600),
                   ),
                   amount: '',
@@ -214,7 +220,7 @@ class ReceiptPdfService {
                 _receiptRow(
                   description: pw.Row(
                     children: [
-                      pw.Text('Note: ', style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey600)),
+                      pw.Text(t('নোট: ', 'Note: '), style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey600)),
                       noteImg,
                     ],
                   ),
@@ -236,7 +242,7 @@ class ReceiptPdfService {
                         pw.Row(
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           children: [
-                            pw.Text('Previous Due', style: pw.TextStyle(font: boldFont, fontSize: 10.5)),
+                            pw.Text(t('আগের বকেয়া', 'Previous Due'), style: pw.TextStyle(font: boldFont, fontSize: 10.5)),
                             pw.Text(
                               '${settings.currencySymbol}${currencyFmt.format(previousDue < 0 ? 0 : previousDue)}',
                               style: pw.TextStyle(font: boldFont, fontSize: 10.5),
@@ -248,7 +254,7 @@ class ReceiptPdfService {
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           children: [
                             pw.Text(
-                              isPayment ? 'Payment Received' : 'Charge Added',
+                              isPayment ? t('পেমেন্ট গৃহীত', 'Payment Received') : t('চার্জ যোগ হয়েছে', 'Charge Added'),
                               style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
                             ),
                             pw.Text(
@@ -266,7 +272,7 @@ class ReceiptPdfService {
                             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                             children: [
                               pw.Text(
-                                'Discount',
+                                t('ডিসকাউন্ট', 'Discount'),
                                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
                               ),
                               pw.Text(
@@ -282,7 +288,7 @@ class ReceiptPdfService {
                         pw.Row(
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           children: [
-                            pw.Text('Balance Due', style: pw.TextStyle(font: boldFont, fontSize: 13)),
+                            pw.Text(t('বাকি বকেয়া', 'Balance Due'), style: pw.TextStyle(font: boldFont, fontSize: 13)),
                             pw.Text(
                               '${settings.currencySymbol}${currencyFmt.format(customer.totalDue)}',
                               style: pw.TextStyle(
@@ -306,7 +312,9 @@ class ReceiptPdfService {
                 child: pw.Column(
                   children: [
                     pw.Text(
-                      isPayment ? 'Thank you for your payment.' : 'This charge has been added to your account.',
+                      isPayment
+                          ? t('আপনার পেমেন্টের জন্য ধন্যবাদ।', 'Thank you for your payment.')
+                          : t('এই চার্জটি আপনার অ্যাকাউন্টে যোগ হয়েছে।', 'This charge has been added to your account.'),
                       style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
                     ),
                     pw.SizedBox(height: 3),

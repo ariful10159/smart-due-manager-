@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/legal_content.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_settings_scope.dart';
 
 class LegalDocumentView extends StatelessWidget {
   const LegalDocumentView({
@@ -57,6 +59,9 @@ class _HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final languageCode = AppSettingsScope.settingsOf(context).languageCode;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -95,7 +100,7 @@ class _HeaderCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "সর্বশেষ আপডেট: ${LegalContent.lastUpdated}",
+                  l10n.lastUpdatedLabel(LegalContent.lastUpdated(languageCode)),
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.88), fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -181,7 +186,7 @@ class _ContactFooter extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              "প্রশ্ন থাকলে যোগাযোগ করুন: ${LegalContent.supportEmail}",
+              AppLocalizations.of(context)!.contactForQuestions(LegalContent.supportEmail),
               style: TextStyle(color: colors.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.5),
             ),
           ),

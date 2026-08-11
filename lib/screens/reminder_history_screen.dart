@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
 
@@ -17,12 +18,13 @@ class ReminderHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = CustomerRepository();
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         title: Text(
-          "রিমাইন্ডার হিস্ট্রি",
+          l10n.reminderHistoryTitle,
           style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -49,7 +51,7 @@ class ReminderHistoryScreen extends StatelessWidget {
                   Icon(Icons.history_toggle_off, size: 48, color: colors.textSecondary),
                   const SizedBox(height: 12),
                   Text(
-                    "কোনো রিমাইন্ডার হিস্ট্রি নেই",
+                    l10n.noReminderHistory,
                     style: TextStyle(color: colors.textSecondary),
                   ),
                 ],
@@ -77,9 +79,9 @@ class ReminderHistoryScreen extends StatelessWidget {
               final isExpired = rawStatus == 'expired';
 
               final statusLabel = isActive
-                  ? 'সক্রিয়'
+                  ? l10n.statusActive
                   : isExpired
-                      ? 'মেয়াদোত্তীর্ণ'
+                      ? l10n.statusExpired
                       : rawStatus.toString();
 
               final statusColor = isActive
@@ -92,9 +94,9 @@ class ReminderHistoryScreen extends StatelessWidget {
               final isRecurring = reminder['isRecurring'] == true;
               final recurrenceType = reminder['recurrenceType']?.toString();
               final recurrenceLabel = switch (recurrenceType) {
-                'weekly' => 'Weekly',
-                'biweekly' => 'Bi-weekly',
-                'monthly' => 'Monthly',
+                'weekly' => l10n.recurrenceWeekly,
+                'biweekly' => l10n.recurrenceBiweeklyShort,
+                'monthly' => l10n.recurrenceMonthlyShort,
                 _ => null,
               };
 
@@ -162,7 +164,7 @@ class ReminderHistoryScreen extends StatelessWidget {
                                 Icon(Icons.repeat_rounded, size: 13, color: colors.accent),
                                 const SizedBox(width: 4),
                                 Text(
-                                  "Recurring · $recurrenceLabel",
+                                  l10n.recurringLabel(recurrenceLabel),
                                   style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
                                 ),
                               ],

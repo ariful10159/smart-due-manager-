@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/notebook.dart';
 import '../models/notebook_repository.dart';
 import '../theme/app_colors.dart';
@@ -101,12 +102,13 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
     await _repo.duplicateNotebook(notebook);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('"${notebook.title}" duplicated')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.notebookDuplicated(notebook.title))),
     );
   }
 
   Future<void> _deleteNotebook(Notebook notebook) async {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -115,19 +117,19 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: colors.borderColor),
         ),
-        title: Text("Delete Notebook", style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
+        title: Text(l10n.deleteNotebookTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         content: Text(
-          '"${notebook.title}" ও এর সব page স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?',
+          l10n.deleteNotebookConfirmBody(notebook.title),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Delete", style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: colors.due, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -140,6 +142,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
 
   void _showNotebookMenu(Notebook notebook) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       backgroundColor: colors.surface,
@@ -152,7 +155,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
           children: [
             ListTile(
               leading: Icon(Icons.open_in_new_rounded, color: colors.accent),
-              title: Text("Open", style: TextStyle(color: colors.textPrimary)),
+              title: Text(l10n.openAction, style: TextStyle(color: colors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(
@@ -162,7 +165,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
             ),
             ListTile(
               leading: Icon(Icons.edit_outlined, color: colors.accent),
-              title: Text("Rename / Edit", style: TextStyle(color: colors.textPrimary)),
+              title: Text(l10n.renameEditAction, style: TextStyle(color: colors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 _renameNotebook(notebook);
@@ -170,7 +173,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
             ),
             ListTile(
               leading: Icon(Icons.copy_all_outlined, color: colors.accent),
-              title: Text("Duplicate", style: TextStyle(color: colors.textPrimary)),
+              title: Text(l10n.duplicateAction, style: TextStyle(color: colors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 _duplicateNotebook(notebook);
@@ -178,7 +181,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
             ),
             ListTile(
               leading: Icon(Icons.delete_outline_rounded, color: colors.due),
-              title: Text("Delete", style: TextStyle(color: colors.due)),
+              title: Text(l10n.deleteAction, style: TextStyle(color: colors.due)),
               onTap: () {
                 Navigator.pop(context);
                 _deleteNotebook(notebook);
@@ -193,12 +196,13 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
       drawer: const AppDrawer(currentRoute: 'notebooks'),
       appBar: AppBar(
-        title: Text("Notebooks", style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
+        title: Text(l10n.drawerNotebooks, style: TextStyle(fontWeight: FontWeight.w800, color: colors.textPrimary)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -214,19 +218,19 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: NotebookSortOption.recentlyUpdated,
-                child: Text("Recently Updated", style: TextStyle(color: colors.textPrimary)),
+                child: Text(l10n.sortRecentlyUpdated, style: TextStyle(color: colors.textPrimary)),
               ),
               PopupMenuItem(
                 value: NotebookSortOption.recentlyCreated,
-                child: Text("Recently Created", style: TextStyle(color: colors.textPrimary)),
+                child: Text(l10n.sortRecentlyCreated, style: TextStyle(color: colors.textPrimary)),
               ),
               PopupMenuItem(
                 value: NotebookSortOption.nameAZ,
-                child: Text("Name A-Z", style: TextStyle(color: colors.textPrimary)),
+                child: Text(l10n.notebookSortNameAZ, style: TextStyle(color: colors.textPrimary)),
               ),
               PopupMenuItem(
                 value: NotebookSortOption.nameZA,
-                child: Text("Name Z-A", style: TextStyle(color: colors.textPrimary)),
+                child: Text(l10n.notebookSortNameZA, style: TextStyle(color: colors.textPrimary)),
               ),
             ],
             icon: Icon(Icons.sort_rounded, color: colors.textPrimary),
@@ -238,7 +242,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
         backgroundColor: colors.accent,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text("New Notebook"),
+        label: Text(l10n.newNotebook),
       ),
       body: Column(
         children: [
@@ -249,7 +253,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
               onChanged: (value) => setState(() => _query = value),
               style: TextStyle(color: colors.textPrimary),
               decoration: InputDecoration(
-                hintText: "Search notebooks...",
+                hintText: l10n.searchNotebooksHint,
                 hintStyle: TextStyle(color: colors.textSecondary),
                 prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
                 filled: true,
@@ -276,7 +280,7 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
                 if (snapshot.hasError) {
                   return _EmptyState(
                     icon: Icons.error_outline_rounded,
-                    title: "নোটবুক লোড করা যায়নি",
+                    title: l10n.notebookLoadFailed,
                     subtitle: "${snapshot.error}",
                   );
                 }
@@ -290,9 +294,9 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
                 if (snapshot.data!.isEmpty) {
                   return _EmptyState(
                     icon: Icons.menu_book_outlined,
-                    title: "Create your first notebook",
-                    subtitle: "Notebooks let you write, organize and format notes freely.",
-                    actionLabel: "+ New Notebook",
+                    title: l10n.createFirstNotebook,
+                    subtitle: l10n.notebooksDesc,
+                    actionLabel: l10n.newNotebookPlus,
                     onAction: _createNotebook,
                   );
                 }
@@ -300,8 +304,8 @@ class _NotebookListScreenState extends State<NotebookListScreen> {
                 if (notebooks.isEmpty) {
                   return _EmptyState(
                     icon: Icons.search_off_rounded,
-                    title: "No notebooks found",
-                    subtitle: 'No results for "$_query"',
+                    title: l10n.noNotebooksFound,
+                    subtitle: l10n.noResultsFor(_query),
                   );
                 }
 
@@ -352,6 +356,7 @@ Future<_NotebookEditResult?> _showNotebookEditor(
   Notebook? initial,
 }) async {
   final colors = AppColors.of(context);
+  final l10n = AppLocalizations.of(context)!;
   final titleController = TextEditingController(text: initial?.title ?? '');
   final descController = TextEditingController(text: initial?.description ?? '');
   int selectedColor = initial?.coverColor ?? kNotebookCoverColors.first;
@@ -368,7 +373,7 @@ Future<_NotebookEditResult?> _showNotebookEditor(
               side: BorderSide(color: colors.borderColor),
             ),
             title: Text(
-              initial == null ? "New Notebook" : "Edit Notebook",
+              initial == null ? l10n.newNotebookTitle : l10n.editNotebookTitle,
               style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
             ),
             content: SingleChildScrollView(
@@ -381,7 +386,7 @@ Future<_NotebookEditResult?> _showNotebookEditor(
                     autofocus: true,
                     style: TextStyle(color: colors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: "Notebook name",
+                      hintText: l10n.notebookNameHint,
                       hintStyle: TextStyle(color: colors.textSecondary),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -399,7 +404,7 @@ Future<_NotebookEditResult?> _showNotebookEditor(
                     maxLines: 2,
                     style: TextStyle(color: colors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: "Description (optional)",
+                      hintText: l10n.descriptionOptionalHint,
                       hintStyle: TextStyle(color: colors.textSecondary),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -412,7 +417,7 @@ Future<_NotebookEditResult?> _showNotebookEditor(
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Text("Cover color", style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                  Text(l10n.coverColorLabel, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 10,
@@ -444,7 +449,7 @@ Future<_NotebookEditResult?> _showNotebookEditor(
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: Text("Cancel", style: TextStyle(color: colors.textSecondary)),
+                child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
               ),
               TextButton(
                 onPressed: () {
@@ -459,7 +464,7 @@ Future<_NotebookEditResult?> _showNotebookEditor(
                   );
                 },
                 child: Text(
-                  initial == null ? "Create" : "Save",
+                  initial == null ? l10n.createAction : l10n.save,
                   style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700),
                 ),
               ),
@@ -487,6 +492,7 @@ class _NotebookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final coverColor = Color(notebook.coverColor);
 
     return Material(
@@ -556,7 +562,7 @@ class _NotebookCard extends StatelessWidget {
                     ],
                     const SizedBox(height: 6),
                     Text(
-                      "Updated ${DateFormat('d MMM').format(notebook.updatedAt)}",
+                      l10n.updatedOnLabel(DateFormat('d MMM').format(notebook.updatedAt)),
                       style: TextStyle(color: colors.hintColor, fontSize: 10),
                     ),
                   ],

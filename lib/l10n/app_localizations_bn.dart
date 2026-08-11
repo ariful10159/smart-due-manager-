@@ -903,4 +903,574 @@ class AppLocalizationsBn extends AppLocalizations {
   String minutesLeft(int minutes) {
     return '$minutes minute(s) left';
   }
+
+  @override
+  String get failedToLoadReport => 'Failed to load report, please try again';
+
+  @override
+  String get collectionReportsTitle => 'Collection Reports';
+
+  @override
+  String get customerPdfReportTooltip => 'Customer PDF Report';
+
+  @override
+  String get downloadPdfTooltip => 'Download PDF';
+
+  @override
+  String get dashboardLabel => 'Dashboard';
+
+  @override
+  String get periodDaily => 'Daily';
+
+  @override
+  String get periodWeekly => 'Weekly';
+
+  @override
+  String get periodMonthly => 'Monthly';
+
+  @override
+  String ownerLabel(String name) {
+    return 'Owner: $name';
+  }
+
+  @override
+  String get customerPaymentDetails => 'Customer Payment Details';
+
+  @override
+  String get noTransactionsForPeriod =>
+      'No transactions found for this period.';
+
+  @override
+  String get otherMethod => 'Other';
+
+  @override
+  String get paymentLabel => 'Payment';
+
+  @override
+  String get remainingLabel => 'Remaining';
+
+  @override
+  String get collectionSummaryLabel => 'Collection Summary';
+
+  @override
+  String get otherNagadBank => 'Other (Nagad/Bank)';
+
+  @override
+  String get totalCollectionLabel => 'Total Collection';
+
+  @override
+  String get monthlyCollectionTrend => 'Monthly Collection Trend';
+
+  @override
+  String get last6Months => 'Last 6 months';
+
+  @override
+  String get noPaymentRecordsPeriod => 'এই সময়ে কোনো পেমেন্ট রেকর্ড নেই';
+
+  @override
+  String get topDefaultersLabel => 'Top Defaulters';
+
+  @override
+  String get topDefaultersDesc => 'সবচেয়ে বেশি বকেয়া থাকা কাস্টমার';
+
+  @override
+  String get allClearCelebration => '🎉 কোনো বকেয়া নেই, সব কাস্টমার ক্লিয়ার';
+
+  @override
+  String poweredByApp(String app) {
+    return 'Powered by $app';
+  }
+
+  @override
+  String notebookDuplicated(String title) {
+    return '\"$title\" duplicated';
+  }
+
+  @override
+  String get deleteNotebookTitle => 'Delete Notebook';
+
+  @override
+  String deleteNotebookConfirmBody(String title) {
+    return '\"$title\" ও এর সব page স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?';
+  }
+
+  @override
+  String get openAction => 'Open';
+
+  @override
+  String get renameEditAction => 'Rename / Edit';
+
+  @override
+  String get duplicateAction => 'Duplicate';
+
+  @override
+  String get sortRecentlyUpdated => 'Recently Updated';
+
+  @override
+  String get sortRecentlyCreated => 'Recently Created';
+
+  @override
+  String get notebookSortNameAZ => 'Name A-Z';
+
+  @override
+  String get notebookSortNameZA => 'Name Z-A';
+
+  @override
+  String get newNotebook => 'New Notebook';
+
+  @override
+  String get searchNotebooksHint => 'Search notebooks...';
+
+  @override
+  String get notebookLoadFailed => 'নোটবুক লোড করা যায়নি';
+
+  @override
+  String get createFirstNotebook => 'Create your first notebook';
+
+  @override
+  String get notebooksDesc =>
+      'Notebooks let you write, organize and format notes freely.';
+
+  @override
+  String get newNotebookPlus => '+ New Notebook';
+
+  @override
+  String get noNotebooksFound => 'No notebooks found';
+
+  @override
+  String noResultsFor(String query) {
+    return 'No results for \"$query\"';
+  }
+
+  @override
+  String get newNotebookTitle => 'New Notebook';
+
+  @override
+  String get editNotebookTitle => 'Edit Notebook';
+
+  @override
+  String get notebookNameHint => 'Notebook name';
+
+  @override
+  String get descriptionOptionalHint => 'Description (optional)';
+
+  @override
+  String get coverColorLabel => 'Cover color';
+
+  @override
+  String get createAction => 'Create';
+
+  @override
+  String updatedOnLabel(String date) {
+    return 'Updated $date';
+  }
+
+  @override
+  String get saveFailedLocalRetry =>
+      'Save failed, your changes are kept locally — will retry';
+
+  @override
+  String get untitledPage => 'Untitled Page';
+
+  @override
+  String get deletePageTitle => 'Delete Page';
+
+  @override
+  String deletePageConfirmBody(String title) {
+    return '\"$title\" মুছে দিতে চান?';
+  }
+
+  @override
+  String get renamePageTitle => 'Rename Page';
+
+  @override
+  String get chooseFromGallery => 'Choose from Gallery';
+
+  @override
+  String get takeAPhoto => 'Take a Photo';
+
+  @override
+  String get uploadingImage => 'Uploading image...';
+
+  @override
+  String get imageUploadFailed => 'Image upload failed, please try again';
+
+  @override
+  String get notebookFallbackTitle => 'Notebook';
+
+  @override
+  String get pagesLabel => 'Pages';
+
+  @override
+  String pageLoadFailed(String error) {
+    return 'Page লোড করা যায়নি: $error';
+  }
+
+  @override
+  String get pageTitleHint => 'Page title';
+
+  @override
+  String get startWritingPlaceholder => 'লিখতে শুরু করুন...';
+
+  @override
+  String get savedStatus => 'Saved';
+
+  @override
+  String get savingStatus => 'Saving...';
+
+  @override
+  String get unsavedStatus => 'Unsaved changes';
+
+  @override
+  String get notebookEmptyTitle => 'This notebook is empty';
+
+  @override
+  String get createFirstPageDesc => 'Create your first page to start writing.';
+
+  @override
+  String get newPagePlus => '+ New Page';
+
+  @override
+  String get newPageTooltip => 'New Page';
+
+  @override
+  String get noPagesYet => 'কোনো page নেই';
+
+  @override
+  String get renameAction => 'Rename';
+
+  @override
+  String get restoreCustomerTitle => 'Restore Customer';
+
+  @override
+  String restoreConfirmBody(String name) {
+    return '\'$name\' কে আবার active list এ ফিরিয়ে আনতে চান?';
+  }
+
+  @override
+  String get restoreAction => 'Restore';
+
+  @override
+  String customerRestoredSuccess(String name) {
+    return '$name restored successfully';
+  }
+
+  @override
+  String get restoreFailed => 'Restore failed, please try again';
+
+  @override
+  String get deletePermanentlyTitle => 'Delete Permanently';
+
+  @override
+  String deletePermanentlyConfirmBody(String name) {
+    return '\'$name\' কে স্থায়ীভাবে ডিলিট করতে চান? এর সব payment history ও reminder ডেটা সম্পূর্ণ মুছে যাবে। এটি আর কখনো ফেরত পাওয়া যাবে না।';
+  }
+
+  @override
+  String get areYouAbsolutelySure => 'একদম নিশ্চিত?';
+
+  @override
+  String get undoWarningBody =>
+      'এই কাজটি Undo করা যাবে না। সত্যিই স্থায়ীভাবে ডিলিট করতে চান?';
+
+  @override
+  String get yesDeleteForever => 'Yes, Delete Forever';
+
+  @override
+  String customerPermanentlyDeleted(String name) {
+    return '$name permanently deleted';
+  }
+
+  @override
+  String get deleteFailedGeneric => 'Delete failed, please try again';
+
+  @override
+  String get noArchivedCustomers => 'কোনো Archived customer নেই';
+
+  @override
+  String get globalSearchTitle => 'Global Search';
+
+  @override
+  String get globalSearchHint => 'কাস্টমার, পেমেন্ট বা নোটবুকে খুঁজুন...';
+
+  @override
+  String get dataLoadFailedShort => 'ডেটা লোড করা যায়নি';
+
+  @override
+  String get tryAgainMessage => 'আবার চেষ্টা করুন';
+
+  @override
+  String get retryAction => 'Retry';
+
+  @override
+  String get startTypingToSearch => 'টাইপ শুরু করুন খুঁজতে';
+
+  @override
+  String get searchEverythingDesc =>
+      'কাস্টমার, পেমেন্ট হিস্ট্রি ও নোটবুক — সবকিছু একসাথে সার্চ হবে';
+
+  @override
+  String get noResultsFound => 'কোনো ফলাফল পাওয়া যায়নি';
+
+  @override
+  String noMatchesFor(String query) {
+    return '\"$query\" এর সাথে মিলে এমন কিছু নেই';
+  }
+
+  @override
+  String get customersSectionLabel => 'Customers';
+
+  @override
+  String get pageTitleMatched => 'Page title matched';
+
+  @override
+  String get notebookMatched => 'Notebook matched';
+
+  @override
+  String get reminderHistoryTitle => 'রিমাইন্ডার হিস্ট্রি';
+
+  @override
+  String get noReminderHistory => 'কোনো রিমাইন্ডার হিস্ট্রি নেই';
+
+  @override
+  String get statusActive => 'সক্রিয়';
+
+  @override
+  String get statusExpired => 'মেয়াদোত্তীর্ণ';
+
+  @override
+  String recurringLabel(String label) {
+    return 'Recurring · $label';
+  }
+
+  @override
+  String get loginTagline => 'আপনার হিসাব, আপনার নিয়ন্ত্রণে';
+
+  @override
+  String get welcomeBack => 'Welcome Back';
+
+  @override
+  String get loginToContinue => 'Login করে চালিয়ে যান';
+
+  @override
+  String get phoneHintExample => '01XXXXXXXXX';
+
+  @override
+  String get enterPhoneNumber => 'ফোন নাম্বার দিন';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get enterPassword => 'পাসওয়ার্ড দিন';
+
+  @override
+  String get forgotPassword => 'Forgot Password?';
+
+  @override
+  String get loginAction => 'Login';
+
+  @override
+  String get newAccountQuestion => 'নতুন অ্যাকাউন্ট? ';
+
+  @override
+  String get registerNow => 'Register করুন';
+
+  @override
+  String get createAccountTitle => 'Create Account';
+
+  @override
+  String get joinUsDesc => 'Join us and manage your transactions smartly';
+
+  @override
+  String get enterYourName => 'আপনার নাম দিন';
+
+  @override
+  String get enterValid11DigitPhone => 'সঠিক ১১ ডিজিটের ফোন নাম্বার দিন';
+
+  @override
+  String get minSixCharacters => 'কমপক্ষে ৬ ক্যারেক্টার দিন';
+
+  @override
+  String get confirmPasswordLabel => 'Confirm Password';
+
+  @override
+  String get passwordsDontMatch => 'পাসওয়ার্ড মিলছে না';
+
+  @override
+  String get getStarted => 'Get Started';
+
+  @override
+  String get alreadyHaveAccount => 'আগে থেকেই অ্যাকাউন্ট আছে? ';
+
+  @override
+  String get loginNow => 'Login করুন';
+
+  @override
+  String get unlockToVerify => 'অ্যাপ আনলক করতে যাচাই করুন';
+
+  @override
+  String get tooManyFailedPinAttempts =>
+      'অনেকবার ভুল PIN দেওয়া হয়েছে, কিছুক্ষণ পর আবার চেষ্টা করুন';
+
+  @override
+  String get wrongPinTryAgain => 'ভুল PIN, আবার চেষ্টা করুন';
+
+  @override
+  String get pinMismatchTryAgain => 'PIN মিলছে না, আবার চেষ্টা করুন';
+
+  @override
+  String lockoutSeconds(int n) {
+    return '$n সেকেন্ড';
+  }
+
+  @override
+  String lockoutMinutes(int n) {
+    return '$n মিনিট';
+  }
+
+  @override
+  String lockoutMinutesSeconds(int n, int s) {
+    return '$n মিনিট $s সেকেন্ড';
+  }
+
+  @override
+  String get setNewPinTitle => 'নতুন PIN সেট করুন';
+
+  @override
+  String get reEnterPinTitle => 'PIN আবার লিখুন';
+
+  @override
+  String get unlockWithPinTitle => 'PIN দিয়ে আনলক করুন';
+
+  @override
+  String tooManyAttemptsCountdown(String remaining) {
+    return 'অনেকবার ভুল PIN — $remaining পর আবার চেষ্টা করুন';
+  }
+
+  @override
+  String get tryFingerprint => 'Fingerprint দিয়ে চেষ্টা করুন';
+
+  @override
+  String get frequentlyAskedQuestions => 'প্রায়ই জিজ্ঞাসিত প্রশ্ন';
+
+  @override
+  String get faq1Q => 'SMS রিমাইন্ডার কীভাবে কাজ করে?';
+
+  @override
+  String get faq1A =>
+      'রিমাইন্ডার SMS আপনার ফোনের নিজস্ব SIM থেকে পাঠানো হয়। অ্যাপ প্রতিটা কাস্টমারের জন্য আলাদাভাবে SMS app খুলে মেসেজ prefilled অবস্থায় দেখায়, আপনাকে নিজে Send বাটনে চাপতে হয় — Play Store নীতি অনুযায়ী অ্যাপ নিজে থেকে bulk SMS পাঠাতে পারে না।';
+
+  @override
+  String get faq2Q => 'আমার ডেটা কি নিরাপদ?';
+
+  @override
+  String get faq2A =>
+      'হ্যাঁ। সব ডেটা Firebase (Google Cloud) এ সংরক্ষিত হয়। App Lock এর জন্য ব্যবহৃত PIN ফোনেই সল্টেড হ্যাশ আকারে রাখা হয়, প্লেইনটেক্সটে কখনো সংরক্ষিত হয় না।';
+
+  @override
+  String get faq3Q => 'ডেটা ব্যাকআপ কীভাবে নেব?';
+
+  @override
+  String get faq3A =>
+      'Settings → Data Backup এ গিয়ে আপনার কাস্টমার ও পেমেন্ট ডেটা CSV ফাইল হিসেবে এক্সপোর্ট করতে পারবেন।';
+
+  @override
+  String get faq4Q => 'App Lock কীভাবে চালু করব?';
+
+  @override
+  String get faq4A =>
+      'Settings → App Lock এ গিয়ে একটা PIN সেট করুন। এরপর থেকে অ্যাপ ব্যাকগ্রাউন্ডে গেলে বা বন্ধ করে আবার খুললে PIN বা বায়োমেট্রিক দিয়ে আনলক করতে হবে।';
+
+  @override
+  String get faq5Q => 'কাস্টমার Archive করলে কী হয়?';
+
+  @override
+  String get faq5A =>
+      'Archive করা কাস্টমার active list থেকে সরে যায় কিন্তু ডেটা মুছে যায় না। Drawer এর \"Archived Customers\" থেকে যেকোনো সময় আবার Restore করতে পারবেন, অথবা চাইলে স্থায়ীভাবে ডিলিট করতে পারবেন।';
+
+  @override
+  String get faq6Q => 'কারেন্সি বা থিম কালার পরিবর্তন করব কীভাবে?';
+
+  @override
+  String get faq6A =>
+      'Settings → কারেন্সি থেকে টাকার চিহ্ন, আর Settings → থিম কালার থেকে অ্যাপের রঙ পরিবর্তন করা যাবে। Dark/Light মোডও Settings → অ্যাপ মোড থেকে বদলানো যায় (অথবা Drawer এর কুইক টগল থেকেও)।';
+
+  @override
+  String get faq7Q => 'Notebook ফিচারটা কী কাজে লাগে?';
+
+  @override
+  String get faq7A =>
+      'হিসাব-নিকাশের বাইরেও যদি কোনো নোট, মনে রাখার তথ্য লিখে রাখতে চান, তার জন্যই Notebook ফিচার — এটি কাস্টমার ডেটা থেকে সম্পূর্ণ আলাদা।';
+
+  @override
+  String get needMoreHelp => 'আরও সাহায্য দরকার?';
+
+  @override
+  String contactDirectly(String email) {
+    return 'সরাসরি যোগাযোগ করুন: $email';
+  }
+
+  @override
+  String get privacyPolicyTitle => 'Privacy Policy';
+
+  @override
+  String get termsOfServiceTitle => 'Terms of Service';
+
+  @override
+  String lastUpdatedLabel(String date) {
+    return 'সর্বশেষ আপডেট: $date';
+  }
+
+  @override
+  String contactForQuestions(String email) {
+    return 'প্রশ্ন থাকলে যোগাযোগ করুন: $email';
+  }
+
+  @override
+  String get receiptGenerationFailed =>
+      'Receipt তৈরি করা যায়নি, আবার চেষ্টা করুন';
+
+  @override
+  String get paymentTypeLabel => 'Payment';
+
+  @override
+  String get chargeAddedLabel => 'Charge Added';
+
+  @override
+  String amountColonLabel(String amount) {
+    return 'Amount: $amount';
+  }
+
+  @override
+  String discountColonLabel(String amount) {
+    return 'Discount: $amount';
+  }
+
+  @override
+  String dateColonLabel(String date) {
+    return 'Date: $date';
+  }
+
+  @override
+  String methodColonLabel(String method) {
+    return 'Method: $method';
+  }
+
+  @override
+  String get descriptionColonLabel => 'Description:';
+
+  @override
+  String get generatingLabel => 'তৈরি হচ্ছে...';
+
+  @override
+  String get shareReceiptAction => 'Share Receipt';
+
+  @override
+  String get imageLoadFailed => 'ছবি লোড করা যায়নি';
+
+  @override
+  String discountAppliedLabel(String amount) {
+    return '-$amount discount';
+  }
 }

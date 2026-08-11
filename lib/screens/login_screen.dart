@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import 'home_screen.dart';
@@ -118,6 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -212,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            "আপনার হিসাব, আপনার নিয়ন্ত্রণে",
+                            l10n.loginTagline,
                             style: TextStyle(
                               fontSize: 13,
                               color: colors.textSecondary,
@@ -269,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                         const SizedBox(width: 10),
                                         Text(
-                                          "Welcome Back",
+                                          l10n.welcomeBack,
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w800,
@@ -281,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Padding(
                                       padding: const EdgeInsets.only(left: 14, top: 3),
                                       child: Text(
-                                        "Login করে চালিয়ে যান",
+                                        l10n.loginToContinue,
                                         style: TextStyle(fontSize: 12, color: colors.textSecondary),
                                       ),
                                     ),
@@ -293,13 +295,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                       style: TextStyle(color: colors.textPrimary, fontSize: 14.5),
                                       decoration: _fieldDecoration(
                                         colors: colors,
-                                        label: "Phone Number",
+                                        label: l10n.phoneNumber,
                                         icon: Icons.phone_rounded,
                                         iconColor: colors.accent,
-                                        hint: "01XXXXXXXXX",
+                                        hint: l10n.phoneHintExample,
                                       ),
                                       validator: (v) => v == null || v.trim().isEmpty
-                                          ? "ফোন নাম্বার দিন"
+                                          ? l10n.enterPhoneNumber
                                           : null,
                                     ),
                                     const SizedBox(height: 16),
@@ -310,7 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       style: TextStyle(color: colors.textPrimary, fontSize: 14.5),
                                       decoration: _fieldDecoration(
                                         colors: colors,
-                                        label: "Password",
+                                        label: l10n.passwordLabel,
                                         icon: Icons.lock_rounded,
                                         iconColor: colors.accentAlt,
                                         suffixIcon: IconButton(
@@ -327,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       ),
                                       validator: (v) =>
-                                          v == null || v.isEmpty ? "পাসওয়ার্ড দিন" : null,
+                                          v == null || v.isEmpty ? l10n.enterPassword : null,
                                     ),
 
                                     Align(
@@ -340,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                         ),
                                         child: Text(
-                                          "Forgot Password?",
+                                          l10n.forgotPassword,
                                           style: TextStyle(
                                             color: colors.accent,
                                             fontSize: 12,
@@ -395,18 +397,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     )
                                                   : Row(
                                                       mainAxisSize: MainAxisSize.min,
-                                                      children: const [
+                                                      children: [
                                                         Text(
-                                                          "Login",
-                                                          style: TextStyle(
+                                                          l10n.loginAction,
+                                                          style: const TextStyle(
                                                             color: Colors.white,
                                                             fontWeight: FontWeight.w800,
                                                             fontSize: 15.5,
                                                             letterSpacing: 0.3,
                                                           ),
                                                         ),
-                                                        SizedBox(width: 8),
-                                                        Icon(
+                                                        const SizedBox(width: 8),
+                                                        const Icon(
                                                           Icons.arrow_forward_rounded,
                                                           color: Colors.white,
                                                           size: 18,
@@ -448,9 +450,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.w500,
                                 ),
                                 children: [
-                                  const TextSpan(text: "নতুন অ্যাকাউন্ট? "),
+                                  TextSpan(text: l10n.newAccountQuestion),
                                   TextSpan(
-                                    text: "Register করুন",
+                                    text: l10n.registerNow,
                                     style: TextStyle(
                                       color: colors.accent,
                                       fontWeight: FontWeight.w800,
