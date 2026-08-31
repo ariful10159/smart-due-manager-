@@ -2731,6 +2731,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'-{amount} discount'**
   String discountAppliedLabel(String amount);
+
+  /// No description provided for @accountDisabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Disabled'**
+  String get accountDisabledTitle;
+
+  /// No description provided for @accountDisabledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been disabled by the administrator. Please contact support if you believe this is a mistake.'**
+  String get accountDisabledMessage;
 }
 
 class _AppLocalizationsDelegate

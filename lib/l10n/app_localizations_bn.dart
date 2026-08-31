@@ -1473,4 +1473,11 @@ class AppLocalizationsBn extends AppLocalizations {
   String discountAppliedLabel(String amount) {
     return '-$amount discount';
   }
+
+  @override
+  String get accountDisabledTitle => 'অ্যাকাউন্ট বন্ধ করা হয়েছে';
+
+  @override
+  String get accountDisabledMessage =>
+      'আপনার অ্যাকাউন্টটি অ্যাডমিন কর্তৃক বন্ধ করে দেওয়া হয়েছে। এটি ভুল মনে হলে সাপোর্টের সাথে যোগাযোগ করুন।';
 }

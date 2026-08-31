@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Admin panel (Node/Vite)
+admin-panel/node_modules/
+admin-panel/dist/

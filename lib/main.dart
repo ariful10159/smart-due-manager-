@@ -16,6 +16,7 @@ import 'screens/splash_screen.dart';
 import 'services/notification_service.dart';
 import 'widgets/app_settings_scope.dart';
 import 'widgets/app_lock_gate.dart'; // ✅ AppLockGate ইমপোর্ট করা হলো
+import 'widgets/account_status_gate.dart'; // ✅ Admin panel থেকে disabled হলে ব্লক করার জন্য
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -124,7 +125,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          return const HomeScreen();
+          return const AccountStatusGate(child: HomeScreen());
         }
 
         return const LoginScreen();
