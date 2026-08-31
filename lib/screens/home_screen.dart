@@ -16,6 +16,7 @@ import 'global_search_screen.dart';
 import 'reminder_screen.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/announcement_banner.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -223,11 +224,15 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 4),
           ],
         ),
-        body: _isLoggingOut
-            ? Center(
-                child: CircularProgressIndicator(color: colors.accent),
-              )
-            : StreamBuilder<List<Customer>>(
+        body: Column(
+          children: [
+            const AnnouncementBanner(),
+            Expanded(
+              child: _isLoggingOut
+                  ? Center(
+                      child: CircularProgressIndicator(color: colors.accent),
+                    )
+                  : StreamBuilder<List<Customer>>(
                 stream: _repo.streamCustomers(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
@@ -428,6 +433,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
+            ),
+          ],
+        ),
         floatingActionButton: _isLoggingOut
             ? null
             : FloatingActionButton(

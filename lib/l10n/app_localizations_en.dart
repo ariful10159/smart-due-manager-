@@ -1472,4 +1472,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String discountAppliedLabel(String amount) {
     return '-$amount discount';
   }
+
+  @override
+  String get accountDisabledTitle => 'Account Disabled';
+
+  @override
+  String get accountDisabledMessage =>
+      'Your account has been disabled by the administrator. Please contact support if you believe this is a mistake.';
 }
