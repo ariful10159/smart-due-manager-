@@ -36,7 +36,11 @@ class SettingsService {
     if (uid == null) return AppSettings.defaults();
 
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get()
+          .timeout(const Duration(seconds: 15));
       final data = doc.data();
       final settingsMap = data?['settings'] as Map<String, dynamic>?;
 

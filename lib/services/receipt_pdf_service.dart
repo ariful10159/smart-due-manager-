@@ -168,6 +168,27 @@ class ReceiptPdfService {
                           ),
                         ],
                       ),
+                      pw.SizedBox(height: 6),
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColor.fromHex('FFF1E9'),
+                          borderRadius: pw.BorderRadius.circular(4),
+                          border: pw.Border.all(color: _orange, width: 0.75),
+                        ),
+                        child: pw.Row(
+                          children: [
+                            pw.Text(
+                              t('বকেয়ার তারিখ: ', 'Due Date: '),
+                              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                            ),
+                            pw.Text(
+                              dateFmt.format(customer.lastPaymentDate),
+                              style: pw.TextStyle(font: boldFont, fontSize: 9.5, color: _orange),
+                            ),
+                          ],
+                        ),
+                      ),
                       pw.SizedBox(height: 8),
                       pw.Container(
                         padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),

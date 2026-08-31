@@ -96,7 +96,9 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
     });
 
     try {
-      final customers = await _customerRepo.fetchCustomersOnce();
+      final customers = (await _customerRepo.fetchCustomersOnce())
+          .where((c) => !c.isHidden)
+          .toList();
       final notebooks = await _notebookRepo.fetchNotebooksOnce();
 
       final paymentLists = await Future.wait(

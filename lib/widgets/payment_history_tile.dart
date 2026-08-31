@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -82,7 +83,7 @@ class PaymentHistoryTile extends StatelessWidget {
                     children: [
                       if (payment.receiptImageUrl != null &&
                           payment.receiptImageUrl!.isNotEmpty)
-                        _buildReceiptImage(colors),
+                        _buildReceiptImage(dialogContext, colors),
                       if (payment.receiptImageUrl != null &&
                           payment.receiptImageUrl!.isNotEmpty)
                         const SizedBox(height: 16),
@@ -163,29 +164,42 @@ class PaymentHistoryTile extends StatelessWidget {
     );
   }
 
-  Widget _buildReceiptImage(AppColors colors) {
+  Widget _buildReceiptImage(BuildContext context, AppColors colors) {
     try {
       final bytes = base64Decode(payment.receiptImageUrl!);
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: double.infinity,
-          height: 200,
-          child: Image.memory(
-            bytes,
-            fit: BoxFit.cover,
-            gaplessPlayback: true,
-            errorBuilder: (context, error, stackTrace) {
-              return Center(
-                child: Text(AppLocalizations.of(context)!.imageLoadFailed, style: TextStyle(color: colors.textSecondary)),
-              );
-            },
+        child: GestureDetector(
+          onTap: () => _openFullScreenImage(context, bytes),
+          child: SizedBox(
+            width: double.infinity,
+            height: 200,
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Text(AppLocalizations.of(context)!.imageLoadFailed, style: TextStyle(color: colors.textSecondary)),
+                );
+              },
+            ),
           ),
         ),
       );
     } catch (e) {
       return const SizedBox.shrink();
     }
+  }
+
+  void _openFullScreenImage(BuildContext context, Uint8List bytes) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        pageBuilder: (_, _, _) => _FullScreenImageViewer(bytes: bytes),
+      ),
+    );
   }
 
   @override
@@ -285,6 +299,42 @@ class PaymentHistoryTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FullScreenImageViewer extends StatelessWidget {
+  const _FullScreenImageViewer({required this.bytes});
+
+  final Uint8List bytes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              minScale: 1,
+              maxScale: 4,
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -25,7 +25,14 @@ class NotificationService {
       settings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
+  }
 
+  // ✅ Permission dialog গুলো ইচ্ছাকৃতভাবে main()/runApp() থেকে আলাদা রাখা হয়েছে —
+  // এগুলো await করলে runApp() আটকে যায়, ফলে dialog resolve না হওয়া পর্যন্ত
+  // Flutter এর প্রথম frame কখনো আঁকা হয় না (কিছু ডিভাইসে/Android ভার্সনে
+  // exact alarm permission request silently hang করে — কালো স্ক্রিনে আটকে থাকার
+  // এটাই আসল কারণ ছিল)। তাই এটা runApp() এর পর, UI দেখানোর পর ডাকা হয়।
+  static Future<void> requestPermissions() async {
     // ✅ Notification permission (Android 13+)
     await Permission.notification.request();
 

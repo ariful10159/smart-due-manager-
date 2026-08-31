@@ -73,6 +73,16 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+
+            // ✅ R8 minification (Flutter/AGP এর ডিফল্ট) কোনো proguard keep-rules
+            // ছাড়াই চালু ছিল — এটা reflection-নির্ভর প্লাগইনের (Firebase,
+            // permission_handler, flutter_local_notifications ইত্যাদি) প্রয়োজনীয়
+            // ক্লাস strip করে দিচ্ছিল, ফলে release build এ main() silently hang
+            // করে কালো স্ক্রিনে আটকে থাকত (কোনো crash/exception ছাড়াই — profile ও
+            // debug build এ minification না থাকায় ঠিকভাবে চলত)। সঠিক keep-rules
+            // ছাড়া মিনিফিকেশন চালু রাখা নিরাপদ নয়, তাই বন্ধ করা হলো।
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

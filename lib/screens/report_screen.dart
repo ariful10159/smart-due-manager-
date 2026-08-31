@@ -216,6 +216,8 @@ class _ReportScreenState extends State<ReportScreen> {
       final totalDue = customer.totalDue + totalPaidInPeriod;
       final remaining = customer.totalDue;
       final methodTotals = _methodTotals(pList);
+      final paymentDates = pList.map((p) => p.date).toList()
+        ..sort((a, b) => a.compareTo(b));
 
       reportRows.add({
         'name': customer.name,
@@ -226,6 +228,8 @@ class _ReportScreenState extends State<ReportScreen> {
         'cash': methodTotals['cash'] ?? 0,
         'bkash': methodTotals['bkash'] ?? 0,
         'other': methodTotals['other'] ?? 0,
+        'dueDate': customer.lastPaymentDate,
+        'paymentDates': paymentDates,
       });
     });
 
@@ -270,6 +274,18 @@ class _ReportScreenState extends State<ReportScreen> {
     return parts.isEmpty ? '-' : parts.join(' + ');
   }
 
+  // ✅ একই period এ কাস্টমারের একাধিক payment থাকলে সবগুলো তারিখই কমা দিয়ে দেখানো হয়
+  String _paymentDatesLabel(Map<String, dynamic> row, DateFormat dateFmt) {
+    final dates = (row['paymentDates'] as List<DateTime>?) ?? const [];
+    if (dates.isEmpty) return '-';
+    return dates.map(dateFmt.format).join(', ');
+  }
+
+  String _dueDateLabel(Map<String, dynamic> row, DateFormat dateFmt) {
+    final dueDate = row['dueDate'] as DateTime?;
+    return dueDate != null ? dateFmt.format(dueDate) : '-';
+  }
+
   // ✅ HTML দিয়ে PDF বানানো হচ্ছে (আগে pdf প্যাকেজের সরাসরি pw.Text ব্যবহার হতো,
   // যেটা বাংলা কাস্টমারের নাম ঠিকভাবে shape করতে পারত না — শুধু ফাঁকা বক্স দেখাত।
   // HTML রেন্ডারার বাংলা text shaping সঠিকভাবে করে)
@@ -282,6 +298,7 @@ class _ReportScreenState extends State<ReportScreen> {
     PdfPageFormat format,
   ) async {
     final currencyFmt = NumberFormat('#,##0.00');
+    final dateFmt = DateFormat('d MMM yyyy');
     final cashTotal = methodTotals['cash'] ?? 0;
     final bkashTotal = methodTotals['bkash'] ?? 0;
     final otherTotal = methodTotals['other'] ?? 0;
@@ -293,6 +310,8 @@ class _ReportScreenState extends State<ReportScreen> {
           <td>${escapeHtml(row['name'] as String)}</td>
           <td>${escapeHtml(row['phone'] as String)}</td>
           <td>${escapeHtml(_methodBreakdownLabel(row))}</td>
+          <td>${escapeHtml(_dueDateLabel(row, dateFmt))}</td>
+          <td>${escapeHtml(_paymentDatesLabel(row, dateFmt))}</td>
           <td class="right">${currencyFmt.format(row['totalDue'])}</td>
           <td class="right">${currencyFmt.format(row['paid'])}</td>
           <td class="right">${currencyFmt.format(row['remaining'])}</td>
@@ -408,6 +427,8 @@ class _ReportScreenState extends State<ReportScreen> {
         <th>Customer</th>
         <th>Phone</th>
         <th>Method</th>
+        <th>Due Date</th>
+        <th>Payment Date</th>
         <th class="right">Total Due</th>
         <th class="right">Payment</th>
         <th class="right">Remaining</th>

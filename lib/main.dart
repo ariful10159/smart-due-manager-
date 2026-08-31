@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -40,6 +42,11 @@ void main() async {
   await settingsController.init();
 
   runApp(SmartDueApp(settingsController: settingsController));
+
+  // ✅ runApp() এর পরে — এই permission dialog গুলো await করলে (main() এর ভেতরে
+  // থাকলে) কিছু ডিভাইসে/Android ভার্সনে Flutter এর প্রথম frame আঁকার আগেই আটকে
+  // যেতে পারে, ফলে ব্যবহারকারী শুধু কালো স্ক্রিন দেখে
+  unawaited(NotificationService.requestPermissions());
 }
 
 class SmartDueApp extends StatelessWidget {

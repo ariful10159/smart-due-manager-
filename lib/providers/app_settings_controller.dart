@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/app_settings.dart';
@@ -11,11 +13,20 @@ class AppSettingsController extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> init() async {
-    // ✅ প্রথমে local cache থেকে instant দেখানো, তারপর Firestore থেকে sync
+    // ✅ প্রথমে local cache থেকে instant দেখানো — main() এই init() কে await করে
+    // runApp() এর আগে, তাই এখানে শুধু দ্রুত local read রাখা হয়েছে।
     _settings = await SettingsService.loadLocalCache();
     _isLoading = false;
     notifyListeners();
 
+    // ✅ Firestore fetch ইচ্ছাকৃতভাবে await করা হয়নি — এটা একটা network call যার
+    // কোনো timeout নেই, main() এর ভেতরে await করলে network slow/hang হলে
+    // runApp() কখনো ডাকা হয় না, ফলে ব্যবহারকারী শুধু কালো splash screen দেখে
+    // (কোনো crash/exception ছাড়াই)। তাই এটা ব্যাকগ্রাউন্ডে sync হয়, UI দেখানোর পরে।
+    unawaited(_syncFromFirestore());
+  }
+
+  Future<void> _syncFromFirestore() async {
     final fresh = await SettingsService.loadFromFirestore();
     _settings = fresh;
     notifyListeners();

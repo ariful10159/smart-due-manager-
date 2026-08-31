@@ -44,7 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loadingCollection = true);
 
     try {
-      final customers = await _repo.fetchCustomersOnce();
+      final customers = (await _repo.fetchCustomersOnce())
+          .where((c) => !c.isHidden)
+          .toList();
 
       final now = DateTime.now().toLocal();
       final todayStart = DateTime(now.year, now.month, now.day);
