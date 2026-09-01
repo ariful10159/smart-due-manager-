@@ -1306,6 +1306,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginNow => 'Login';
 
   @override
+  String get otpVerificationTitle => 'Verify Phone Number';
+
+  @override
+  String otpSentTo(String phone) {
+    return 'We sent a 6-digit code to $phone';
+  }
+
+  @override
+  String get otpCodeLabel => 'OTP Code';
+
+  @override
+  String get otpCodeHint => '6-digit code';
+
+  @override
+  String get enterOtpCode => 'Enter the OTP code';
+
+  @override
+  String get enterValid6DigitOtp => 'Enter a valid 6-digit code';
+
+  @override
+  String get verifyAndCreateAccount => 'Verify & Create Account';
+
+  @override
+  String get sendingOtp => 'Sending OTP...';
+
+  @override
+  String get autoVerifyingOtp => 'Auto-verifying...';
+
+  @override
+  String get resendCode => 'Resend Code';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'Resend code in ${seconds}s';
+  }
+
+  @override
+  String get didntReceiveCode => 'Didn\'t receive the code? ';
+
+  @override
+  String get changePhoneNumber => 'Change phone number';
+
+  @override
+  String get otpResentSuccess => 'New OTP sent';
+
+  @override
+  String get forgotPasswordTitle => 'Reset Password';
+
+  @override
+  String get resetPasswordDesc =>
+      'Verify your phone number to set a new password';
+
+  @override
+  String get newPasswordLabel => 'New Password';
+
+  @override
+  String get confirmNewPasswordLabel => 'Confirm New Password';
+
+  @override
+  String get verifyAndResetPassword => 'Verify & Reset Password';
+
+  @override
   String get unlockToVerify => 'Verify to unlock the app';
 
   @override
