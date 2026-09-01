@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import 'report_screen.dart';
 import 'settings_screen.dart';
@@ -14,9 +16,11 @@ import 'customer_detail_screen.dart';
 import 'all_customers_screen.dart';
 import 'global_search_screen.dart';
 import 'reminder_screen.dart';
+import 'notifications_screen.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/announcement_banner.dart';
+import '../widgets/announcement_image_popup.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,6 +43,80 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadCollectionStats();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAnnouncementPopup());
+  }
+
+  // ✅ 'popup' টাইপ active announcement থাকলে (schedule window এর মধ্যে পড়লে)
+  // অ্যাপ খোলার সময় একবার image popup দেখানো হয়। একটার বেশি match করলে
+  // সবচেয়ে সাম্প্রতিক আপডেট হওয়াটা দেখানো হয়।
+  Future<void> _checkAnnouncementPopup() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('announcements')
+          .where('active', isEqualTo: true)
+          .get();
+
+      final now = DateTime.now();
+      QueryDocumentSnapshot<Map<String, dynamic>>? best;
+      DateTime? bestUpdatedAt;
+
+      for (final candidate in snapshot.docs) {
+        final data = candidate.data();
+        if ((data['type'] as String?) != 'popup') continue;
+        final imageUrl = (data['imageUrl'] as String? ?? '').trim();
+        if (imageUrl.isEmpty) continue;
+
+        final startAt = (data['startAt'] as Timestamp?)?.toDate();
+        final endAt = (data['endAt'] as Timestamp?)?.toDate();
+        if (startAt != null && now.isBefore(startAt)) continue;
+        if (endAt != null && now.isAfter(endAt)) continue;
+
+        final updatedAt = (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime(0);
+        if (best == null || updatedAt.isAfter(bestUpdatedAt!)) {
+          best = candidate;
+          bestUpdatedAt = updatedAt;
+        }
+      }
+
+      if (best == null || !mounted) return;
+
+      final data = best.data();
+      final frequency = (data['frequency'] as String?) ?? 'always';
+      final prefKey = 'announcement_popup_last_shown_${best.id}';
+
+      if (frequency != 'always') {
+        final prefs = await SharedPreferences.getInstance();
+
+        if (frequency == 'once') {
+          if (prefs.getBool(prefKey) == true) return;
+        } else {
+          final lastShownMillis = prefs.getInt(prefKey);
+          if (lastShownMillis != null) {
+            final lastShown = DateTime.fromMillisecondsSinceEpoch(lastShownMillis);
+            final minGap = frequency == 'weekly' ? const Duration(days: 7) : const Duration(days: 1);
+            if (now.difference(lastShown) < minGap) return;
+          }
+        }
+
+        if (frequency == 'once') {
+          await prefs.setBool(prefKey, true);
+        } else {
+          await prefs.setInt(prefKey, now.millisecondsSinceEpoch);
+        }
+      }
+
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AnnouncementImagePopup(
+          imageUrl: data['imageUrl'] as String,
+          title: data['title'] as String?,
+          caption: data['message'] as String?,
+        ),
+      );
+    } catch (_) {
+      // ✅ Popup non-critical — কোনো এরর হলে চুপচাপ স্কিপ করা হয়, অ্যাপ ব্লক হবে না
+    }
   }
 
   Future<void> _loadCollectionStats() async {
@@ -197,6 +275,14 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             _AppBarIconButton(
+              icon: Icons.notifications_none_rounded,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                );
+              },
+            ),
+            _AppBarIconButton(
               icon: Icons.bar_chart_rounded,
               onPressed: () {
                 Navigator.of(context).push(
@@ -257,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final customers = snapshot.data!;
                   final now = DateTime.now();
 
-                  final totalDue = customers.fold<double>(0, (sum, c) => sum + c.totalDue);
+                  final totalDue = customers.fold<double>(0, (total, c) => total + c.totalDue);
                   final totalCustomers = customers.length;
                   final customersWithDue = customers.where((c) => c.totalDue > 0).length;
                   final fullyPaidCustomers = customers.where((c) => c.totalDue <= 0).length;

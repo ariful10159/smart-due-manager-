@@ -654,5 +654,48 @@
   },
 
   "accountDisabledTitle": "Account Disabled",
-  "accountDisabledMessage": "Your account has been disabled by the administrator. Please contact support if you believe this is a mistake."
+  "accountDisabledMessage": "Your account has been disabled by the administrator. Please contact support if you believe this is a mistake.",
+
+  "notificationsTitle": "Notifications",
+  "noNotifications": "No notifications yet",
+  "statusInactive": "Inactive",
+  "noticeDetailTitle": "Notice",
+  "updatedOnLabel": "Updated {date}",
+  "@updatedOnLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "scheduleLabel": "Schedule",
+  "noScheduleWindow": "No schedule window — always shown while active",
+
+  "maintenanceTitle": "Under Maintenance",
+  "maintenanceDefaultMessage": "We're doing some scheduled maintenance. Please check back soon.",
+  "maintenanceEtaLabel": "Expected back around {date}",
+  "@maintenanceEtaLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "forceUpdateTitle": "Update Required",
+  "forceUpdateMessage": "A new version of the app is required to continue. Please update to version {version} or later.",
+  "@forceUpdateMessage": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "updateNowButton": "Update Now",
+
+  "groupAbout": "About",
+  "aboutAppTitle": "About App",
+  "appVersionLabel": "Version {version}",
+  "@appVersionLabel": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+
+  "contactTitle": "Contact",
+  "contactSupportEmail": "Support email",
+  "contactSupportPhone": "Support phone",
+  "contactWhatsapp": "WhatsApp",
+  "contactFacebook": "Facebook page",
+  "contactWebsite": "Website",
+  "noContactInfo": "No contact info added yet",
+
+  "faqTitle": "FAQ",
+  "noFaqItems": "No FAQ items yet"
 }

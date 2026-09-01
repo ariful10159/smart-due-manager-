@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../services/activity_log_service.dart';
 import 'customer.dart';
 import 'payment.dart';
 
@@ -136,6 +139,7 @@ class CustomerRepository {
     if (data.isEmpty) return;
 
     await _col.doc(customerId).update(data);
+    unawaited(ActivityLogService.log('edit_customer', details: {'customerId': customerId}));
   }
 
   // ✅ Update due
@@ -175,6 +179,11 @@ class CustomerRepository {
     required Payment payment,
   }) async {
     await _paymentsCol(customerId).doc(payment.id).set(payment.toMap());
+    unawaited(ActivityLogService.log('add_payment', details: {
+      'customerId': customerId,
+      'amount': payment.amount,
+      'type': payment.type.name,
+    }));
   }
 
   // ✅ প্রতিবার SMS পাঠানোর পর একটা log entry যোগ করা  
@@ -282,11 +291,13 @@ class CustomerRepository {
   // ✅ Hide customer (SOFT DELETE)
   Future<void> hideCustomer(String customerId) async {
     await _col.doc(customerId).update({'isHidden': true});
+    unawaited(ActivityLogService.log('archive_customer', details: {'customerId': customerId}));
   }
 
   // ✅ Restore customer (Hidden থেকে আবার Visible করা)
   Future<void> restoreCustomer(String customerId) async {
     await _col.doc(customerId).update({'isHidden': false});
+    unawaited(ActivityLogService.log('restore_customer', details: {'customerId': customerId}));
   }
 
   // ✅ CSV থেকে parse করা customer গুলো import করা — ফোন নাম্বার দিয়ে duplicate
@@ -347,5 +358,6 @@ class CustomerRepository {
     }
 
     await _col.doc(customerId).delete();
+    unawaited(ActivityLogService.log('delete_customer', details: {'customerId': customerId}));
   }
 }

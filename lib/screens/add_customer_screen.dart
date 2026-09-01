@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
+import '../services/activity_log_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
@@ -577,6 +579,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
           .collection('customers')
           .doc(customer.id)
           .set(customer.toMap());
+      unawaited(ActivityLogService.log('add_customer', details: {'customerId': customer.id, 'name': customer.name}));
 
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;

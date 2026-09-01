@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations;
 
+import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/app_settings_controller.dart';
 import 'screens/home_screen.dart';
@@ -17,24 +18,28 @@ import 'services/notification_service.dart';
 import 'widgets/app_settings_scope.dart';
 import 'widgets/app_lock_gate.dart'; // ✅ AppLockGate ইমপোর্ট করা হলো
 import 'widgets/account_status_gate.dart'; // ✅ Admin panel থেকে disabled হলে ব্লক করার জন্য
+import 'widgets/app_config_gate.dart'; // ✅ Admin panel থেকে maintenance/force-update ব্লক করার জন্য
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // ✅ ক্র্যাশ রিপোর্টিং — debug build এ ড্যাশবোর্ড স্প্যাম এড়াতে collection বন্ধ রাখা হয়,
-  // release/profile build এ চালু থাকে।
-  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+  // ✅ Crashlytics ওয়েবে সাপোর্টেড না, তাই শুধু native প্ল্যাটফর্মে চালু করা হয়
+  if (!kIsWeb) {
+    // ✅ ক্র্যাশ রিপোর্টিং — debug build এ ড্যাশবোর্ড স্প্যাম এড়াতে collection বন্ধ রাখা হয়,
+    // release/profile build এ চালু থাকে।
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
 
-  // ✅ Flutter framework এর ভেতরের (widget build/layout ইত্যাদি) fatal error গুলো Crashlytics এ পাঠানো
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    // ✅ Flutter framework এর ভেতরের (widget build/layout ইত্যাদি) fatal error গুলো Crashlytics এ পাঠানো
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 
-  // ✅ Flutter framework এর বাইরের (async gap, isolate) error গুলোও ধরার জন্য
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+    // ✅ Flutter framework এর বাইরের (async gap, isolate) error গুলোও ধরার জন্য
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
 
   await NotificationService.init();
 
@@ -104,7 +109,8 @@ class SmartDueApp extends StatelessWidget {
                 child: child!,
               );
             },
-            home: AppLockGate(child: const AuthWrapper()), // ✅ App lock wrap করা হলো
+            // ✅ AppConfigGate সবচেয়ে বাইরে — login এর আগেও maintenance/force-update ব্লক করার জন্য
+            home: AppConfigGate(child: AppLockGate(child: const AuthWrapper())),
           );
         },
       ),

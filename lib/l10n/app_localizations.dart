@@ -2743,6 +2743,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account has been disabled by the administrator. Please contact support if you believe this is a mistake.'**
   String get accountDisabledMessage;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @noNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get noNotifications;
+
+  /// No description provided for @statusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get statusInactive;
+
+  /// No description provided for @noticeDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notice'**
+  String get noticeDetailTitle;
+
+  /// No description provided for @scheduleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get scheduleLabel;
+
+  /// No description provided for @noScheduleWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule window — always shown while active'**
+  String get noScheduleWindow;
+
+  /// No description provided for @maintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Maintenance'**
+  String get maintenanceTitle;
+
+  /// No description provided for @maintenanceDefaultMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re doing some scheduled maintenance. Please check back soon.'**
+  String get maintenanceDefaultMessage;
+
+  /// No description provided for @maintenanceEtaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected back around {date}'**
+  String maintenanceEtaLabel(String date);
+
+  /// No description provided for @forceUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Required'**
+  String get forceUpdateTitle;
+
+  /// No description provided for @forceUpdateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of the app is required to continue. Please update to version {version} or later.'**
+  String forceUpdateMessage(String version);
+
+  /// No description provided for @updateNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Now'**
+  String get updateNowButton;
+
+  /// No description provided for @groupAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get groupAbout;
+
+  /// No description provided for @aboutAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About App'**
+  String get aboutAppTitle;
+
+  /// No description provided for @appVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String appVersionLabel(String version);
+
+  /// No description provided for @contactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contactTitle;
+
+  /// No description provided for @contactSupportEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Support email'**
+  String get contactSupportEmail;
+
+  /// No description provided for @contactSupportPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Support phone'**
+  String get contactSupportPhone;
+
+  /// No description provided for @contactWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get contactWhatsapp;
+
+  /// No description provided for @contactFacebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Facebook page'**
+  String get contactFacebook;
+
+  /// No description provided for @contactWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get contactWebsite;
+
+  /// No description provided for @noContactInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'No contact info added yet'**
+  String get noContactInfo;
+
+  /// No description provided for @faqTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQ'**
+  String get faqTitle;
+
+  /// No description provided for @noFaqItems.
+  ///
+  /// In en, this message translates to:
+  /// **'No FAQ items yet'**
+  String get noFaqItems;
 }
 
 class _AppLocalizationsDelegate
