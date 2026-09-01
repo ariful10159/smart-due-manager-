@@ -7,6 +7,7 @@ const navItems = [
   { to: '/users', label: 'Users', icon: '👥' },
   { to: '/search', label: 'Search', icon: '🔍' },
   { to: '/announcement', label: 'Announcements', icon: '📣' },
+  { to: '/app-config', label: 'App Config', icon: '⚙️' },
   { to: '/admins', label: 'Admins', icon: '🛡️' },
   { to: '/audit-log', label: 'Audit log', icon: '📜' },
 ]

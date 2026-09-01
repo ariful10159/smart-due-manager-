@@ -1062,7 +1062,7 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String updatedOnLabel(String date) {
-    return 'Updated $date';
+    return '$date এ আপডেট হয়েছে';
   }
 
   @override
@@ -1480,4 +1480,84 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'আপনার অ্যাকাউন্টটি অ্যাডমিন কর্তৃক বন্ধ করে দেওয়া হয়েছে। এটি ভুল মনে হলে সাপোর্টের সাথে যোগাযোগ করুন।';
+
+  @override
+  String get notificationsTitle => 'নোটিফিকেশন';
+
+  @override
+  String get noNotifications => 'এখনো কোনো নোটিফিকেশন নেই';
+
+  @override
+  String get statusInactive => 'নিষ্ক্রিয়';
+
+  @override
+  String get noticeDetailTitle => 'নোটিশ';
+
+  @override
+  String get scheduleLabel => 'সময়সূচি';
+
+  @override
+  String get noScheduleWindow =>
+      'কোনো সময়সীমা নেই — active থাকা পর্যন্ত সবসময় দেখাবে';
+
+  @override
+  String get maintenanceTitle => 'রক্ষণাবেক্ষণ চলছে';
+
+  @override
+  String get maintenanceDefaultMessage =>
+      'আমরা কিছু নির্ধারিত রক্ষণাবেক্ষণের কাজ করছি। একটু পরে আবার চেষ্টা করুন।';
+
+  @override
+  String maintenanceEtaLabel(String date) {
+    return 'প্রায় $date নাগাদ ফিরবে';
+  }
+
+  @override
+  String get forceUpdateTitle => 'আপডেট প্রয়োজন';
+
+  @override
+  String forceUpdateMessage(String version) {
+    return 'চালিয়ে যেতে অ্যাপের নতুন ভার্সন প্রয়োজন। দয়া করে $version বা তার পরের ভার্সনে আপডেট করুন।';
+  }
+
+  @override
+  String get updateNowButton => 'এখনই আপডেট করুন';
+
+  @override
+  String get groupAbout => 'সম্পর্কে';
+
+  @override
+  String get aboutAppTitle => 'অ্যাপ সম্পর্কে';
+
+  @override
+  String appVersionLabel(String version) {
+    return 'ভার্সন $version';
+  }
+
+  @override
+  String get contactTitle => 'যোগাযোগ';
+
+  @override
+  String get contactSupportEmail => 'সাপোর্ট ইমেইল';
+
+  @override
+  String get contactSupportPhone => 'সাপোর্ট ফোন';
+
+  @override
+  String get contactWhatsapp => 'হোয়াটসঅ্যাপ';
+
+  @override
+  String get contactFacebook => 'ফেসবুক পেজ';
+
+  @override
+  String get contactWebsite => 'ওয়েবসাইট';
+
+  @override
+  String get noContactInfo => 'এখনো কোনো যোগাযোগের তথ্য যোগ করা হয়নি';
+
+  @override
+  String get faqTitle => 'সচরাচর জিজ্ঞাসা';
+
+  @override
+  String get noFaqItems => 'এখনো কোনো প্রশ্ন যোগ করা হয়নি';
 }

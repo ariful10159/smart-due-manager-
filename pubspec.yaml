@@ -46,6 +46,7 @@ dependencies:
   local_auth: ^2.3.0       # Fingerprint/Face unlock এর জন্য
   csv: ^6.0.0               # CSV এক্সপোর্টের জন্য
   fl_chart: ^0.69.2         # Dashboard/analytics চার্ট এর জন্য
+  package_info_plus: ^8.0.0 # ইনস্টল করা app version জানার জন্য (force update চেক)
   
   
   

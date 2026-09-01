@@ -465,5 +465,36 @@
   "discountAppliedLabel": "-{amount} discount",
 
   "accountDisabledTitle": "অ্যাকাউন্ট বন্ধ করা হয়েছে",
-  "accountDisabledMessage": "আপনার অ্যাকাউন্টটি অ্যাডমিন কর্তৃক বন্ধ করে দেওয়া হয়েছে। এটি ভুল মনে হলে সাপোর্টের সাথে যোগাযোগ করুন।"
+  "accountDisabledMessage": "আপনার অ্যাকাউন্টটি অ্যাডমিন কর্তৃক বন্ধ করে দেওয়া হয়েছে। এটি ভুল মনে হলে সাপোর্টের সাথে যোগাযোগ করুন।",
+
+  "notificationsTitle": "নোটিফিকেশন",
+  "noNotifications": "এখনো কোনো নোটিফিকেশন নেই",
+  "statusInactive": "নিষ্ক্রিয়",
+  "noticeDetailTitle": "নোটিশ",
+  "updatedOnLabel": "{date} এ আপডেট হয়েছে",
+  "scheduleLabel": "সময়সূচি",
+  "noScheduleWindow": "কোনো সময়সীমা নেই — active থাকা পর্যন্ত সবসময় দেখাবে",
+
+  "maintenanceTitle": "রক্ষণাবেক্ষণ চলছে",
+  "maintenanceDefaultMessage": "আমরা কিছু নির্ধারিত রক্ষণাবেক্ষণের কাজ করছি। একটু পরে আবার চেষ্টা করুন।",
+  "maintenanceEtaLabel": "প্রায় {date} নাগাদ ফিরবে",
+
+  "forceUpdateTitle": "আপডেট প্রয়োজন",
+  "forceUpdateMessage": "চালিয়ে যেতে অ্যাপের নতুন ভার্সন প্রয়োজন। দয়া করে {version} বা তার পরের ভার্সনে আপডেট করুন।",
+  "updateNowButton": "এখনই আপডেট করুন",
+
+  "groupAbout": "সম্পর্কে",
+  "aboutAppTitle": "অ্যাপ সম্পর্কে",
+  "appVersionLabel": "ভার্সন {version}",
+
+  "contactTitle": "যোগাযোগ",
+  "contactSupportEmail": "সাপোর্ট ইমেইল",
+  "contactSupportPhone": "সাপোর্ট ফোন",
+  "contactWhatsapp": "হোয়াটসঅ্যাপ",
+  "contactFacebook": "ফেসবুক পেজ",
+  "contactWebsite": "ওয়েবসাইট",
+  "noContactInfo": "এখনো কোনো যোগাযোগের তথ্য যোগ করা হয়নি",
+
+  "faqTitle": "সচরাচর জিজ্ঞাসা",
+  "noFaqItems": "এখনো কোনো প্রশ্ন যোগ করা হয়নি"
 }

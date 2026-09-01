@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_settings_scope.dart';
+import 'about_app_screen.dart';
+import 'contact_screen.dart';
+import 'faq_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'settings/app_lock_settings_screen.dart';
 import 'settings/app_mode_screen.dart';
@@ -166,6 +169,38 @@ class SettingsScreen extends StatelessWidget {
                 isLast: true,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const TermsOfServiceScreen()),
+                ),
+              ),
+            ],
+          ),
+
+          _GroupHeader(label: l10n.groupAbout, colors: colors, topPadding: 24),
+          _SettingsGroup(
+            colors: colors,
+            children: [
+              _SettingsRow(
+                icon: Icons.info_outline_rounded,
+                title: l10n.aboutAppTitle,
+                colors: colors,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AboutAppScreen()),
+                ),
+              ),
+              _SettingsRow(
+                icon: Icons.support_agent_rounded,
+                title: l10n.contactTitle,
+                colors: colors,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ContactScreen()),
+                ),
+              ),
+              _SettingsRow(
+                icon: Icons.help_outline_rounded,
+                title: l10n.faqTitle,
+                colors: colors,
+                isLast: true,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FaqScreen()),
                 ),
               ),
             ],

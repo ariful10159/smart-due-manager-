@@ -33,6 +33,10 @@ class NotificationService {
   // exact alarm permission request silently hang করে — কালো স্ক্রিনে আটকে থাকার
   // এটাই আসল কারণ ছিল)। তাই এটা runApp() এর পর, UI দেখানোর পর ডাকা হয়।
   static Future<void> requestPermissions() async {
+    // ✅ Android-নির্দিষ্ট runtime permission — ওয়েবে এই দুটোর কোনো অর্থ নেই এবং
+    // scheduleExactAlarm ওয়েবে সাপোর্টেডই না (সরাসরি exception ছোঁড়ে)
+    if (kIsWeb) return;
+
     // ✅ Notification permission (Android 13+)
     await Permission.notification.request();
 

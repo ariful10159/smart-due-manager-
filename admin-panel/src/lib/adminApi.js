@@ -52,6 +52,14 @@ export async function fetchAuditLog() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
+// Regular shopkeeper activity (customer/payment add-edit-delete etc.), written directly
+// from the Flutter app — see lib/services/activity_log_service.dart.
+export async function fetchUserActivityLog() {
+  const q = query(collection(db, 'userActivityLog'), orderBy('at', 'desc'), limit(200))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
 // ============================================
 // Users
 // ============================================
@@ -251,6 +259,60 @@ export async function deleteAnnouncement(id) {
   await logAction('delete_announcement', { id })
 }
 
+// Popup images are stored inline as a base64 data URI on the announcement doc itself
+// (no Firebase Storage involved) — keeps this working without any extra rules deploy.
+// Firestore caps a document at 1MiB total, and base64 inflates size by ~33%, so
+// whatever the admin picks gets client-side compressed (downscale + re-encode as
+// JPEG, trying progressively smaller until it fits) rather than rejected.
+export const MAX_ANNOUNCEMENT_IMAGE_BYTES = 500 * 1024 // target after compression
+const DIMENSION_STEPS = [1600, 1280, 1024, 800, 600, 480]
+const QUALITY_STEPS = [0.85, 0.7, 0.55, 0.4, 0.3]
+
+function loadImageElement(objectUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Could not read this image file.'))
+    img.src = objectUrl
+  })
+}
+
+export function dataUrlByteSize(dataUrl) {
+  const base64 = dataUrl.split(',')[1] || ''
+  return Math.ceil((base64.length * 3) / 4)
+}
+
+export async function compressImageToDataUrl(file, maxBytes = MAX_ANNOUNCEMENT_IMAGE_BYTES) {
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const img = await loadImageElement(objectUrl)
+    const naturalWidth = img.naturalWidth || img.width
+    const naturalHeight = img.naturalHeight || img.height
+
+    let lastAttempt = null
+    for (const maxDim of DIMENSION_STEPS) {
+      const scale = Math.min(1, maxDim / Math.max(naturalWidth, naturalHeight))
+      const width = Math.max(1, Math.round(naturalWidth * scale))
+      const height = Math.max(1, Math.round(naturalHeight * scale))
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+
+      for (const quality of QUALITY_STEPS) {
+        const dataUrl = canvas.toDataURL('image/jpeg', quality)
+        lastAttempt = dataUrl
+        if (dataUrlByteSize(dataUrl) <= maxBytes) return dataUrl
+      }
+    }
+    // Smallest/lowest-quality attempt didn't fit — return it anyway, it's the best we can do.
+    return lastAttempt
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
 // ============================================
 // Admins
 // ============================================
@@ -268,4 +330,113 @@ export async function addAdmin(uid, email) {
 export async function removeAdmin(uid) {
   await deleteDoc(doc(db, 'admins', uid))
   await logAction('remove_admin', { uid })
+}
+
+// ============================================
+// App Config
+// ============================================
+
+const APP_CONFIG_DOC = doc(db, 'appConfig', 'main')
+
+export async function fetchAppConfig() {
+  const snap = await getDoc(APP_CONFIG_DOC)
+  return snap.exists() ? snap.data() : {}
+}
+
+// Generic partial update for cards that don't need their own history log
+// (Maintenance Mode, Force Update toggle, About App, Contact).
+export async function updateAppConfig(data, actionName) {
+  await setDoc(APP_CONFIG_DOC, { ...data, updatedAt: serverTimestamp() }, { merge: true })
+  await logAction(actionName || 'update_app_config', data)
+}
+
+export async function fetchVersionHistory() {
+  const q = query(collection(db, 'appConfig', 'main', 'versionHistory'), orderBy('changedAt', 'desc'), limit(50))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+// Rejects a no-op save (identical currentVersion) so the history log doesn't fill up
+// with duplicate entries.
+export async function publishVersion({ currentVersion, minRequiredVersion, playStoreUrl }) {
+  const existing = await fetchAppConfig()
+  if (existing.currentVersion === currentVersion) {
+    throw new Error('This is already the current version — change it before saving.')
+  }
+  await setDoc(
+    APP_CONFIG_DOC,
+    { currentVersion, minRequiredVersion, playStoreUrl: playStoreUrl || null, updatedAt: serverTimestamp() },
+    { merge: true },
+  )
+  await addDoc(collection(db, 'appConfig', 'main', 'versionHistory'), {
+    currentVersion,
+    minRequiredVersion,
+    changedBy: auth.currentUser?.email || null,
+    changedAt: serverTimestamp(),
+  })
+  await logAction('publish_version', { currentVersion, minRequiredVersion })
+}
+
+// Each policy type gets its own history subcollection (privacyHistory / termsHistory)
+// rather than one shared subcollection filtered by a `type` field — avoids needing a
+// composite Firestore index for the equality-filter-plus-orderBy query.
+export async function fetchPolicyHistory(type) {
+  const q = query(collection(db, 'appConfig', 'main', `${type}History`), orderBy('publishedAt', 'desc'), limit(20))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+// type: 'privacy' | 'terms'
+export async function publishPolicy(type, { textEn, textBn }) {
+  const existing = await fetchAppConfig()
+  const nextVersion = (existing[`${type}Version`] || 0) + 1
+  await setDoc(
+    APP_CONFIG_DOC,
+    {
+      [`${type}En`]: textEn,
+      [`${type}Bn`]: textBn,
+      [`${type}Version`]: nextVersion,
+      [`${type}PublishedAt`]: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
+  await addDoc(collection(db, 'appConfig', 'main', `${type}History`), {
+    textEn,
+    textBn,
+    version: nextVersion,
+    publishedBy: auth.currentUser?.email || null,
+    publishedAt: serverTimestamp(),
+  })
+  await logAction('publish_policy', { type, version: nextVersion })
+}
+
+// ============================================
+// FAQ
+// ============================================
+
+export async function fetchFaqs() {
+  const q = query(collection(db, 'faqs'), orderBy('order', 'asc'))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+export async function addFaq(data) {
+  const ref = await addDoc(collection(db, 'faqs'), {
+    ...data,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+  await logAction('add_faq', { id: ref.id, question: data.question })
+  return ref.id
+}
+
+export async function updateFaq(id, data) {
+  await updateDoc(doc(db, 'faqs', id), { ...data, updatedAt: serverTimestamp() })
+  await logAction('update_faq', { id, question: data.question })
+}
+
+export async function deleteFaq(id) {
+  await deleteDoc(doc(db, 'faqs', id))
+  await logAction('delete_faq', { id })
 }

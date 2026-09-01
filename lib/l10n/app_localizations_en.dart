@@ -1479,4 +1479,84 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'Your account has been disabled by the administrator. Please contact support if you believe this is a mistake.';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get noNotifications => 'No notifications yet';
+
+  @override
+  String get statusInactive => 'Inactive';
+
+  @override
+  String get noticeDetailTitle => 'Notice';
+
+  @override
+  String get scheduleLabel => 'Schedule';
+
+  @override
+  String get noScheduleWindow =>
+      'No schedule window — always shown while active';
+
+  @override
+  String get maintenanceTitle => 'Under Maintenance';
+
+  @override
+  String get maintenanceDefaultMessage =>
+      'We\'re doing some scheduled maintenance. Please check back soon.';
+
+  @override
+  String maintenanceEtaLabel(String date) {
+    return 'Expected back around $date';
+  }
+
+  @override
+  String get forceUpdateTitle => 'Update Required';
+
+  @override
+  String forceUpdateMessage(String version) {
+    return 'A new version of the app is required to continue. Please update to version $version or later.';
+  }
+
+  @override
+  String get updateNowButton => 'Update Now';
+
+  @override
+  String get groupAbout => 'About';
+
+  @override
+  String get aboutAppTitle => 'About App';
+
+  @override
+  String appVersionLabel(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get contactTitle => 'Contact';
+
+  @override
+  String get contactSupportEmail => 'Support email';
+
+  @override
+  String get contactSupportPhone => 'Support phone';
+
+  @override
+  String get contactWhatsapp => 'WhatsApp';
+
+  @override
+  String get contactFacebook => 'Facebook page';
+
+  @override
+  String get contactWebsite => 'Website';
+
+  @override
+  String get noContactInfo => 'No contact info added yet';
+
+  @override
+  String get faqTitle => 'FAQ';
+
+  @override
+  String get noFaqItems => 'No FAQ items yet';
 }

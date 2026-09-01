@@ -10,6 +10,8 @@ import SearchPage from './pages/SearchPage'
 import AnnouncementPage from './pages/AnnouncementPage'
 import AdminsPage from './pages/AdminsPage'
 import AuditLogPage from './pages/AuditLogPage'
+import AppConfigPage from './pages/AppConfigPage'
+import FaqManagementPage from './pages/FaqManagementPage'
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
           <Route path="/users/:uid" element={<UserDetailPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/announcement" element={<AnnouncementPage />} />
+          <Route path="/app-config" element={<AppConfigPage />} />
+          <Route path="/app-config/faq" element={<FaqManagementPage />} />
           <Route path="/admins" element={<AdminsPage />} />
           <Route path="/audit-log" element={<AuditLogPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
