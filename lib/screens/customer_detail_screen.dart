@@ -450,6 +450,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     );
   }
 
+  bool _isReminderOverdue(Customer customer) {
+    final nextReminderDate = customer.nextReminderDate;
+    if (nextReminderDate == null) return false;
+    return nextReminderDate.isBefore(DateTime.now());
+  }
+
   String _recurrenceLabel(String recurrenceType) {
     final l10n = AppLocalizations.of(context)!;
     switch (recurrenceType) {
@@ -1415,7 +1421,9 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                           children: [
                             Text(
                               l10n.nextReminderLabel(_formatDateTime(customer.nextReminderDate!)),
-                              style: TextStyle(color: colors.warn),
+                              style: TextStyle(
+                                color: _isReminderOverdue(customer) ? colors.due : colors.warn,
+                              ),
                             ),
                             if (customer.isRecurringReminder) ...[
                               const SizedBox(height: 3),
@@ -1426,6 +1434,29 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                                   Text(
                                     l10n.repeatsLabel(_recurrenceLabel(customer.recurrenceType ?? 'monthly')),
                                     style: TextStyle(fontSize: 11.5, color: colors.accent, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            // ✅ nextReminderDate পার হয়ে গেলে সেটা Firestore এ নিজে
+                            // থেকে বদলায় না — তাই সময়ের সাথে তুলনা করে overdue দেখানো হয়
+                            if (_isReminderOverdue(customer)) ...[
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(Icons.error_outline_rounded, size: 13, color: colors.due),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      customer.isRecurringReminder
+                                          ? l10n.reminderOverdueRecurringHint
+                                          : l10n.reminderOverdueHint,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: colors.due,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),

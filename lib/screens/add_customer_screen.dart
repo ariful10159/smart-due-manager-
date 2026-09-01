@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -161,34 +162,91 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate(AppColors colors) async {
-    DateTime? pickedDate = await showDatePicker(
+  // ✅ Android/iOS classic স্পিনার-স্টাইল (day/month/year wheel) date picker।
+  Future<DateTime?> _showWheelDatePicker(
+    AppColors colors, {
+    required DateTime initialDate,
+  }) {
+    final isDark = colors.scaffoldBg.computeLuminance() < 0.5;
+    DateTime tempPicked = initialDate;
+
+    return showModalBottomSheet<DateTime>(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme(
-              brightness: colors.scaffoldBg.computeLuminance() < 0.5
-                  ? Brightness.dark
-                  : Brightness.light,
-              primary: colors.accent,
-              onPrimary: Colors.white,
-              secondary: colors.accentAlt,
-              onSecondary: Colors.white,
-              error: colors.due,
-              onError: Colors.white,
-              surface: colors.surface,
-              onSurface: colors.textPrimary,
-            ),
-            dialogTheme: DialogThemeData(backgroundColor: colors.surface),
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 216,
+                child: CupertinoTheme(
+                  data: CupertinoThemeData(
+                    brightness: isDark ? Brightness.dark : Brightness.light,
+                    textTheme: CupertinoTextThemeData(
+                      dateTimePickerTextStyle: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: initialDate,
+                    minimumYear: 2000,
+                    maximumYear: 2100,
+                    onDateTimeChanged: (date) => tempPicked = date,
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: colors.borderColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          AppLocalizations.of(context)!.cancel,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(tempPicked),
+                        child: Text(
+                          'OK',
+                          style: TextStyle(
+                            color: colors.accent,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          child: child!,
         );
       },
     );
+  }
+
+  Future<void> _selectDate(AppColors colors) async {
+    final pickedDate = await _showWheelDatePicker(colors, initialDate: DateTime.now());
 
     if (pickedDate != null) {
       setState(() {
@@ -442,33 +500,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     TextEditingController controller,
     AppColors colors,
   ) async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme(
-              brightness: colors.scaffoldBg.computeLuminance() < 0.5
-                  ? Brightness.dark
-                  : Brightness.light,
-              primary: colors.accent,
-              onPrimary: Colors.white,
-              secondary: colors.accentAlt,
-              onSecondary: Colors.white,
-              error: colors.due,
-              onError: Colors.white,
-              surface: colors.surface,
-              onSurface: colors.textPrimary,
-            ),
-            dialogTheme: DialogThemeData(backgroundColor: colors.surface),
-          ),
-          child: child!,
-        );
-      },
-    );
+    final pickedDate = await _showWheelDatePicker(colors, initialDate: DateTime.now());
 
     if (pickedDate != null) {
       controller.text = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";

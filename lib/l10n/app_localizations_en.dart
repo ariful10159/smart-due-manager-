@@ -1232,15 +1232,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noReminderHistory => 'No reminder history';
 
   @override
-  String get statusActive => 'Active';
+  String get statusUpcoming => 'Upcoming';
 
   @override
-  String get statusExpired => 'Expired';
+  String get statusDueToday => 'Due Today';
+
+  @override
+  String get statusOverdue => 'Overdue';
+
+  @override
+  String get statusReplaced => 'Replaced';
 
   @override
   String recurringLabel(String label) {
     return 'Recurring · $label';
   }
+
+  @override
+  String reminderSetOnLabel(String date) {
+    return 'Set on $date';
+  }
+
+  @override
+  String reminderNextOnLabel(String date) {
+    return 'Next reminder: $date';
+  }
+
+  @override
+  String get reminderOverdueHint => 'This reminder date has passed';
+
+  @override
+  String get reminderOverdueRecurringHint =>
+      'Overdue — tap ✓ to move to the next cycle';
+
+  @override
+  String get totalRemindersLabel => 'Total Reminders';
+
+  @override
+  String get daysSinceFirstReminderLabel => 'Days Since First';
 
   @override
   String get loginTagline => 'Your accounts, in your control';

@@ -538,12 +538,26 @@
 
   "reminderHistoryTitle": "Reminder History",
   "noReminderHistory": "No reminder history",
-  "statusActive": "Active",
-  "statusExpired": "Expired",
+  "statusUpcoming": "Upcoming",
+  "statusDueToday": "Due Today",
+  "statusOverdue": "Overdue",
+  "statusReplaced": "Replaced",
   "recurringLabel": "Recurring · {label}",
   "@recurringLabel": {
     "placeholders": { "label": { "type": "String" } }
   },
+  "reminderSetOnLabel": "Set on {date}",
+  "@reminderSetOnLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "reminderNextOnLabel": "Next reminder: {date}",
+  "@reminderNextOnLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "reminderOverdueHint": "This reminder date has passed",
+  "reminderOverdueRecurringHint": "Overdue — tap ✓ to move to the next cycle",
+  "totalRemindersLabel": "Total Reminders",
+  "daysSinceFirstReminderLabel": "Days Since First",
 
   "loginTagline": "Your accounts, in your control",
   "welcomeBack": "Welcome Back",

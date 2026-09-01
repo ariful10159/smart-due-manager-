@@ -8,7 +8,6 @@ import 'settings_screen.dart';
 import 'login_screen.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
-import '../models/payment.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import 'add_customer_screen.dart';
@@ -131,22 +130,23 @@ class _HomeScreenState extends State<HomeScreen> {
       final todayStart = DateTime(now.year, now.month, now.day);
       final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
 
+      // ✅ প্রতিটা কাস্টমারের payment সিকোয়েন্সিয়ালি (একটার পর একটা await করে) না
+      // এনে একসাথে (parallel) আনা হয় — কাস্টমার বেশি হলে এতে অনেক দ্রুত লোড হয়।
+      // সাথে পুরো payment history না টেনে শুধু এই সপ্তাহেরটুকু Firestore থেকেই
+      // ফিল্টার করে আনা হয়, তাই ডেটা ট্রান্সফারও অনেক কম।
+      final results = await Future.wait(
+        customers.map((c) => _repo.fetchPaymentsSince(c.id, weekStart)),
+      );
+
       double today = 0;
       double week = 0;
 
-      for (final customer in customers) {
-        final paymentsSnapshot = await _repo.streamPayments(customer.id).first;
-
-        for (final payment in paymentsSnapshot) {
-          if (payment.type != PaymentType.payment) continue;
-
+      for (final payments in results) {
+        for (final payment in payments) {
           final paymentDateLocal = payment.date.toLocal();
-
+          week += payment.amount;
           if (!paymentDateLocal.isBefore(todayStart)) {
             today += payment.amount;
-          }
-          if (!paymentDateLocal.isBefore(weekStart)) {
-            week += payment.amount;
           }
         }
       }

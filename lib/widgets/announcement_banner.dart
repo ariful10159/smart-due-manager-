@@ -64,35 +64,39 @@ class _AnnouncementBannerState extends State<AnnouncementBanner> {
           fontWeight: FontWeight.w600,
         );
 
-        return Material(
-          color: colorScheme.primaryContainer,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(Icons.campaign_outlined, color: colorScheme.onPrimaryContainer),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => NotificationDetailScreen(data: data)),
-                        );
-                      },
-                      child: SizedBox(
-                        height: 22,
-                        child: _Marquee(text: tickerText, style: textStyle),
+        return SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Material(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.campaign_outlined, color: colorScheme.onPrimaryContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => NotificationDetailScreen(data: data)),
+                          );
+                        },
+                        child: SizedBox(
+                          height: 22,
+                          child: _Marquee(text: tickerText, style: textStyle),
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: colorScheme.onPrimaryContainer, size: 20),
-                    onPressed: () => setState(() => _dismissedId = best!.id),
-                  ),
-                ],
+                    IconButton(
+                      icon: Icon(Icons.close, color: colorScheme.onPrimaryContainer, size: 20),
+                      onPressed: () => setState(() => _dismissedId = best!.id),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

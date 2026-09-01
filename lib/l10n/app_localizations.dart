@@ -2318,23 +2318,71 @@ abstract class AppLocalizations {
   /// **'No reminder history'**
   String get noReminderHistory;
 
-  /// No description provided for @statusActive.
+  /// No description provided for @statusUpcoming.
   ///
   /// In en, this message translates to:
-  /// **'Active'**
-  String get statusActive;
+  /// **'Upcoming'**
+  String get statusUpcoming;
 
-  /// No description provided for @statusExpired.
+  /// No description provided for @statusDueToday.
   ///
   /// In en, this message translates to:
-  /// **'Expired'**
-  String get statusExpired;
+  /// **'Due Today'**
+  String get statusDueToday;
+
+  /// No description provided for @statusOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get statusOverdue;
+
+  /// No description provided for @statusReplaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced'**
+  String get statusReplaced;
 
   /// No description provided for @recurringLabel.
   ///
   /// In en, this message translates to:
   /// **'Recurring · {label}'**
   String recurringLabel(String label);
+
+  /// No description provided for @reminderSetOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set on {date}'**
+  String reminderSetOnLabel(String date);
+
+  /// No description provided for @reminderNextOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next reminder: {date}'**
+  String reminderNextOnLabel(String date);
+
+  /// No description provided for @reminderOverdueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This reminder date has passed'**
+  String get reminderOverdueHint;
+
+  /// No description provided for @reminderOverdueRecurringHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue — tap ✓ to move to the next cycle'**
+  String get reminderOverdueRecurringHint;
+
+  /// No description provided for @totalRemindersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Reminders'**
+  String get totalRemindersLabel;
+
+  /// No description provided for @daysSinceFirstReminderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Days Since First'**
+  String get daysSinceFirstReminderLabel;
 
   /// No description provided for @loginTagline.
   ///

@@ -288,6 +288,19 @@ class CustomerRepository {
     });
   }
 
+  // ✅ নির্দিষ্ট তারিখের পর হওয়া payment-গুলো — পুরো history না টেনে সরাসরি
+  // Firestore-এ ফিল্টার করা হয় (home screen এর today/week collection স্ট্যাটের জন্য)
+  Future<List<Payment>> fetchPaymentsSince(String customerId, DateTime since) async {
+    final snapshot = await _paymentsCol(customerId)
+        .where('type', isEqualTo: PaymentType.payment.name)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Payment.fromMap({...doc.data(), 'id': doc.id}))
+        .toList();
+  }
+
   // ✅ Hide customer (SOFT DELETE)
   Future<void> hideCustomer(String customerId) async {
     await _col.doc(customerId).update({'isHidden': true});

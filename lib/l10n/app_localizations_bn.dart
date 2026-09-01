@@ -1233,15 +1233,44 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noReminderHistory => 'কোনো রিমাইন্ডার হিস্ট্রি নেই';
 
   @override
-  String get statusActive => 'সক্রিয়';
+  String get statusUpcoming => 'আসন্ন';
 
   @override
-  String get statusExpired => 'মেয়াদোত্তীর্ণ';
+  String get statusDueToday => 'আজই';
+
+  @override
+  String get statusOverdue => 'মেয়াদ পার হয়েছে';
+
+  @override
+  String get statusReplaced => 'প্রতিস্থাপিত';
 
   @override
   String recurringLabel(String label) {
     return 'Recurring · $label';
   }
+
+  @override
+  String reminderSetOnLabel(String date) {
+    return 'সেট করা হয়েছে $date';
+  }
+
+  @override
+  String reminderNextOnLabel(String date) {
+    return 'পরবর্তী রিমাইন্ডার: $date';
+  }
+
+  @override
+  String get reminderOverdueHint => 'এই রিমাইন্ডারের তারিখ পার হয়ে গেছে';
+
+  @override
+  String get reminderOverdueRecurringHint =>
+      'মেয়াদ পার হয়েছে — পরের সাইকেলে যেতে ✓ চাপুন';
+
+  @override
+  String get totalRemindersLabel => 'মোট রিমাইন্ডার';
+
+  @override
+  String get daysSinceFirstReminderLabel => 'প্রথম থেকে দিন';
 
   @override
   String get loginTagline => 'আপনার হিসাব, আপনার নিয়ন্ত্রণে';

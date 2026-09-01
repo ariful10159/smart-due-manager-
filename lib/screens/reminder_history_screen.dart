@@ -59,36 +59,90 @@ class ReminderHistoryScreen extends StatelessWidget {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: reminders.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final reminder = reminders[index];
+          final totalReminders = reminders.length;
+
+          // ✅ createdAt অনুযায়ী নতুন-আগে সাজানো, তাই লিস্টের শেষ আইটেমটাই সবচেয়ে
+          // পুরনো — অর্থাৎ প্রথম যেদিন এই কাস্টমারের জন্য reminder সেট করা হয়েছিল
+          final oldestRaw = reminders.last['createdAt'];
+          final oldestCreatedAt = oldestRaw is Timestamp
+              ? oldestRaw.toDate()
+              : oldestRaw is DateTime
+                  ? oldestRaw
+                  : DateTime.now();
+          final daysSinceFirst = DateTime.now().difference(oldestCreatedAt).inDays;
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _buildStatsCard(
+                  colors: colors,
+                  l10n: l10n,
+                  totalReminders: totalReminders,
+                  daysSinceFirst: daysSinceFirst,
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: reminders.length,
+                  separatorBuilder: (_, __) => SizedBox(
+                    height: 22,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 36,
+                          child: Center(
+                            child: Container(width: 2, height: 22, color: colors.borderColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  itemBuilder: (context, index) {
+                    final reminder = reminders[index];
 
               final timestamp = reminder['reminderDate'];
               final dateTime = timestamp is Timestamp
                   ? timestamp.toDate()
                   : timestamp as DateTime;
-
               final formattedDate =
                   DateFormat('d MMMM yyyy • hh:mm a').format(dateTime);
 
-              final rawStatus = reminder['status'];
-              final isActive = rawStatus == 'active';
-              final isExpired = rawStatus == 'expired';
+              final createdRaw = reminder['createdAt'];
+              final createdAt = createdRaw is Timestamp
+                  ? createdRaw.toDate()
+                  : createdRaw is DateTime
+                      ? createdRaw
+                      : dateTime;
+              final formattedSetOn =
+                  DateFormat('d MMMM yyyy • hh:mm a').format(createdAt);
 
-              final statusLabel = isActive
-                  ? l10n.statusActive
-                  : isExpired
-                      ? l10n.statusExpired
-                      : rawStatus.toString();
+              // ✅ 'active' মানে এটাই কাস্টমারের বর্তমান reminder (নতুন কিছু সেট
+              // করে replace হয়নি) — কিন্তু তারিখ পার হয়ে গেছে কিনা সেটা Firestore
+              // এ ট্র্যাক করা হয় না, তাই সেটা এখানে সময়ের সাথে তুলনা করে বের করা হয়
+              final isActive = reminder['status'] == 'active';
+              final now = DateTime.now();
+              final isSameDay = dateTime.year == now.year &&
+                  dateTime.month == now.month &&
+                  dateTime.day == now.day;
+              final isOverdue = !isSameDay && dateTime.isBefore(now);
 
-              final statusColor = isActive
-                  ? colors.clear
-                  : isExpired
-                      ? colors.textSecondary
-                      : colors.warn;
+              final String statusLabel;
+              final Color statusColor;
+              if (!isActive) {
+                statusLabel = l10n.statusReplaced;
+                statusColor = colors.textSecondary;
+              } else if (isOverdue) {
+                statusLabel = l10n.statusOverdue;
+                statusColor = colors.due;
+              } else if (isSameDay) {
+                statusLabel = l10n.statusDueToday;
+                statusColor = colors.warn;
+              } else {
+                statusLabel = l10n.statusUpcoming;
+                statusColor = colors.clear;
+              }
 
               final note = (reminder['note'] as String?)?.trim() ?? '';
               final isRecurring = reminder['isRecurring'] == true;
@@ -114,11 +168,18 @@ class ReminderHistoryScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      backgroundColor: statusColor,
-                      child: Icon(
-                        isActive ? Icons.alarm : Icons.alarm_off,
-                        color: Colors.white,
+                    SizedBox(
+                      width: 36,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: CircleAvatar(
+                          radius: 18,
+                          backgroundColor: statusColor,
+                          child: Icon(
+                            isActive ? Icons.alarm : Icons.alarm_off,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -130,7 +191,7 @@ class ReminderHistoryScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  formattedDate,
+                                  l10n.reminderSetOnLabel(formattedSetOn),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: colors.textPrimary,
@@ -152,6 +213,23 @@ class ReminderHistoryScreen extends StatelessWidget {
                                     color: statusColor,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.event_available_rounded, size: 13, color: colors.accent),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  l10n.reminderNextOnLabel(formattedDate),
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: colors.accent,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -202,10 +280,86 @@ class ReminderHistoryScreen extends StatelessWidget {
                   ],
                 ),
               );
-            },
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildStatsCard({
+    required AppColors colors,
+    required AppLocalizations l10n,
+    required int totalReminders,
+    required int daysSinceFirst,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [colors.accent.withValues(alpha: 0.18), colors.accentAlt.withValues(alpha: 0.10)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatItem(
+              colors: colors,
+              icon: Icons.alarm_rounded,
+              value: '$totalReminders',
+              label: l10n.totalRemindersLabel,
+            ),
+          ),
+          Container(width: 1, height: 40, color: colors.borderColor),
+          Expanded(
+            child: _buildStatItem(
+              colors: colors,
+              icon: Icons.calendar_month_rounded,
+              value: '$daysSinceFirst',
+              label: l10n.daysSinceFirstReminderLabel,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required AppColors colors,
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, size: 18, color: colors.accent),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: colors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }
