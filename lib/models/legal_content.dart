@@ -29,6 +29,39 @@ class LegalContent {
   static List<LegalSection> termsOfService(String languageCode) =>
       languageCode == 'en' ? _termsOfServiceEn : _termsOfServiceBn;
 
+  // ✅ Admin panel থেকে plain-text override পাবলিশ করা হলে সেটা এখানে পার্স হয়।
+  // "## Heading" দিয়ে শুরু হওয়া লাইনগুলোকে আলাদা section হিসেবে ধরা হয় (LegalDocumentView
+  // এর numbered-card UI বজায় থাকার জন্য) — কোনো "## " না পেলে পুরো টেক্সটটাই একটা
+  // section হিসেবে দেখানো হয়।
+  static List<LegalSection> parseSections(String raw, String fallbackHeading) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return [];
+
+    final sections = <LegalSection>[];
+    String? currentHeading;
+    final bodyBuffer = StringBuffer();
+
+    void flush() {
+      final heading = currentHeading;
+      if (heading != null) {
+        sections.add(LegalSection(heading, bodyBuffer.toString().trim()));
+      }
+      bodyBuffer.clear();
+    }
+
+    for (final line in trimmed.split('\n')) {
+      if (line.trimLeft().startsWith('## ')) {
+        flush();
+        currentHeading = line.trimLeft().substring(3).trim();
+      } else {
+        bodyBuffer.writeln(line);
+      }
+    }
+    flush();
+
+    return sections.isNotEmpty ? sections : [LegalSection(fallbackHeading, trimmed)];
+  }
+
   static const List<LegalSection> _privacyPolicyBn = [
     LegalSection(
       'আমরা যা সংগ্রহ করি',

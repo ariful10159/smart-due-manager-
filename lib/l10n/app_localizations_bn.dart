@@ -1622,4 +1622,43 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get noFaqItems => 'এখনো কোনো প্রশ্ন যোগ করা হয়নি';
+
+  @override
+  String get copyLabel => 'কপি করুন';
+
+  @override
+  String get copiedToClipboard => 'ক্লিপবোর্ডে কপি হয়েছে';
+
+  @override
+  String get agreementPrefix => 'আমি ';
+
+  @override
+  String get agreementConnector => ' ও ';
+
+  @override
+  String get agreementSuffix => ' এর সাথে সম্মত';
+
+  @override
+  String get agreeToTermsRequired =>
+      'চালিয়ে যেতে Privacy Policy ও Terms of Service এর সাথে সম্মত হন';
+
+  @override
+  String get policyUpdatedTitle => 'আমাদের নীতিমালা আপডেট হয়েছে';
+
+  @override
+  String get policyUpdatedMessage =>
+      'আমরা আমাদের Privacy Policy এবং/অথবা Terms of Service আপডেট করেছি। অ্যাপ ব্যবহার চালিয়ে যেতে দয়া করে পড়ে সম্মতি দিন।';
+
+  @override
+  String get reviewPrivacyPolicy => 'Privacy Policy দেখুন';
+
+  @override
+  String get reviewTermsOfService => 'Terms of Service দেখুন';
+
+  @override
+  String get iHaveReviewedAgreement =>
+      'আমি আপডেট হওয়া Privacy Policy ও Terms of Service পড়েছি এবং সম্মত';
+
+  @override
+  String get acceptAndContinue => 'সম্মত হয়ে চালিয়ে যান';
 }

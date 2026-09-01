@@ -493,6 +493,7 @@ export default function UserDetailPage() {
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const [busy, setBusy] = useState(false)
   const [pinResetMsg, setPinResetMsg] = useState('')
+  const [deleteError, setDeleteError] = useState('')
   const [logoUrl, setLogoUrl] = useState(null)
   const [selectedNotebook, setSelectedNotebook] = useState(null)
 
@@ -613,6 +614,7 @@ export default function UserDetailPage() {
       </div>
 
       {pinResetMsg && <p className="mt-2 text-sm text-emerald-400">{pinResetMsg}</p>}
+      {deleteError && <p className="mt-2 text-sm text-red-400">{deleteError}</p>}
 
       {/* Mini stats */}
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -814,14 +816,21 @@ export default function UserDetailPage() {
       <ConfirmDialog
         open={confirmDeleteAll}
         title="Delete all data for this user?"
-        message="This permanently deletes this user's profile, customers, payments, reminders, and notebooks. This cannot be undone. Their login account itself is not deleted."
+        message="This permanently deletes this user's profile, customers, payments, reminders, notebooks, and their login account (phone number + password). This cannot be undone."
         confirmLabel="Delete everything"
         onCancel={() => setConfirmDeleteAll(false)}
         onConfirm={async () => {
+          setDeleteError('')
           setBusy(true)
-          await deleteUserDataCascade(uid)
-          setBusy(false)
-          navigate('/users')
+          try {
+            await deleteUserDataCascade(uid)
+            setBusy(false)
+            navigate('/users')
+          } catch (e) {
+            setBusy(false)
+            setConfirmDeleteAll(false)
+            setDeleteError(e.message || 'Failed to fully delete this user.')
+          }
         }}
       />
     </div>

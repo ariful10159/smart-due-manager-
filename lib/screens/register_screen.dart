@@ -1,9 +1,12 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import 'login_screen.dart';
 import 'otp_verification_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,6 +24,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _agreedToTerms = false;
+
+  final _privacyPolicyTap = TapGestureRecognizer();
+  final _termsOfServiceTap = TapGestureRecognizer();
 
   @override
   void dispose() {
@@ -28,6 +35,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _privacyPolicyTap.dispose();
+    _termsOfServiceTap.dispose();
     super.dispose();
   }
 
@@ -35,6 +44,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final l10n = AppLocalizations.of(context)!;
+
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.agreeToTermsRequired)),
+      );
+      return;
+    }
+
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
@@ -87,6 +104,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: colors.accent, width: 2),
       ),
+    );
+  }
+
+  Widget _buildAgreementRow(AppColors colors, AppLocalizations l10n) {
+    final linkStyle = TextStyle(
+      color: colors.accent,
+      fontWeight: FontWeight.w700,
+      fontSize: 13,
+      decoration: TextDecoration.underline,
+      decorationColor: colors.accent,
+    );
+    final textStyle = TextStyle(color: colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: _agreedToTerms,
+            activeColor: colors.accent,
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // ✅ ইচ্ছাকৃতভাবে পুরো টেক্সটকে GestureDetector দিয়ে wrap করা হয়নি — তাহলে
+        // Privacy Policy/Terms লিংকে ট্যাপ করলে সেটার নিজস্ব TapGestureRecognizer এর
+        // পাশাপাশি বাইরের GestureDetector ও একসাথে ফায়ার করত, checkbox ভুলবশত টগল
+        // হয়ে যেত। তাই checkbox toggle শুধু checkbox থেকেই হয়।
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              style: textStyle,
+              children: [
+                TextSpan(text: l10n.agreementPrefix),
+                TextSpan(
+                  text: l10n.privacyPolicy,
+                  style: linkStyle,
+                  recognizer: _privacyPolicyTap
+                    ..onTap = () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                        ),
+                ),
+                TextSpan(text: l10n.agreementConnector),
+                TextSpan(
+                  text: l10n.termsOfService,
+                  style: linkStyle,
+                  recognizer: _termsOfServiceTap
+                    ..onTap = () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const TermsOfServiceScreen()),
+                        ),
+                ),
+                TextSpan(text: l10n.agreementSuffix),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -303,7 +381,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 20),
+
+                      // ─── ✅ PRIVACY POLICY / TERMS AGREEMENT CHECKBOX ───
+                      _buildAgreementRow(colors, l10n),
+                      const SizedBox(height: 20),
 
                       // ─── 🚀 HIGH-GLOSS PREMIUM ELITE ACTION BUTTON ───
                       Container(

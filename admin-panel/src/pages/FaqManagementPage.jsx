@@ -2,50 +2,73 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchFaqs, addFaq, updateFaq, deleteFaq } from '../lib/adminApi'
 import ConfirmDialog from '../components/ConfirmDialog'
+import FaqExcelImport from '../components/FaqExcelImport'
 
 const inputClass =
   'w-full rounded-lg border border-ink-700 bg-ink-850 px-3 py-2.5 text-sm text-white placeholder:text-ink-400 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
 
+const labelClass = 'mb-1 block text-xs text-ink-400'
+
 function FaqForm({ initial, nextOrder, onCancel, onSave }) {
-  const [question, setQuestion] = useState(initial?.question || '')
-  const [answer, setAnswer] = useState(initial?.answer || '')
+  const [questionEn, setQuestionEn] = useState(initial?.questionEn || '')
+  const [answerEn, setAnswerEn] = useState(initial?.answerEn || '')
+  const [questionBn, setQuestionBn] = useState(initial?.questionBn || '')
+  const [answerBn, setAnswerBn] = useState(initial?.answerBn || '')
   const [order, setOrder] = useState(initial?.order ?? nextOrder)
   const [saving, setSaving] = useState(false)
 
-  const canSave = question.trim().length > 0 && answer.trim().length > 0
+  // At least one language needs both a question and an answer.
+  const canSave = (questionEn.trim() && answerEn.trim()) || (questionBn.trim() && answerBn.trim())
 
   const handleSave = async () => {
     setSaving(true)
-    await onSave({ question: question.trim(), answer: answer.trim(), order: Number(order) || 0 })
+    await onSave({
+      questionEn: questionEn.trim(),
+      answerEn: answerEn.trim(),
+      questionBn: questionBn.trim(),
+      answerBn: answerBn.trim(),
+      order: Number(order) || 0,
+    })
     setSaving(false)
   }
 
   return (
     <div className="rounded-2xl border border-ink-800 bg-ink-900/60 p-5 shadow-card">
-      <div className="space-y-3">
-        <input
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Question"
-          className={inputClass}
-        />
-        <textarea
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Answer"
-          rows={4}
-          className={inputClass}
-        />
-        <label className="block text-xs text-ink-400">
-          Order (lower shows first)
-          <input
-            type="number"
-            value={order}
-            onChange={(e) => setOrder(e.target.value)}
-            className={`${inputClass} mt-1 w-32`}
-          />
-        </label>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-ink-300">English</p>
+          <div>
+            <label className={labelClass}>Question</label>
+            <input value={questionEn} onChange={(e) => setQuestionEn(e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Answer</label>
+            <textarea value={answerEn} onChange={(e) => setAnswerEn(e.target.value)} rows={4} className={inputClass} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-ink-300">বাংলা</p>
+          <div>
+            <label className={labelClass}>প্রশ্ন</label>
+            <input value={questionBn} onChange={(e) => setQuestionBn(e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>উত্তর</label>
+            <textarea value={answerBn} onChange={(e) => setAnswerBn(e.target.value)} rows={4} className={inputClass} />
+          </div>
+        </div>
       </div>
+
+      <div className="mt-3">
+        <label className={labelClass}>Order (lower shows first)</label>
+        <input
+          type="number"
+          value={order}
+          onChange={(e) => setOrder(e.target.value)}
+          className={`${inputClass} w-32`}
+        />
+      </div>
+
       <div className="mt-4 flex justify-end gap-2">
         <button
           onClick={onCancel}
@@ -105,14 +128,17 @@ export default function FaqManagementPage() {
   const nextOrder = items.length > 0 ? Math.max(...items.map((i) => i.order || 0)) + 1 : 0
 
   return (
-    <div className="max-w-2xl p-6 md:p-8">
+    <div className="max-w-3xl p-6 md:p-8">
       <Link to="/app-config" className="text-sm font-medium text-indigo-400 transition-colors hover:text-indigo-300">
         ← App Config
       </Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-white">FAQ Management</h1>
-          <p className="mt-1 text-sm text-ink-400">Shown on the app's FAQ screen, sorted by order.</p>
+          <p className="mt-1 text-sm text-ink-400">
+            Shown on the app's Help &amp; Support screen, sorted by order. If this list is empty, the app falls back
+            to its built-in FAQ.
+          </p>
         </div>
         {!creating && (
           <button
@@ -122,6 +148,10 @@ export default function FaqManagementPage() {
             + New
           </button>
         )}
+      </div>
+
+      <div className="mt-5">
+        <FaqExcelImport nextOrder={nextOrder} onImported={load} />
       </div>
 
       {creating && (
@@ -144,8 +174,13 @@ export default function FaqManagementPage() {
             <div key={item.id} className="rounded-2xl border border-ink-800 bg-ink-900/60 p-5 shadow-card">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-white">{item.question}</p>
-                  <p className="mt-1 text-sm text-ink-300">{item.answer}</p>
+                  <p className="font-semibold text-white">{item.questionEn || item.questionBn}</p>
+                  <p className="mt-1 text-sm text-ink-300">{item.answerEn || item.answerBn}</p>
+                  {item.questionBn && (
+                    <p className="mt-2 text-sm text-ink-400">
+                      <span className="font-semibold">{item.questionBn}</span> — {item.answerBn}
+                    </p>
+                  )}
                   <p className="mt-2 text-xs text-ink-500">order {item.order ?? 0}</p>
                 </div>
                 <div className="flex shrink-0 gap-3">
@@ -168,7 +203,7 @@ export default function FaqManagementPage() {
         )}
         {items.length === 0 && !creating && (
           <p className="rounded-2xl border border-ink-800 bg-ink-900/60 p-8 text-center text-sm text-ink-500">
-            No FAQ items yet.
+            No FAQ items yet — the app is showing its built-in default FAQ.
           </p>
         )}
       </div>
@@ -176,7 +211,7 @@ export default function FaqManagementPage() {
       <ConfirmDialog
         open={!!confirmDelete}
         title="Delete FAQ item?"
-        message={`"${confirmDelete?.question || ''}" will be permanently removed.`}
+        message={`"${confirmDelete?.questionEn || confirmDelete?.questionBn || ''}" will be permanently removed.`}
         confirmLabel="Delete"
         onCancel={() => setConfirmDelete(null)}
         onConfirm={async () => {

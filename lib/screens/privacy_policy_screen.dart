@@ -24,7 +24,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         final override = (languageCode == 'en' ? config['privacyEn'] : config['privacyBn']) as String?;
 
         final sections = (override?.trim().isNotEmpty ?? false)
-            ? [LegalSection(title, override!.trim())]
+            ? LegalContent.parseSections(override!, title)
             : LegalContent.privacyPolicy(languageCode);
 
         return LegalDocumentView(title: title, sections: sections, icon: Icons.privacy_tip_rounded);

@@ -724,5 +724,20 @@
   "noContactInfo": "No contact info added yet",
 
   "faqTitle": "FAQ",
-  "noFaqItems": "No FAQ items yet"
+  "noFaqItems": "No FAQ items yet",
+
+  "copyLabel": "Copy",
+  "copiedToClipboard": "Copied to clipboard",
+
+  "agreementPrefix": "I agree to the ",
+  "agreementConnector": " and ",
+  "agreementSuffix": ".",
+  "agreeToTermsRequired": "Please agree to the Privacy Policy and Terms of Service to continue",
+
+  "policyUpdatedTitle": "Our Policies Have Been Updated",
+  "policyUpdatedMessage": "We've updated our Privacy Policy and/or Terms of Service. Please review them and accept to continue using the app.",
+  "reviewPrivacyPolicy": "Review Privacy Policy",
+  "reviewTermsOfService": "Review Terms of Service",
+  "iHaveReviewedAgreement": "I have read and accept the updated Privacy Policy and Terms of Service",
+  "acceptAndContinue": "Accept & Continue"
 }

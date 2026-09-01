@@ -42,8 +42,6 @@ class LegalDocumentView extends StatelessWidget {
             _SectionCard(index: i + 1, section: sections[i], colors: colors),
             const SizedBox(height: 12),
           ],
-          const SizedBox(height: 8),
-          _ContactFooter(colors: colors),
         ],
       ),
     );
@@ -160,35 +158,6 @@ class _SectionCard extends StatelessWidget {
           Text(
             section.body,
             style: TextStyle(color: colors.textSecondary, fontSize: 13.5, height: 1.65),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ContactFooter extends StatelessWidget {
-  const _ContactFooter({required this.colors});
-
-  final AppColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surfaceAlt,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.mail_outline_rounded, color: colors.info, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              AppLocalizations.of(context)!.contactForQuestions(LegalContent.supportEmail),
-              style: TextStyle(color: colors.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.5),
-            ),
           ),
         ],
       ),

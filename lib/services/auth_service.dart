@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'app_config_service.dart';
+
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -72,10 +74,28 @@ class AuthService {
       );
       await user.linkWithCredential(emailCredential).timeout(const Duration(seconds: 15));
 
+      // ✅ Registration স্ক্রিনের checkbox দিয়ে যেহেতু ইতিমধ্যে বর্তমান Privacy
+      // Policy/Terms এ সম্মত হয়েই এসেছে, নতুন অ্যাকাউন্টকে সাথে সাথেই up-to-date
+      // হিসেবে মার্ক করা হয় — নাহলে লগইনের পরপরই আবার PolicyAcceptanceGate দেখাত।
+      int privacyVersion = 0;
+      int termsVersion = 0;
+      try {
+        final config = await AppConfigService.fetchOnce();
+        privacyVersion = (config['privacyVersion'] as num?)?.toInt() ?? 0;
+        termsVersion = (config['termsVersion'] as num?)?.toInt() ?? 0;
+      } catch (_) {
+        // ✅ Config fetch fail করলেও registration আটকাবে না — version 0 থাকবে,
+        // পরে PolicyAcceptanceGate ঠিকমতো handle করে নেবে।
+      }
+
       await _firestore.collection('users').doc(user.uid).set({
         'name': name,
         'phone': phone,
         'createdAt': Timestamp.now(),
+        'acceptedPrivacyVersion': privacyVersion,
+        'acceptedPrivacyAt': Timestamp.now(),
+        'acceptedTermsVersion': termsVersion,
+        'acceptedTermsAt': Timestamp.now(),
       }).timeout(const Duration(seconds: 15));
 
       return null;

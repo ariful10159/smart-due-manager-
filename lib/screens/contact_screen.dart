@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
@@ -101,9 +102,10 @@ class ContactScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: () => row.onTap(row.value),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           children: [
+            const SizedBox(width: 8),
             Icon(row.icon, color: colors.accent, size: 20),
             const SizedBox(width: 14),
             Expanded(
@@ -119,10 +121,22 @@ class ContactScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: colors.textSecondary, size: 20),
+            IconButton(
+              icon: Icon(Icons.copy_rounded, color: colors.textSecondary, size: 19),
+              tooltip: AppLocalizations.of(context)!.copyLabel,
+              onPressed: () => _copyToClipboard(context, row.value),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _copyToClipboard(BuildContext context, String value) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context)!.copiedToClipboard), duration: const Duration(seconds: 2)),
     );
   }
 }

@@ -45,6 +45,34 @@ function isVersionBelow(a, b) {
   return false
 }
 
+// Mirrors LegalContent.parseSections in lib/models/legal_content.dart — lines starting
+// with "## " become a new section heading, so the preview matches what the app renders.
+function parseLegalSections(raw) {
+  const trimmed = raw.trim()
+  if (!trimmed) return []
+
+  const sections = []
+  let currentHeading = null
+  let body = []
+
+  const flush = () => {
+    if (currentHeading !== null) sections.push({ heading: currentHeading, body: body.join('\n').trim() })
+    body = []
+  }
+
+  for (const line of trimmed.split('\n')) {
+    if (line.trimStart().startsWith('## ')) {
+      flush()
+      currentHeading = line.trimStart().slice(3).trim()
+    } else {
+      body.push(line)
+    }
+  }
+  flush()
+
+  return sections.length > 0 ? sections : [{ heading: null, body: trimmed }]
+}
+
 function formatRemaining(until) {
   if (!until) return null
   const diffMs = until.getTime() - Date.now()
@@ -113,24 +141,47 @@ function ModalFooter({ onCancel, onSave, saving, dirty, error }) {
   )
 }
 
-function HistoryTimeline({ items, renderLabel, renderMeta }) {
+function HistoryTimeline({ items, renderLabel, renderMeta, renderExpanded, maxHeightClass = 'max-h-40' }) {
+  const [expandedId, setExpandedId] = useState(null)
   if (items.length === 0) return null
+
   return (
     <div className="mt-5">
       <p className="mb-2 text-xs font-medium text-ink-400">History</p>
-      <div className="max-h-40 overflow-y-auto pr-1">
-        {items.map((item, i) => (
-          <div key={item.id} className="relative flex gap-3 pb-3 last:pb-0">
-            <div className="flex flex-col items-center">
-              <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${i === 0 ? 'bg-indigo-400' : 'bg-ink-600'}`} />
-              {i !== items.length - 1 && <span className="w-px flex-1 bg-ink-700" />}
+      <div className={`${maxHeightClass} overflow-y-auto pr-1`}>
+        {items.map((item, i) => {
+          const isExpanded = renderExpanded && expandedId === item.id
+          return (
+            <div key={item.id} className="relative flex gap-3 pb-3 last:pb-0">
+              <div className="flex flex-col items-center">
+                <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${i === 0 ? 'bg-indigo-400' : 'bg-ink-600'}`} />
+                {i !== items.length - 1 && <span className="w-px flex-1 bg-ink-700" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                {renderExpanded ? (
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                    className="flex w-full items-center justify-between gap-2 text-left"
+                  >
+                    <span>
+                      <p className="text-xs font-medium text-ink-200">{renderLabel(item)}</p>
+                      <p className="text-[11px] text-ink-500">{renderMeta(item)}</p>
+                    </span>
+                    <span className="shrink-0 text-[11px] font-medium text-indigo-400">
+                      {isExpanded ? 'Hide ▲' : 'View ▾'}
+                    </span>
+                  </button>
+                ) : (
+                  <>
+                    <p className="text-xs font-medium text-ink-200">{renderLabel(item)}</p>
+                    <p className="text-[11px] text-ink-500">{renderMeta(item)}</p>
+                  </>
+                )}
+                {isExpanded && <div className="mt-2">{renderExpanded(item)}</div>}
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-ink-200">{renderLabel(item)}</p>
-              <p className="text-[11px] text-ink-500">{renderMeta(item)}</p>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -289,7 +340,7 @@ function MaintenanceModal({ config, onClose, onSaved }) {
           </div>
 
           <div>
-            <p className={labelClass}>Expected back (ETA — display only, doesn't auto turn off)</p>
+            <p className={labelClass}>Expected back (ETA — the app auto-unblocks once this passes)</p>
             <div className="flex flex-wrap gap-2">
               {DURATION_PRESETS.map((p) => (
                 <button
@@ -442,9 +493,18 @@ function PolicyModal({ config, type, title, icon, onClose, onSaved }) {
 
   return (
     <Modal open title={`${icon} ${title}`} onClose={onClose} wide>
-      <p className="mb-3 text-xs text-ink-500">
+      <p className="mb-1 text-xs text-ink-500">
         Leaving both languages blank keeps the app's built-in {title.toLowerCase()} text. Publishing here overrides
         it live — no app release needed.
+      </p>
+      <p className="mb-1 text-xs text-ink-500">
+        Start a line with <code className="rounded bg-ink-900 px-1 py-0.5 text-indigo-300">## </code> to begin a new
+        section — the app renders each as its own numbered card, same as the built-in policy. Plain text with no{' '}
+        <code className="rounded bg-ink-900 px-1 py-0.5 text-indigo-300">##</code> shows as one flowing block.
+      </p>
+      <p className="mb-3 text-xs text-amber-400">
+        ⚠️ Publishing bumps the version — every user will be forced to re-accept before they can use the app again.
+        See <span className="font-medium">Policy Acceptance</span> to track who has/hasn't.
       </p>
 
       <div className="flex items-center justify-between">
@@ -474,9 +534,21 @@ function PolicyModal({ config, type, title, icon, onClose, onSaved }) {
 
       <div className="mt-2">
         {previewing ? (
-          <div className="max-h-72 min-h-[220px] overflow-y-auto rounded-lg border border-ink-700 bg-ink-900/50 p-4">
+          <div className="max-h-72 min-h-[220px] space-y-3 overflow-y-auto rounded-lg border border-ink-700 bg-ink-900/50 p-4">
             {activeText.trim() ? (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-200">{activeText}</p>
+              parseLegalSections(activeText).map((s, i) => (
+                <div key={i} className="rounded-lg border border-ink-700 bg-ink-850 p-3.5">
+                  {s.heading && (
+                    <p className="mb-1.5 flex items-center gap-2 text-sm font-bold text-white">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-500/20 text-xs text-indigo-300">
+                        {i + 1}
+                      </span>
+                      {s.heading}
+                    </p>
+                  )}
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-300">{s.body}</p>
+                </div>
+              ))
             ) : (
               <p className="text-sm italic text-ink-500">
                 Nothing published for this language yet — the app's built-in text will show instead.
@@ -498,6 +570,26 @@ function PolicyModal({ config, type, title, icon, onClose, onSaved }) {
         items={history}
         renderLabel={(h) => `v${h.version}`}
         renderMeta={(h) => `${fmt(h.publishedAt)} · ${h.publishedBy || 'unknown'}`}
+        maxHeightClass="max-h-64"
+        renderExpanded={(h) => {
+          const historicalText = lang === 'en' ? h.textEn : h.textBn
+          return (
+            <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-ink-700 bg-ink-900/50 p-3">
+              {historicalText?.trim() ? (
+                parseLegalSections(historicalText).map((s, i) => (
+                  <div key={i} className="rounded-lg border border-ink-700 bg-ink-850 p-3">
+                    {s.heading && <p className="mb-1 text-xs font-bold text-white">{s.heading}</p>}
+                    <p className="whitespace-pre-wrap text-xs leading-relaxed text-ink-300">{s.body}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs italic text-ink-500">
+                  Nothing was set for {lang === 'en' ? 'English' : 'বাংলা'} in this version.
+                </p>
+              )}
+            </div>
+          )
+        }}
       />
       <ModalFooter onCancel={onClose} onSave={handleSave} saving={saving} dirty={dirty} />
     </Modal>
@@ -509,14 +601,18 @@ function PolicyModal({ config, type, title, icon, onClose, onSaved }) {
 // ============================================
 
 function AboutAppModal({ config, onClose, onSaved }) {
-  const [text, setText] = useState(config.aboutApp || '')
+  const [textEn, setTextEn] = useState(config.aboutAppEn || '')
+  const [textBn, setTextBn] = useState(config.aboutAppBn || '')
+  const [lang, setLang] = useState('en')
   const [saving, setSaving] = useState(false)
-  const dirty = text !== (config.aboutApp || '')
+  const dirty = textEn !== (config.aboutAppEn || '') || textBn !== (config.aboutAppBn || '')
+  const activeText = lang === 'en' ? textEn : textBn
+  const setActiveText = lang === 'en' ? setTextEn : setTextBn
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      await updateAppConfig({ aboutApp: text }, 'update_about')
+      await updateAppConfig({ aboutAppEn: textEn, aboutAppBn: textBn }, 'update_about')
       onSaved()
     } finally {
       setSaving(false)
@@ -528,15 +624,35 @@ function AboutAppModal({ config, onClose, onSaved }) {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_200px]">
         <div>
           <label className={labelClass}>Shown on the app's "About" screen</label>
+          <div className="mb-2 flex gap-1 rounded-lg border border-ink-700 bg-ink-900/50 p-1">
+            {[
+              { key: 'en', label: 'English', count: textEn.length },
+              { key: 'bn', label: 'বাংলা', count: textBn.length },
+            ].map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setLang(t.key)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  lang === t.key ? 'bg-indigo-500/20 text-white' : 'text-ink-400 hover:text-white'
+                }`}
+              >
+                {t.label} <span className="text-ink-500">· {t.count}</span>
+              </button>
+            ))}
+          </div>
           <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+            value={activeText}
+            onChange={(e) => setActiveText(e.target.value)}
             rows={8}
-            placeholder="Smart Due helps small shop owners track customer dues, payments and reminders — all in one simple app."
+            placeholder={
+              lang === 'en'
+                ? 'Smart Due helps small shop owners track customer dues, payments and reminders — all in one simple app.'
+                : 'Smart Due ছোট দোকানদারদের বাকি, পেমেন্ট আর রিমাইন্ডার ট্র্যাক করতে সাহায্য করে।'
+            }
             className={inputClass}
           />
           <p className="mt-1.5 text-xs text-ink-500">
-            {text.length} characters · {text.trim() ? text.trim().split(/\s+/).length : 0} words
+            {activeText.length} characters · {activeText.trim() ? activeText.trim().split(/\s+/).length : 0} words
           </p>
         </div>
         <div>
@@ -547,7 +663,7 @@ function AboutAppModal({ config, onClose, onSaved }) {
               <p className="text-[10px] text-white/80">Version 1.0.0</p>
             </div>
             <p className="text-xs leading-relaxed text-ink-300">
-              {text.trim() || <span className="italic text-ink-500">Nothing set yet</span>}
+              {activeText.trim() || <span className="italic text-ink-500">Nothing set yet</span>}
             </p>
           </PhonePreview>
         </div>
@@ -628,7 +744,18 @@ export default function AppConfigPage() {
   async function load() {
     setLoadError('')
     try {
-      setConfig(await fetchAppConfig())
+      let data = await fetchAppConfig()
+
+      // Self-heal: the app auto-unblocks once maintenanceUntil passes (client-side),
+      // but the Firestore flag itself only flips here — whenever an admin next opens
+      // this page — so the dashboard's ON/OFF status doesn't stay stale forever.
+      const until = data.maintenanceUntil?.toDate ? data.maintenanceUntil.toDate() : null
+      if (data.maintenanceEnabled && until && until.getTime() <= Date.now()) {
+        await updateAppConfig({ maintenanceEnabled: false }, 'auto_disable_expired_maintenance')
+        data = await fetchAppConfig()
+      }
+
+      setConfig(data)
     } catch (e) {
       setLoadError(e.message || 'Could not load app config.')
     }
@@ -709,7 +836,7 @@ export default function AppConfigPage() {
         <ConfigCard
           icon="ℹ️"
           title="About App"
-          summary={config.aboutApp ? `${config.aboutApp.length} characters set` : 'Not set'}
+          summary={config.aboutAppEn || config.aboutAppBn ? 'Set' : 'Not set'}
           onClick={() => setOpenModal('about')}
         />
         <ConfigCard
@@ -725,6 +852,14 @@ export default function AppConfigPage() {
           <span className="text-2xl">❓</span>
           <p className="font-semibold text-white">FAQ Management</p>
           <p className="text-sm text-ink-400">Manage the in-app FAQ list →</p>
+        </Link>
+        <Link
+          to="/app-config/policy-acceptance"
+          className="flex flex-col items-start gap-2 rounded-2xl border border-dashed border-ink-700 bg-ink-900/40 p-5 text-left transition-colors hover:border-indigo-500"
+        >
+          <span className="text-2xl">📋</span>
+          <p className="font-semibold text-white">Policy Acceptance</p>
+          <p className="text-sm text-ink-400">Who accepted which version →</p>
         </Link>
       </div>
 

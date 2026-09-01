@@ -3001,6 +3001,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No FAQ items yet'**
   String get noFaqItems;
+
+  /// No description provided for @copyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyLabel;
+
+  /// No description provided for @copiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get copiedToClipboard;
+
+  /// No description provided for @agreementPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the '**
+  String get agreementPrefix;
+
+  /// No description provided for @agreementConnector.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get agreementConnector;
+
+  /// No description provided for @agreementSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'.'**
+  String get agreementSuffix;
+
+  /// No description provided for @agreeToTermsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please agree to the Privacy Policy and Terms of Service to continue'**
+  String get agreeToTermsRequired;
+
+  /// No description provided for @policyUpdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Our Policies Have Been Updated'**
+  String get policyUpdatedTitle;
+
+  /// No description provided for @policyUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve updated our Privacy Policy and/or Terms of Service. Please review them and accept to continue using the app.'**
+  String get policyUpdatedMessage;
+
+  /// No description provided for @reviewPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Privacy Policy'**
+  String get reviewPrivacyPolicy;
+
+  /// No description provided for @reviewTermsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Terms of Service'**
+  String get reviewTermsOfService;
+
+  /// No description provided for @iHaveReviewedAgreement.
+  ///
+  /// In en, this message translates to:
+  /// **'I have read and accept the updated Privacy Policy and Terms of Service'**
+  String get iHaveReviewedAgreement;
+
+  /// No description provided for @acceptAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept & Continue'**
+  String get acceptAndContinue;
 }
 
 class _AppLocalizationsDelegate
