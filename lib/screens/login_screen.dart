@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
+import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 
@@ -335,7 +336,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Align(
                                       alignment: Alignment.centerRight,
                                       child: TextButton(
-                                        onPressed: _isLoading ? null : () {},
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) => const ForgotPasswordScreen(),
+                                                  ),
+                                                );
+                                              },
                                         style: TextButton.styleFrom(
                                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                                           minimumSize: Size.zero,

@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import 'login_screen.dart';
+import 'otp_verification_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 
@@ -21,7 +22,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
@@ -43,49 +43,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final l10n = AppLocalizations.of(context)!;
+
     if (!_agreedToTerms) {
-      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.agreeToTermsRequired)),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
 
-    final error = await AuthService.register(
-      name: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (error != null) {
-      final colors = AppColors.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: colors.due,
-          elevation: 8,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.white, size: 26),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  error,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
+    // ✅ সরাসরি অ্যাকাউন্ট তৈরি না করে আগে ফোন নাম্বার OTP দিয়ে ভেরিফাই করা হয়
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OtpVerificationScreen(
+          phone: phone,
+          verifyButtonLabel: l10n.verifyAndCreateAccount,
+          onVerify: (verificationId, smsCode) => AuthService.verifyOtpAndRegister(
+            name: name,
+            phone: phone,
+            password: password,
+            verificationId: verificationId,
+            smsCode: smsCode,
+          ),
+          onAutoVerify: (credential) => AuthService.registerWithAutoVerifiedCredential(
+            name: name,
+            phone: phone,
+            password: password,
+            credential: credential,
           ),
         ),
-      );
-    }
+      ),
+    );
   }
 
   InputDecoration _fieldDecoration({
@@ -421,25 +413,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          onPressed: _isLoading ? null : _register,
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  l10n.getStarted,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 0.7,
-                                  ),
-                                ),
+                          onPressed: _register,
+                          child: Text(
+                            l10n.getStarted,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.7,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 28),
@@ -453,15 +436,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: TextStyle(color: colors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
                           ),
                           GestureDetector(
-                            onTap: _isLoading
-                                ? null
-                                : () {
-                                    Navigator.of(context).pushReplacement(
-                                      MaterialPageRoute(
-                                        builder: (_) => const LoginScreen(),
-                                      ),
-                                    );
-                                  },
+                            onTap: () {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                              );
+                            },
                             child: Text(
                               l10n.loginNow,
                               style: TextStyle(

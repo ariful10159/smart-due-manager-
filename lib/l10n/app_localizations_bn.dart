@@ -1307,6 +1307,68 @@ class AppLocalizationsBn extends AppLocalizations {
   String get loginNow => 'Login করুন';
 
   @override
+  String get otpVerificationTitle => 'ফোন নাম্বার ভেরিফাই করুন';
+
+  @override
+  String otpSentTo(String phone) {
+    return 'আমরা $phone নাম্বারে ৬ ডিজিটের কোড পাঠিয়েছি';
+  }
+
+  @override
+  String get otpCodeLabel => 'OTP কোড';
+
+  @override
+  String get otpCodeHint => '৬ ডিজিটের কোড';
+
+  @override
+  String get enterOtpCode => 'OTP কোড দিন';
+
+  @override
+  String get enterValid6DigitOtp => 'সঠিক ৬ ডিজিটের কোড দিন';
+
+  @override
+  String get verifyAndCreateAccount => 'ভেরিফাই করে অ্যাকাউন্ট তৈরি করুন';
+
+  @override
+  String get sendingOtp => 'OTP পাঠানো হচ্ছে...';
+
+  @override
+  String get autoVerifyingOtp => 'অটো-ভেরিফাই হচ্ছে...';
+
+  @override
+  String get resendCode => 'আবার কোড পাঠান';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return '$seconds সেকেন্ড পর আবার পাঠাতে পারবেন';
+  }
+
+  @override
+  String get didntReceiveCode => 'কোড পাননি? ';
+
+  @override
+  String get changePhoneNumber => 'ফোন নাম্বার পরিবর্তন করুন';
+
+  @override
+  String get otpResentSuccess => 'নতুন OTP পাঠানো হয়েছে';
+
+  @override
+  String get forgotPasswordTitle => 'পাসওয়ার্ড রিসেট করুন';
+
+  @override
+  String get resetPasswordDesc =>
+      'নতুন পাসওয়ার্ড সেট করতে ফোন নাম্বার ভেরিফাই করুন';
+
+  @override
+  String get newPasswordLabel => 'নতুন পাসওয়ার্ড';
+
+  @override
+  String get confirmNewPasswordLabel => 'নতুন পাসওয়ার্ড আবার দিন';
+
+  @override
+  String get verifyAndResetPassword => 'ভেরিফাই করে পাসওয়ার্ড রিসেট করুন';
+
+  @override
   String get unlockToVerify => 'অ্যাপ আনলক করতে যাচাই করুন';
 
   @override

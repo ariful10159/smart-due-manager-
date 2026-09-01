@@ -568,6 +568,33 @@
   "alreadyHaveAccount": "Already have an account? ",
   "loginNow": "Login",
 
+  "otpVerificationTitle": "Verify Phone Number",
+  "otpSentTo": "We sent a 6-digit code to {phone}",
+  "@otpSentTo": {
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "otpCodeLabel": "OTP Code",
+  "otpCodeHint": "6-digit code",
+  "enterOtpCode": "Enter the OTP code",
+  "enterValid6DigitOtp": "Enter a valid 6-digit code",
+  "verifyAndCreateAccount": "Verify & Create Account",
+  "sendingOtp": "Sending OTP...",
+  "autoVerifyingOtp": "Auto-verifying...",
+  "resendCode": "Resend Code",
+  "resendCodeIn": "Resend code in {seconds}s",
+  "@resendCodeIn": {
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "didntReceiveCode": "Didn't receive the code? ",
+  "changePhoneNumber": "Change phone number",
+  "otpResentSuccess": "New OTP sent",
+
+  "forgotPasswordTitle": "Reset Password",
+  "resetPasswordDesc": "Verify your phone number to set a new password",
+  "newPasswordLabel": "New Password",
+  "confirmNewPasswordLabel": "Confirm New Password",
+  "verifyAndResetPassword": "Verify & Reset Password",
+
   "unlockToVerify": "Verify to unlock the app",
   "tooManyFailedPinAttempts": "Too many wrong PIN attempts, please try again later",
   "wrongPinTryAgain": "Wrong PIN, please try again",

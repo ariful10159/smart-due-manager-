@@ -2462,6 +2462,120 @@ abstract class AppLocalizations {
   /// **'Login'**
   String get loginNow;
 
+  /// No description provided for @otpVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Phone Number'**
+  String get otpVerificationTitle;
+
+  /// No description provided for @otpSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to {phone}'**
+  String otpSentTo(String phone);
+
+  /// No description provided for @otpCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP Code'**
+  String get otpCodeLabel;
+
+  /// No description provided for @otpCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get otpCodeHint;
+
+  /// No description provided for @enterOtpCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the OTP code'**
+  String get enterOtpCode;
+
+  /// No description provided for @enterValid6DigitOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 6-digit code'**
+  String get enterValid6DigitOtp;
+
+  /// No description provided for @verifyAndCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Create Account'**
+  String get verifyAndCreateAccount;
+
+  /// No description provided for @sendingOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending OTP...'**
+  String get sendingOtp;
+
+  /// No description provided for @autoVerifyingOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-verifying...'**
+  String get autoVerifyingOtp;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend Code'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code in {seconds}s'**
+  String resendCodeIn(int seconds);
+
+  /// No description provided for @didntReceiveCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t receive the code? '**
+  String get didntReceiveCode;
+
+  /// No description provided for @changePhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Change phone number'**
+  String get changePhoneNumber;
+
+  /// No description provided for @otpResentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'New OTP sent'**
+  String get otpResentSuccess;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @resetPasswordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your phone number to set a new password'**
+  String get resetPasswordDesc;
+
+  /// No description provided for @newPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get newPasswordLabel;
+
+  /// No description provided for @confirmNewPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm New Password'**
+  String get confirmNewPasswordLabel;
+
+  /// No description provided for @verifyAndResetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Reset Password'**
+  String get verifyAndResetPassword;
+
   /// No description provided for @unlockToVerify.
   ///
   /// In en, this message translates to:
