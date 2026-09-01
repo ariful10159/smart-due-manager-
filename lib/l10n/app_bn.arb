@@ -496,5 +496,20 @@
   "noContactInfo": "এখনো কোনো যোগাযোগের তথ্য যোগ করা হয়নি",
 
   "faqTitle": "সচরাচর জিজ্ঞাসা",
-  "noFaqItems": "এখনো কোনো প্রশ্ন যোগ করা হয়নি"
+  "noFaqItems": "এখনো কোনো প্রশ্ন যোগ করা হয়নি",
+
+  "copyLabel": "কপি করুন",
+  "copiedToClipboard": "ক্লিপবোর্ডে কপি হয়েছে",
+
+  "agreementPrefix": "আমি ",
+  "agreementConnector": " ও ",
+  "agreementSuffix": " এর সাথে সম্মত",
+  "agreeToTermsRequired": "চালিয়ে যেতে Privacy Policy ও Terms of Service এর সাথে সম্মত হন",
+
+  "policyUpdatedTitle": "আমাদের নীতিমালা আপডেট হয়েছে",
+  "policyUpdatedMessage": "আমরা আমাদের Privacy Policy এবং/অথবা Terms of Service আপডেট করেছি। অ্যাপ ব্যবহার চালিয়ে যেতে দয়া করে পড়ে সম্মতি দিন।",
+  "reviewPrivacyPolicy": "Privacy Policy দেখুন",
+  "reviewTermsOfService": "Terms of Service দেখুন",
+  "iHaveReviewedAgreement": "আমি আপডেট হওয়া Privacy Policy ও Terms of Service পড়েছি এবং সম্মত",
+  "acceptAndContinue": "সম্মত হয়ে চালিয়ে যান"
 }

@@ -12,6 +12,7 @@ import AdminsPage from './pages/AdminsPage'
 import AuditLogPage from './pages/AuditLogPage'
 import AppConfigPage from './pages/AppConfigPage'
 import FaqManagementPage from './pages/FaqManagementPage'
+import PolicyAcceptancePage from './pages/PolicyAcceptancePage'
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/announcement" element={<AnnouncementPage />} />
           <Route path="/app-config" element={<AppConfigPage />} />
           <Route path="/app-config/faq" element={<FaqManagementPage />} />
+          <Route path="/app-config/policy-acceptance" element={<PolicyAcceptancePage />} />
           <Route path="/admins" element={<AdminsPage />} />
           <Route path="/audit-log" element={<AuditLogPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

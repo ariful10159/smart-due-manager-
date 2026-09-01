@@ -1,4 +1,4 @@
-import { auth, db, storage } from '../firebase'
+import { auth, db, storage, functions } from '../firebase'
 import {
   collection,
   doc,
@@ -16,6 +16,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { ref, getDownloadURL } from 'firebase/storage'
+import { httpsCallable } from 'firebase/functions'
 
 const BATCH_LIMIT = 450
 
@@ -106,6 +107,21 @@ export async function deleteUserDataCascade(uid) {
 
   await deleteDoc(doc(db, 'users', uid))
   await logAction('delete_user_data', { uid, customerCount: customersSnap.size, notebookCount: notebooksSnap.size })
+
+  // Firestore data is gone at this point — the Auth account (phone number + password) is
+  // the last piece, and can only be deleted via a Cloud Function (Admin SDK), never from the
+  // browser directly. If this fails (e.g. functions not deployed yet), surface it clearly —
+  // the caller's data is already gone, but their login still works, which needs following up.
+  try {
+    await httpsCallable(functions, 'deleteUserAuth')({ uid })
+  } catch (e) {
+    await logAction('delete_user_auth_failed', { uid, error: e.message || String(e) })
+    throw new Error(
+      "User's data was deleted, but removing their login account failed: " +
+        (e.message || 'unknown error') +
+        '. Their phone number/password may still work — check the Cloud Function is deployed.',
+    )
+  }
 }
 
 export async function getBusinessLogoUrl(uid) {

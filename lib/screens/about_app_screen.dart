@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/legal_content.dart';
 import '../services/app_config_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_settings_scope.dart';
 
 class AboutAppScreen extends StatelessWidget {
   const AboutAppScreen({super.key});
@@ -13,6 +14,7 @@ class AboutAppScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final languageCode = AppSettingsScope.settingsOf(context).languageCode;
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -31,7 +33,12 @@ class AboutAppScreen extends StatelessWidget {
         builder: (context, snapshot) {
           final config = (snapshot.data?[0] as Map<String, dynamic>?) ?? {};
           final packageInfo = snapshot.data?[1] as PackageInfo?;
-          final aboutText = (config['aboutApp'] as String? ?? '').trim();
+          final suffix = languageCode == 'en' ? 'En' : 'Bn';
+          final otherSuffix = suffix == 'En' ? 'Bn' : 'En';
+          var aboutText = (config['aboutApp$suffix'] as String? ?? '').trim();
+          if (aboutText.isEmpty) {
+            aboutText = (config['aboutApp$otherSuffix'] as String? ?? '').trim();
+          }
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),

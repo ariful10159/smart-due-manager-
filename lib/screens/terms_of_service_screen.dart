@@ -24,7 +24,7 @@ class TermsOfServiceScreen extends StatelessWidget {
         final override = (languageCode == 'en' ? config['termsEn'] : config['termsBn']) as String?;
 
         final sections = (override?.trim().isNotEmpty ?? false)
-            ? [LegalSection(title, override!.trim())]
+            ? LegalContent.parseSections(override!, title)
             : LegalContent.termsOfService(languageCode);
 
         return LegalDocumentView(title: title, sections: sections, icon: Icons.gavel_rounded);

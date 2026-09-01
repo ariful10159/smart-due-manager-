@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-// ✅ appConfig/main.maintenanceEnabled == true হলে AppConfigGate এই স্ক্রিন দেখায়।
-// maintenanceUntil শুধু ETA হিসেবে দেখানো হয় — সময় পার হয়ে গেলেও admin ম্যানুয়ালি
-// toggle off না করা পর্যন্ত এই স্ক্রিন সরে না।
+// ✅ appConfig/main.maintenanceEnabled == true থাকলে এবং maintenanceUntil (সেট
+// থাকলে) এখনো পার না হলে AppConfigGate এই স্ক্রিন দেখায়। ETA পার হয়ে গেলে
+// AppConfigGate নিজে থেকেই আনব্লক করে দেয় — admin এর ম্যানুয়ালি toggle off করা
+// লাগে না।
 class MaintenanceScreen extends StatelessWidget {
   const MaintenanceScreen({super.key, this.message, this.until});
 

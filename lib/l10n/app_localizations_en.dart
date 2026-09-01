@@ -1559,4 +1559,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noFaqItems => 'No FAQ items yet';
+
+  @override
+  String get copyLabel => 'Copy';
+
+  @override
+  String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get agreementPrefix => 'I agree to the ';
+
+  @override
+  String get agreementConnector => ' and ';
+
+  @override
+  String get agreementSuffix => '.';
+
+  @override
+  String get agreeToTermsRequired =>
+      'Please agree to the Privacy Policy and Terms of Service to continue';
+
+  @override
+  String get policyUpdatedTitle => 'Our Policies Have Been Updated';
+
+  @override
+  String get policyUpdatedMessage =>
+      'We\'ve updated our Privacy Policy and/or Terms of Service. Please review them and accept to continue using the app.';
+
+  @override
+  String get reviewPrivacyPolicy => 'Review Privacy Policy';
+
+  @override
+  String get reviewTermsOfService => 'Review Terms of Service';
+
+  @override
+  String get iHaveReviewedAgreement =>
+      'I have read and accept the updated Privacy Policy and Terms of Service';
+
+  @override
+  String get acceptAndContinue => 'Accept & Continue';
 }
