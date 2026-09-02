@@ -42,8 +42,11 @@ async function logAction(action, details = {}) {
       adminEmail: auth.currentUser?.email || null,
       at: serverTimestamp(),
     })
-  } catch {
-    // Audit logging must never block the actual admin action.
+  } catch (err) {
+    // Audit logging must never block the actual admin action — but a swallowed failure here
+    // means an action happened with zero trace of it, so at least surface it loudly to whoever
+    // has devtools open (and to any error-tracking tool that hooks console.error).
+    console.error(`[audit log] failed to record "${action}" — the admin action itself still succeeded`, details, err)
   }
 }
 
@@ -88,39 +91,17 @@ export async function resetUserPin(uid) {
   await logAction('reset_pin', { uid })
 }
 
+// Runs entirely server-side (Cloud Function, Admin SDK) so it keeps going — and finishes —
+// even if this browser tab is closed mid-delete. It's also safe to call again on a user whose
+// deletion previously got interrupted: already-deleted documents just won't be found the
+// second time, so a retry picks up wherever the first attempt left off.
 export async function deleteUserDataCascade(uid) {
-  const customersSnap = await getDocs(query(collection(db, 'customers'), where('ownerId', '==', uid)))
-  for (const customerDoc of customersSnap.docs) {
-    for (const sub of ['payments', 'reminders', 'smsLogs']) {
-      const subSnap = await getDocs(collection(db, 'customers', customerDoc.id, sub))
-      await deleteQuerySnapshotInBatches(subSnap)
-    }
-  }
-  await deleteQuerySnapshotInBatches(customersSnap)
-
-  const notebooksSnap = await getDocs(query(collection(db, 'notebooks'), where('ownerId', '==', uid)))
-  for (const notebookDoc of notebooksSnap.docs) {
-    const pagesSnap = await getDocs(collection(db, 'notebooks', notebookDoc.id, 'pages'))
-    await deleteQuerySnapshotInBatches(pagesSnap)
-  }
-  await deleteQuerySnapshotInBatches(notebooksSnap)
-
-  await deleteDoc(doc(db, 'users', uid))
-  await logAction('delete_user_data', { uid, customerCount: customersSnap.size, notebookCount: notebooksSnap.size })
-
-  // Firestore data is gone at this point — the Auth account (phone number + password) is
-  // the last piece, and can only be deleted via a Cloud Function (Admin SDK), never from the
-  // browser directly. If this fails (e.g. functions not deployed yet), surface it clearly —
-  // the caller's data is already gone, but their login still works, which needs following up.
   try {
-    await httpsCallable(functions, 'deleteUserAuth')({ uid })
+    const result = await httpsCallable(functions, 'deleteUserData')({ uid })
+    return result.data
   } catch (e) {
-    await logAction('delete_user_auth_failed', { uid, error: e.message || String(e) })
-    throw new Error(
-      "User's data was deleted, but removing their login account failed: " +
-        (e.message || 'unknown error') +
-        '. Their phone number/password may still work — check the Cloud Function is deployed.',
-    )
+    await logAction('delete_user_data_failed', { uid, error: e.message || String(e) })
+    throw new Error(e.message || 'Failed to delete this user.')
   }
 }
 
@@ -327,6 +308,21 @@ export async function compressImageToDataUrl(file, maxBytes = MAX_ANNOUNCEMENT_I
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
+}
+
+// ============================================
+// Problem reports (user-submitted, from Report a Problem in the app)
+// ============================================
+
+export async function fetchProblemReports() {
+  const q = query(collection(db, 'problemReports'), orderBy('createdAt', 'desc'), limit(200))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+export async function updateProblemReportStatus(id, status) {
+  await updateDoc(doc(db, 'problemReports', id), { status, updatedAt: serverTimestamp() })
+  await logAction('update_problem_report_status', { id, status })
 }
 
 // ============================================

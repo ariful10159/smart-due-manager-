@@ -79,6 +79,19 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ✅ PROBLEM REPORTS — ইউজার শুধু নিজের নামে (spoof করা যাবে না) রিপোর্ট
+    // create করতে পারবে, নিজেরটা পড়তে পারবে; সব রিপোর্ট পড়া/status আপডেট
+    // করা শুধু admin এর জন্য — যাতে master admin panel এ কোন ইউজার কোন
+    // সমস্যা রিপোর্ট করেছে তা দেখা যায়।
+    // ============================================
+    match /problemReports/{reportId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null &&
+                   (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // ============================================
     // ✅ USERS COLLECTION — নিজের profile অথবা admin
     // ============================================
     match /users/{userId} {

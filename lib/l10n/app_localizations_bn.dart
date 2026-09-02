@@ -102,19 +102,45 @@ class AppLocalizationsBn extends AppLocalizations {
   String get drawerHelp => 'হেল্প ও সাপোর্ট';
 
   @override
-  String get drawerFeedback => 'ফিডব্যাক পাঠান';
+  String get drawerReportProblem => 'সমস্যা রিপোর্ট করুন';
 
   @override
   String get drawerRate => 'অ্যাপ রেট করুন';
+
+  @override
+  String get reportProblemTitle => 'সমস্যা রিপোর্ট করুন';
+
+  @override
+  String get reportProblemSubtitle =>
+      'অ্যাপে কোনো সমস্যা হচ্ছে? নিচে বিস্তারিত লিখুন — আমাদের টিম দেখে ব্যবস্থা নেবে।';
+
+  @override
+  String get reportProblemCategory => 'ক্যাটাগরি';
+
+  @override
+  String get reportProblemDescription => 'সমস্যার বিবরণ';
+
+  @override
+  String get reportProblemDescriptionHint => 'কী হয়েছে? আপনি কী আশা করেছিলেন?';
+
+  @override
+  String get reportProblemDescriptionError =>
+      'অন্তত ১০ ক্যারেক্টার লিখে সমস্যাটি বর্ণনা করুন';
+
+  @override
+  String get reportProblemSubmit => 'রিপোর্ট পাঠান';
+
+  @override
+  String get reportProblemSubmitted => 'ধন্যবাদ! আপনার রিপোর্ট পাঠানো হয়েছে।';
+
+  @override
+  String get reportProblemFailed => 'রিপোর্ট পাঠানো যায়নি, আবার চেষ্টা করুন';
 
   @override
   String get darkMode => 'ডার্ক মোড';
 
   @override
   String get lightMode => 'লাইট মোড';
-
-  @override
-  String get emailAppNotFound => 'ইমেইল অ্যাপ পাওয়া যায়নি';
 
   @override
   String get playStoreNotFound => 'Play Store খোলা যায়নি';

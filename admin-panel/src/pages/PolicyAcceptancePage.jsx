@@ -85,7 +85,7 @@ export default function PolicyAcceptancePage() {
       { label: 'Terms version accepted', get: (u) => u.acceptedTermsVersion ?? '' },
       { label: 'Terms accepted at', get: (u) => (u.acceptedTermsAt?.toDate ? u.acceptedTermsAt.toDate().toISOString() : '') },
     ])
-    downloadCsv(csv, 'policy-acceptance.csv')
+    downloadCsv('policy-acceptance.csv', csv)
   }
 
   if (loading) {

@@ -102,19 +102,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get drawerHelp => 'Help & Support';
 
   @override
-  String get drawerFeedback => 'Send Feedback';
+  String get drawerReportProblem => 'Report a Problem';
 
   @override
   String get drawerRate => 'Rate the App';
+
+  @override
+  String get reportProblemTitle => 'Report a Problem';
+
+  @override
+  String get reportProblemSubtitle =>
+      'Facing an issue in the app? Let us know the details below — our team will look into it.';
+
+  @override
+  String get reportProblemCategory => 'Category';
+
+  @override
+  String get reportProblemDescription => 'Describe the problem';
+
+  @override
+  String get reportProblemDescriptionHint =>
+      'What happened? What did you expect instead?';
+
+  @override
+  String get reportProblemDescriptionError =>
+      'Please describe the problem in at least 10 characters';
+
+  @override
+  String get reportProblemSubmit => 'Submit Report';
+
+  @override
+  String get reportProblemSubmitted =>
+      'Thanks! Your report has been submitted.';
+
+  @override
+  String get reportProblemFailed =>
+      'Could not submit the report, please try again';
 
   @override
   String get darkMode => 'Dark Mode';
 
   @override
   String get lightMode => 'Light Mode';
-
-  @override
-  String get emailAppNotFound => 'No email app found';
 
   @override
   String get playStoreNotFound => 'Could not open Play Store';
