@@ -39,7 +39,7 @@ class AppSettings {
   Color get accentColor => Color(accentColorValue);
 
   factory AppSettings.defaults() => const AppSettings(
-        accentColorValue: 0xFF6366F1,
+        accentColorValue: 0xFFEF4444, // Red — matches app's default theme
         isDarkMode: true,
         currencySymbol: '৳',
         businessName: 'Smart Due',
@@ -53,7 +53,7 @@ class AppSettings {
         fontScale: 1.0,
         appLockEnabled: false,
         appLockPinHash: null,
-        languageCode: 'bn',
+        languageCode: 'en',
       );
 
   factory AppSettings.fromMap(Map<String, dynamic> map) {

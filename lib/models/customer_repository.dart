@@ -178,7 +178,13 @@ class CustomerRepository {
     required String customerId,
     required Payment payment,
   }) async {
-    await _paymentsCol(customerId).doc(payment.id).set(payment.toMap());
+    // ✅ 'ownerId' এখানে লেখা হয় যাতে পরে collectionGroup query দিয়ে (সব
+    // কাস্টমারের payments subcollection একসাথে) সরাসরি নিজের পেমেন্ট ফিল্টার
+    // করা যায় — parent customer doc এর জন্য আলাদা get() লাগে না
+    await _paymentsCol(customerId).doc(payment.id).set({
+      ...payment.toMap(),
+      'ownerId': _currentUserId,
+    });
     unawaited(ActivityLogService.log('add_payment', details: {
       'customerId': customerId,
       'amount': payment.amount,
@@ -288,10 +294,14 @@ class CustomerRepository {
     });
   }
 
-  // ✅ নির্দিষ্ট তারিখের পর হওয়া payment-গুলো — পুরো history না টেনে সরাসরি
-  // Firestore-এ ফিল্টার করা হয় (home screen এর today/week collection স্ট্যাটের জন্য)
-  Future<List<Payment>> fetchPaymentsSince(String customerId, DateTime since) async {
-    final snapshot = await _paymentsCol(customerId)
+  // ✅ প্রতিটা কাস্টমারের payments subcollection আলাদা আলাদা query না করে
+  // collectionGroup দিয়ে বর্তমান ইউজারের ALL payments একটা মাত্র query-তে আনা
+  // হয় (home screen এর today/week collection স্ট্যাটের জন্য) — 193 আলাদা query
+  // এর বদলে একটাই, আর প্রতিটার parent-customer ownership-চেক get() ও লাগে না
+  Future<List<Payment>> fetchOwnPaymentsSince(DateTime since) async {
+    final snapshot = await _firestore
+        .collectionGroup('payments')
+        .where('ownerId', isEqualTo: _currentUserId)
         .where('type', isEqualTo: PaymentType.payment.name)
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
         .get();

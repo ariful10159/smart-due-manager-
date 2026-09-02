@@ -27,7 +27,10 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
+    // ✅ ফোন নম্বর দিয়ে লগইন করলে Firebase auth এ ইমেইল হিসেবে
+    // "<phone>@smartdue.local" সেভ থাকে — এখানে শুধু ফোন নম্বর অংশটুকু দেখানো হয়
     final email = AuthService.currentUser?.email ?? '';
+    final phone = email.split('@').first;
 
     return Drawer(
       backgroundColor: colors.scaffoldBg,
@@ -66,9 +69,9 @@ class AppDrawer extends StatelessWidget {
                             color: colors.textPrimary,
                           ),
                         ),
-                        if (email.isNotEmpty)
+                        if (phone.isNotEmpty)
                           Text(
-                            email,
+                            phone,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
                           ),

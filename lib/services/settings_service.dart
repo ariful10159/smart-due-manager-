@@ -30,6 +30,17 @@ class SettingsService {
     }
   }
 
+  // ✅ Logout করলে কল করা হয় — যাতে একই ডিভাইসে অন্য কেউ লগইন করলে আগের
+  // ইউজারের business info/settings ভুলবশত দেখা না যায়
+  static Future<void> clearLocalCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_prefsKey);
+    } catch (_) {
+      // non-critical
+    }
+  }
+
   // ✅ Firestore থেকে ফ্রেশ সেটিংস আনা হয় (ব্যাকগ্রাউন্ডে)
   static Future<AppSettings> loadFromFirestore() async {
     final uid = AuthService.currentUser?.uid;

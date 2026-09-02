@@ -209,6 +209,28 @@ class AppLocalizationsBn extends AppLocalizations {
   String get saveTemplate => 'টেমপ্লেট সেভ করুন';
 
   @override
+  String get placeholderHelpLabel =>
+      'প্লেসহোল্ডারগুলোর মানে কী? দেখতে ট্যাপ করুন';
+
+  @override
+  String get placeholderGuideTitle => 'প্লেসহোল্ডার গাইড';
+
+  @override
+  String get placeholderNameDesc => 'কাস্টমারের নাম';
+
+  @override
+  String get placeholderAmountDesc => 'কাস্টমারের বকেয়া পরিমাণ';
+
+  @override
+  String get placeholderDueDateDesc => 'পরিশোধের শেষ তারিখ';
+
+  @override
+  String get placeholderBusinessNameDesc => 'আপনার ব্যবসা/দোকানের নাম';
+
+  @override
+  String get placeholderPhoneDesc => 'কাস্টমারের ফোন নম্বর';
+
+  @override
   String get groupSecurity => 'নিরাপত্তা ও ডেটা';
 
   @override

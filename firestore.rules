@@ -116,16 +116,33 @@ service cloud.firestore {
       // 🛠️ পেমেন্ট ডকুমেন্টের 'date' ফিল্ড আপডেট করা লক করা হয়েছে!
       // ============================================
       match /payments/{paymentId} {
-        allow read, create: if request.auth != null &&
-                               (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
+        // ✅ পেমেন্ট ডকুমেন্টে নিজেই 'ownerId' থাকলে (নতুন লেখা payment গুলোতে)
+        // সরাসরি সেটা চেক করা হয় — parent customer doc এর জন্য আলাদা get()
+        // লাগে না। পুরনো payment (যেগুলোতে এখনো 'ownerId' নেই) এর জন্য আগের
+        // মতো parent-lookup fallback রাখা হয়েছে, যাতে কিছু ভেঙে না যায়।
+        allow read: if request.auth != null &&
+                      (resource.data.ownerId == request.auth.uid ||
+                       (!('ownerId' in resource.data) &&
+                        get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid) ||
+                       isAdmin());
+
+        allow create: if request.auth != null &&
+                       request.resource.data.ownerId == request.auth.uid &&
+                       (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
 
         // পেমেন্ট হয়ে যাওয়ার পর ট্রানজেকশন ডেট কেউ এডিট বা আপডেট করতে পারবে না (admin ছাড়া)
         allow update: if request.auth != null &&
-                      (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin()) &&
+                      (resource.data.ownerId == request.auth.uid ||
+                       (!('ownerId' in resource.data) &&
+                        get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid) ||
+                       isAdmin()) &&
                       (isAdmin() || request.resource.data.date == resource.data.date);
 
         allow delete: if request.auth != null &&
-                      (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
+                      (resource.data.ownerId == request.auth.uid ||
+                       (!('ownerId' in resource.data) &&
+                        get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid) ||
+                       isAdmin());
       }
 
       // ============================================
@@ -143,6 +160,21 @@ service cloud.firestore {
         allow read, write: if request.auth != null &&
                             (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
       }
+    }
+
+    // ============================================
+    // ✅ PAYMENTS COLLECTION GROUP QUERY — home screen এর today/week collection
+    // স্ট্যাট প্রতিটা কাস্টমারের জন্য আলাদা query না করে collectionGroup('payments')
+    // দিয়ে একটা মাত্র query তে চালায়। Firestore collection-group query চালাতে
+    // হলে এই {path=**} wildcard প্যাটার্নেই আলাদা rule ঘোষণা করতে হয় (উপরের
+    // customers/{customerId}/payments rule টা normal subcollection path access
+    // এর জন্য থেকেই যায়, এটা শুধু collection-group scope এর জন্য অতিরিক্ত)।
+    // শুধু document এ থাকা 'ownerId' চেক করা হয় — parent lookup লাগে না, তাই
+    // পুরনো (migrate না হওয়া) payment গুলো এই query তে দেখা যাবে না।
+    // ============================================
+    match /{path=**}/payments/{paymentId} {
+      allow read: if request.auth != null &&
+                   (resource.data.ownerId == request.auth.uid || isAdmin());
     }
 
     // ============================================

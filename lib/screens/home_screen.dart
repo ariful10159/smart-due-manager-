@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
-import 'report_screen.dart';
 import 'settings_screen.dart';
-import 'login_screen.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
-import '../services/auth_service.dart';
+import '../models/payment.dart';
 import '../theme/app_colors.dart';
 import 'add_customer_screen.dart';
 import 'customer_detail_screen.dart';
@@ -18,6 +16,7 @@ import 'reminder_screen.dart';
 import 'notifications_screen.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/app_settings_scope.dart';
 import '../widgets/announcement_banner.dart';
 import '../widgets/announcement_image_popup.dart';
 
@@ -122,32 +121,34 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loadingCollection = true);
 
     try {
-      final customers = (await _repo.fetchCustomersOnce())
-          .where((c) => !c.isHidden)
-          .toList();
-
       final now = DateTime.now().toLocal();
       final todayStart = DateTime(now.year, now.month, now.day);
       final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
 
-      // ✅ প্রতিটা কাস্টমারের payment সিকোয়েন্সিয়ালি (একটার পর একটা await করে) না
-      // এনে একসাথে (parallel) আনা হয় — কাস্টমার বেশি হলে এতে অনেক দ্রুত লোড হয়।
-      // সাথে পুরো payment history না টেনে শুধু এই সপ্তাহেরটুকু Firestore থেকেই
-      // ফিল্টার করে আনা হয়, তাই ডেটা ট্রান্সফারও অনেক কম।
-      final results = await Future.wait(
-        customers.map((c) => _repo.fetchPaymentsSince(c.id, weekStart)),
-      );
+      // ✅ প্রতিটা কাস্টমারের payments subcollection আলাদা আলাদা query করার বদলে
+      // collectionGroup দিয়ে একটা মাত্র query-তে এই সপ্তাহের সব payment আনা হয়
+      // (customer লিস্টটা শুধু hidden কাস্টমার বাদ দেওয়ার জন্য লাগে) — দুটো
+      // query একে অপরের উপর নির্ভর করে না, তাই একসাথে (parallel) চালানো হয়
+      final results = await Future.wait([
+        _repo.fetchCustomersOnce(),
+        _repo.fetchOwnPaymentsSince(weekStart),
+      ]);
+      final hiddenCustomerIds = (results[0] as List<Customer>)
+          .where((c) => c.isHidden)
+          .map((c) => c.id)
+          .toSet();
+      final payments = results[1] as List<Payment>;
 
       double today = 0;
       double week = 0;
 
-      for (final payments in results) {
-        for (final payment in payments) {
-          final paymentDateLocal = payment.date.toLocal();
-          week += payment.amount;
-          if (!paymentDateLocal.isBefore(todayStart)) {
-            today += payment.amount;
-          }
+      for (final payment in payments) {
+        if (hiddenCustomerIds.contains(payment.customerId)) continue;
+
+        final paymentDateLocal = payment.date.toLocal();
+        week += payment.amount;
+        if (!paymentDateLocal.isBefore(todayStart)) {
+          today += payment.amount;
         }
       }
 
@@ -186,64 +187,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return l10n.greetingEvening;
   }
 
-  Future<void> _handleLogout() async {
-    if (!mounted) return;
-    final colors = AppColors.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: !_isLoggingOut,
-      builder: (_) => AlertDialog(
-        backgroundColor: colors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: colors.borderColor),
-        ),
-        title: Text(
-          l10n.logout,
-          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800),
-        ),
-        content: Text(
-          l10n.logoutConfirm,
-          style: TextStyle(color: colors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              l10n.logout,
-              style: TextStyle(color: colors.due, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-    if (!mounted) return;
-
-    setState(() => _isLoggingOut = true);
-
-    // ✅ প্রথমেই সরাসরি LoginScreen এ নিয়ে যাওয়া হচ্ছে, স্ট্রিম sync এর জন্য অপেক্ষা না করে।
-    // Route stack পুরোপুরি ক্লিয়ার হয়ে যায়, তাই HomeScreen আর ব্যাক বাটনে ফিরে আসবে না।
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
-
-    // ✅ Firebase sign-out ব্যাকগ্রাউন্ডে সম্পন্ন হচ্ছে
-    await AuthService.logout();
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
     final l10n = AppLocalizations.of(context)!;
+    // ✅ ইউজার settings > Business Profile এ shop/business name সেভ করলে top bar এ
+    // সেটাই দেখানো হয় — সেভ করা না থাকলে (খালি থাকলে) ডিফল্ট "Smart Due" দেখায়
+    final businessName = AppSettingsScope.of(context).settings.businessName.trim();
+    final appBarTitle = businessName.isEmpty ? 'Smart Due' : businessName;
 
     return PopScope(
       // ✅ Logout প্রসেস চলাকালীন back বাটন সম্পূর্ণ ব্লক করা হচ্ছে
@@ -253,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
         drawer: const AppDrawer(currentRoute: 'home'),
         appBar: AppBar(
           title: Text(
-            'Smart Due',
+            appBarTitle,
             style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 20,
@@ -283,29 +234,12 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             _AppBarIconButton(
-              icon: Icons.bar_chart_rounded,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ReportScreen()),
-                );
-              },
-            ),
-            _AppBarIconButton(
               icon: Icons.settings_rounded,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
-            ),
-            _AppBarIconButton(
-              icon: Icons.add_rounded,
-              onPressed: _openAddCustomer,
-            ),
-            _AppBarIconButton(
-              icon: Icons.logout_rounded,
-              iconColor: colors.due,
-              onPressed: _isLoggingOut ? () {} : _handleLogout,
             ),
             const SizedBox(width: 4),
           ],
@@ -548,12 +482,10 @@ class _AppBarIconButton extends StatelessWidget {
   const _AppBarIconButton({
     required this.icon,
     required this.onPressed,
-    this.iconColor,
   });
 
   final IconData icon;
   final VoidCallback onPressed;
-  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -571,7 +503,7 @@ class _AppBarIconButton extends StatelessWidget {
         child: IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
-          icon: Icon(icon, size: 17, color: iconColor ?? colors.textPrimary),
+          icon: Icon(icon, size: 17, color: colors.textPrimary),
           onPressed: onPressed,
           splashRadius: 18,
         ),

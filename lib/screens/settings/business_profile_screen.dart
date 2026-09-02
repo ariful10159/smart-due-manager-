@@ -77,9 +77,57 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
       logoUrl: controller.settings.businessLogoUrl,
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.businessInfoSaved)),
-    );
+    await _showSuccessDialog(AppLocalizations.of(context)!.businessInfoSaved);
+  }
+
+  // ✅ নিচের SnackBar এর বদলে স্ক্রিনের মাঝখানে একটা চেকমার্ক পপআপ দেখানো হয়,
+  // যেটা কিছুক্ষণ পর নিজে থেকেই বন্ধ হয়ে যায়
+  Future<void> _showSuccessDialog(String message) async {
+    final colors = AppColors.of(context);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          if (dialogContext.mounted) {
+            Navigator.of(dialogContext).pop();
+          }
+        });
+
+        return Dialog(
+            backgroundColor: colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_rounded, color: Colors.green, size: 36),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
   }
 
   @override

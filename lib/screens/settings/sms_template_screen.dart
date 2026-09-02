@@ -25,6 +25,121 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
     super.dispose();
   }
 
+  // ✅ SnackBar এর বদলে স্ক্রিনের মাঝখানে একটা চেকমার্ক পপআপ দেখানো হয়,
+  // যেটা কিছুক্ষণ পর নিজে থেকেই বন্ধ হয়ে যায় (business profile save এর মতোই)
+  Future<void> _showSuccessDialog(String message) async {
+    final colors = AppColors.of(context);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          if (dialogContext.mounted) {
+            Navigator.of(dialogContext).pop();
+          }
+        });
+
+        return Dialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_rounded, color: Colors.green, size: 36),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ✅ {name}, {amount} ইত্যাদি placeholder-গুলো আসলে কী বোঝায় তার সংক্ষিপ্ত
+  // গাইড — নতুন ইউজার এমনিতে দেখলে না বুঝতে পারে, তাই ট্যাপ করলে bottom sheet এ দেখানো হয়
+  Future<void> _showPlaceholderGuide(AppLocalizations l10n) async {
+    final colors = AppColors.of(context);
+    final entries = <(String, String)>[
+      ('{name}', l10n.placeholderNameDesc),
+      ('{amount}', l10n.placeholderAmountDesc),
+      ('{due_date}', l10n.placeholderDueDateDesc),
+      ('{business_name}', l10n.placeholderBusinessNameDesc),
+      ('{phone}', l10n.placeholderPhoneDesc),
+    ];
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.placeholderGuideTitle,
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: colors.textPrimary),
+                ),
+                const SizedBox(height: 16),
+                for (final entry in entries) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colors.accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          entry.$1,
+                          style: TextStyle(color: colors.accent, fontSize: 12.5, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          entry.$2,
+                          style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _insertTag(TextEditingController controller, String tag) {
     final text = controller.text;
     final selection = controller.selection;
@@ -163,20 +278,44 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
           const SizedBox(height: 10),
           _buildPlaceholderChips(colors, _thankYouTemplateController, AppSettings.thankYouPlaceholders),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => _showPlaceholderGuide(l10n),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 15, color: colors.accent),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      l10n.placeholderHelpLabel,
+                      style: TextStyle(
+                        color: colors.accent,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 controller.update(
                   settings.copyWith(
                     smsReminderTemplate: _dueTemplateController.text.trim(),
                     fullPaymentThankYouTemplate: _thankYouTemplateController.text.trim(),
                   ),
                 );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.templateSaved)),
-                );
+                await _showSuccessDialog(l10n.templateSaved);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: settings.accentColor,

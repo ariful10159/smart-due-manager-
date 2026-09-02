@@ -208,6 +208,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveTemplate => 'Save Template';
 
   @override
+  String get placeholderHelpLabel =>
+      'What do the placeholders mean? Tap to see';
+
+  @override
+  String get placeholderGuideTitle => 'Placeholder Guide';
+
+  @override
+  String get placeholderNameDesc => 'Customer\'s name';
+
+  @override
+  String get placeholderAmountDesc => 'Customer\'s due amount';
+
+  @override
+  String get placeholderDueDateDesc => 'Payment due date';
+
+  @override
+  String get placeholderBusinessNameDesc => 'Your business/shop name';
+
+  @override
+  String get placeholderPhoneDesc => 'Customer\'s phone number';
+
+  @override
   String get groupSecurity => 'Security & Data';
 
   @override

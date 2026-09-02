@@ -494,6 +494,48 @@ abstract class AppLocalizations {
   /// **'Save Template'**
   String get saveTemplate;
 
+  /// No description provided for @placeholderHelpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What do the placeholders mean? Tap to see'**
+  String get placeholderHelpLabel;
+
+  /// No description provided for @placeholderGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholder Guide'**
+  String get placeholderGuideTitle;
+
+  /// No description provided for @placeholderNameDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer\'s name'**
+  String get placeholderNameDesc;
+
+  /// No description provided for @placeholderAmountDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer\'s due amount'**
+  String get placeholderAmountDesc;
+
+  /// No description provided for @placeholderDueDateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment due date'**
+  String get placeholderDueDateDesc;
+
+  /// No description provided for @placeholderBusinessNameDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business/shop name'**
+  String get placeholderBusinessNameDesc;
+
+  /// No description provided for @placeholderPhoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer\'s phone number'**
+  String get placeholderPhoneDesc;
+
   /// No description provided for @groupSecurity.
   ///
   /// In en, this message translates to:

@@ -862,16 +862,49 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               }
             }
 
-            return AlertDialog(
+            // ✅ AlertDialog এর built-in title/content/actions ব্যবহার করলে content
+            // অংশটা Column এ একটা সাধারণ (non-flex) child হিসেবে বসে — তাই সেটা
+            // নিজের চাওয়া height এ রেন্ডার হতে চায়, আশেপাশে (title/actions/keyboard)
+            // যতটুকু জায়গা আসলে অবশিষ্ট আছে তা মেনে ছোট হয় না, ফলে overflow হয়।
+            // এখানে বদলে নিজে থেকে একটা height-bounded Dialog বানিয়ে ফর্মের
+            // scrollable অংশটা Flexible দিয়ে মোড়ানো হয়েছে — তাই এটা যতটুকু জায়গা
+            // পায় ঠিক ততটুকুতেই বসে যায় (ভেতরে দরকার হলে scroll করে), overflow
+            // structurally সম্ভবই না, কীবোর্ড থাকুক বা না থাকুক।
+            // ✅ Dialog নিজে থেকে কীবোর্ডের জন্য available height ঠিকমতো কমাবে —
+            // এই ধারণার উপর নির্ভর না করে, এখানে সরাসরি MediaQuery থেকে
+            // (screen height - keyboard height - insetPadding) হিসাব করে
+            // পুরো dialog-টাকে একটা hard ConstrainedBox দিয়ে বেঁধে দেওয়া হয়েছে।
+            // এর ভেতরে Flexible content-কে (এবং শুধু content-কেই, title/button না)
+            // ছোট করে, তাই overflow structurally আর সম্ভব না।
+            final mq = MediaQuery.of(dialogContext);
+            const verticalInset = 48.0; // insetPadding: vertical 24 * 2
+            final maxDialogHeight =
+                (mq.size.height - mq.viewInsets.bottom - verticalInset).clamp(120.0, mq.size.height);
+
+            return Dialog(
               backgroundColor: colors.surface,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
                 side: BorderSide(color: colors.borderColor),
               ),
-              title: Text(l10n.editCustomerTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
-              content: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxDialogHeight),
+                child: Padding(
+                padding: const EdgeInsets.all(20),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      l10n.editCustomerTitle,
+                      style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 19),
+                    ),
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
                     GestureDetector(
                       onTap: pickEditImage,
                       child: CircleAvatar(
@@ -978,16 +1011,21 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                     ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              actions: [
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
                 TextButton(
                   onPressed: isSavingEdit
                       ? null
                       : () => Navigator.pop(dialogContext),
                   child: Text(l10n.cancel, style: TextStyle(color: colors.textSecondary)),
                 ),
+                const SizedBox(width: 8),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.accent,
@@ -1055,7 +1093,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         )
                       : Text(l10n.save),
                 ),
+                  ],
+                ),
               ],
+            ),
+              ),
+              ),
             );
           },
         );
@@ -1181,6 +1224,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
+      // ✅ এই স্ক্রিনের নিজের কোনো text input নেই (সব এডিট modal dialog এ হয়,
+      // যেটা নিজের কীবোর্ড-অ্যাভয়ডেন্স নিজেই হ্যান্ডেল করে) — কিন্তু dialog এর
+      // ভেতরের কীবোর্ড খুললেও এই আন্ডারলাইং Scaffold ডিফল্টে resize করতে যায়,
+      // আর body এর fixed-height profile header (Expanded payment list ছাড়া
+      // বাকি অংশ) সেই কমে যাওয়া height এ আর ধরে না, ফলে overflow হয়। তাই এই
+      // স্ক্রিনকে কীবোর্ডের জন্য resize করতে বারণ করা হয়েছে।
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(widget.customer.name, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700)),
         centerTitle: true,
