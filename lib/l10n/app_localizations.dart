@@ -284,17 +284,71 @@ abstract class AppLocalizations {
   /// **'Help & Support'**
   String get drawerHelp;
 
-  /// No description provided for @drawerFeedback.
+  /// No description provided for @drawerReportProblem.
   ///
   /// In en, this message translates to:
-  /// **'Send Feedback'**
-  String get drawerFeedback;
+  /// **'Report a Problem'**
+  String get drawerReportProblem;
 
   /// No description provided for @drawerRate.
   ///
   /// In en, this message translates to:
   /// **'Rate the App'**
   String get drawerRate;
+
+  /// No description provided for @reportProblemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a Problem'**
+  String get reportProblemTitle;
+
+  /// No description provided for @reportProblemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Facing an issue in the app? Let us know the details below — our team will look into it.'**
+  String get reportProblemSubtitle;
+
+  /// No description provided for @reportProblemCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get reportProblemCategory;
+
+  /// No description provided for @reportProblemDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the problem'**
+  String get reportProblemDescription;
+
+  /// No description provided for @reportProblemDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened? What did you expect instead?'**
+  String get reportProblemDescriptionHint;
+
+  /// No description provided for @reportProblemDescriptionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the problem in at least 10 characters'**
+  String get reportProblemDescriptionError;
+
+  /// No description provided for @reportProblemSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Report'**
+  String get reportProblemSubmit;
+
+  /// No description provided for @reportProblemSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your report has been submitted.'**
+  String get reportProblemSubmitted;
+
+  /// No description provided for @reportProblemFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit the report, please try again'**
+  String get reportProblemFailed;
 
   /// No description provided for @darkMode.
   ///
@@ -307,12 +361,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Light Mode'**
   String get lightMode;
-
-  /// No description provided for @emailAppNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No email app found'**
-  String get emailAppNotFound;
 
   /// No description provided for @playStoreNotFound.
   ///

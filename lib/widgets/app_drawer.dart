@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
-import '../models/legal_content.dart';
 import '../providers/app_settings_controller.dart';
 import '../screens/archived_customers_screen.dart';
 import '../screens/help_support_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/notebook_list_screen.dart';
+import '../screens/report_problem_screen.dart';
 import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/auth_service.dart';
@@ -165,10 +165,15 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             _DrawerItem(
-              icon: Icons.feedback_outlined,
-              label: l10n.drawerFeedback,
-              selected: false,
-              onTap: () => _sendFeedback(context),
+              icon: Icons.bug_report_outlined,
+              label: l10n.drawerReportProblem,
+              selected: currentRoute == 'report_problem',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
+                );
+              },
             ),
             _DrawerItem(
               icon: Icons.star_outline_rounded,
@@ -199,25 +204,6 @@ class AppDrawer extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _sendFeedback(BuildContext context) async {
-    Navigator.pop(context);
-
-    final uri = Uri(
-      scheme: 'mailto',
-      path: LegalContent.supportEmail,
-      query: 'subject=${Uri.encodeComponent("${LegalContent.appName} - Feedback")}',
-    );
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.emailAppNotFound)),
-      );
-    }
   }
 
   Future<void> _rateApp(BuildContext context) async {

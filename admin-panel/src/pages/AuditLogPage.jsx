@@ -7,6 +7,7 @@ const ADMIN_ACTION_LABELS = {
   enable_user: 'Enabled account',
   reset_pin: 'Reset PIN',
   delete_user_data: 'Deleted all user data',
+  delete_user_data_failed: 'Failed to delete all user data',
   update_customer: 'Edited customer',
   delete_customer: 'Deleted customer',
   update_payment: 'Edited payment',
@@ -17,6 +18,7 @@ const ADMIN_ACTION_LABELS = {
   delete_announcement: 'Deleted announcement',
   add_admin: 'Granted admin access',
   remove_admin: 'Removed admin access',
+  update_problem_report_status: 'Updated problem report status',
 }
 
 const USER_ACTION_LABELS = {

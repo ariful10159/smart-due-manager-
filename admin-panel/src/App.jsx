@@ -10,6 +10,7 @@ import SearchPage from './pages/SearchPage'
 import AnnouncementPage from './pages/AnnouncementPage'
 import AdminsPage from './pages/AdminsPage'
 import AuditLogPage from './pages/AuditLogPage'
+import ProblemReportsPage from './pages/ProblemReportsPage'
 import AppConfigPage from './pages/AppConfigPage'
 import FaqManagementPage from './pages/FaqManagementPage'
 import PolicyAcceptancePage from './pages/PolicyAcceptancePage'
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/app-config/policy-acceptance" element={<PolicyAcceptancePage />} />
           <Route path="/admins" element={<AdminsPage />} />
           <Route path="/audit-log" element={<AuditLogPage />} />
+          <Route path="/problem-reports" element={<ProblemReportsPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
