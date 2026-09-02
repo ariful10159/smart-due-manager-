@@ -206,6 +206,16 @@ class AppLocalizationsBn extends AppLocalizations {
   String get addressLabel => 'ঠিকানা';
 
   @override
+  String get businessPhoneLabel => 'দোকানের ফোন নাম্বার';
+
+  @override
+  String get bkashNumberLabel => 'bKash/Nagad নাম্বার';
+
+  @override
+  String get bkashNumberDesc =>
+      'কাস্টমার এখানে দেখে বুঝবে কোন নাম্বারে টাকা পাঠাতে হবে';
+
+  @override
   String get smsTemplate => 'SMS টেমপ্লেট';
 
   @override
@@ -227,6 +237,17 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get thankYouTemplateHint => 'ধন্যবাদ জানানোর SMS টেমপ্লেট লিখুন...';
+
+  @override
+  String get partialPaymentLabel => 'আংশিক পেমেন্ট ধন্যবাদ';
+
+  @override
+  String get partialPaymentDesc =>
+      'কাস্টমার বকেয়ার কিছু অংশ পরিশোধ করলে এবং কিছু বকেয়া থেকে গেলে এই টেমপ্লেট ব্যবহার হবে';
+
+  @override
+  String get partialPaymentTemplateHint =>
+      'আংশিক পেমেন্টের SMS টেমপ্লেট লিখুন...';
 
   @override
   String get templateSaved => 'টেমপ্লেট সেভ হয়েছে';
@@ -257,7 +278,42 @@ class AppLocalizationsBn extends AppLocalizations {
   String get placeholderPhoneDesc => 'কাস্টমারের ফোন নম্বর';
 
   @override
+  String get placeholderPaidAmountDesc => 'এইমাত্র যে টাকা পরিশোধ হলো';
+
+  @override
+  String get placeholderRemainingDueDesc =>
+      'এই পেমেন্টের পর যে বকেয়া বাকি রইল';
+
+  @override
+  String get placeholderBusinessPhoneDesc => 'আপনার দোকানের ফোন নাম্বার';
+
+  @override
+  String get placeholderBkashNumberDesc =>
+      'টাকা পাঠানোর জন্য আপনার bKash/Nagad নাম্বার';
+
+  @override
   String get groupSecurity => 'নিরাপত্তা ও ডেটা';
+
+  @override
+  String get changePassword => 'পাসওয়ার্ড পরিবর্তন করুন';
+
+  @override
+  String get changePasswordDesc =>
+      'আপনার অ্যাকাউন্ট লগইন পাসওয়ার্ড আপডেট করুন';
+
+  @override
+  String changingPasswordForAccount(String phone) {
+    return 'যে অ্যাকাউন্টের পাসওয়ার্ড বদলাচ্ছেন: $phone';
+  }
+
+  @override
+  String get currentPasswordLabel => 'বর্তমান পাসওয়ার্ড';
+
+  @override
+  String get enterCurrentPassword => 'আপনার বর্তমান পাসওয়ার্ড লিখুন';
+
+  @override
+  String get passwordChangedSuccess => 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে';
 
   @override
   String get appLock => 'App Lock (নিরাপত্তা)';
@@ -276,6 +332,40 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get disabled => 'বন্ধ আছে';
+
+  @override
+  String get groupDangerZone => 'বিপজ্জনক অঞ্চল';
+
+  @override
+  String get deleteAccount => 'অ্যাকাউন্ট ডিলিট করুন';
+
+  @override
+  String get deleteAccountDesc =>
+      'আপনার অ্যাকাউন্ট ও সব ডেটা স্থায়ীভাবে মুছে ফেলুন';
+
+  @override
+  String get deleteAccountWarningTitle => 'এটা আর ফেরানো যাবে না';
+
+  @override
+  String get deleteAccountWarningBody =>
+      'অ্যাকাউন্ট ডিলিট করলে আপনার সব কাস্টমার, পেমেন্ট হিস্ট্রি, নোটবুক ও সেটিংস স্থায়ীভাবে মুছে যাবে। এটা আর ফিরিয়ে আনা যাবে না।';
+
+  @override
+  String deleteAccountWarningBodyWithCount(int count) {
+    return 'অ্যাকাউন্ট ডিলিট করলে আপনার $count জন কাস্টমার, তাদের সম্পূর্ণ পেমেন্ট হিস্ট্রি, নোটবুক ও সেটিংস — সব স্থায়ীভাবে মুছে যাবে। এটা আর ফিরিয়ে আনা যাবে না।';
+  }
+
+  @override
+  String get deleteAccountAcknowledge =>
+      'আমি বুঝেছি এই কাজ স্থায়ী এবং এটা আর ফেরানো যাবে না';
+
+  @override
+  String get deleteAccountFinalConfirmTitle =>
+      'অ্যাকাউন্ট স্থায়ীভাবে ডিলিট করবেন?';
+
+  @override
+  String get deleteAccountFinalConfirmBody =>
+      'এটাই বাতিল করার শেষ সুযোগ। আপনার সব ডেটা এখনই মুছে যাবে এবং আর ফিরিয়ে আনা যাবে না।';
 
   @override
   String get dataBackup => 'ডেটা ব্যাকআপ';
@@ -660,6 +750,14 @@ class AppLocalizationsBn extends AppLocalizations {
   String get reminderNoteHint => 'এই reminder নিয়ে কোনো নোট লিখুন...';
 
   @override
+  String get reminderNotificationTitle => 'পেমেন্ট রিমাইন্ডার';
+
+  @override
+  String reminderNotificationBody(String name) {
+    return '$name এর কাছ থেকে পেমেন্ট নেওয়ার সময় হয়েছে';
+  }
+
+  @override
   String get reminderUpdatedSuccess => 'Reminder Updated ✅';
 
   @override
@@ -823,6 +921,11 @@ class AppLocalizationsBn extends AppLocalizations {
   }
 
   @override
+  String partialPaymentSmsConfirm(String name, String phone) {
+    return '\'$name\' কে ($phone) পেমেন্ট-প্রাপ্তির SMS পাঠাতে চান?';
+  }
+
+  @override
   String get send => 'Send';
 
   @override
@@ -954,6 +1057,10 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get failedToLoadReport => 'Failed to load report, please try again';
+
+  @override
+  String get failedToLoadCollectionStats =>
+      'আজকের/এই সপ্তাহের কালেকশন লোড করা যায়নি, আবার চেষ্টা করুন';
 
   @override
   String get collectionReportsTitle => 'Collection Reports';
@@ -1291,6 +1398,9 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get statusReplaced => 'প্রতিস্থাপিত';
+
+  @override
+  String get statusCancelled => 'বাতিল করা হয়েছে';
 
   @override
   String recurringLabel(String label) {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/customer_repository.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_settings_scope.dart';
 
 class ArchivedCustomersScreen extends StatefulWidget {
   const ArchivedCustomersScreen({super.key});
@@ -186,6 +188,8 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -286,7 +290,7 @@ class _ArchivedCustomersScreenState extends State<ArchivedCustomersScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              l10n.totalDueColon(customer.totalDue.toStringAsFixed(2)),
+                              l10n.totalDueColon('$currencySymbol${currencyFmt.format(customer.totalDue)}'),
                               style: TextStyle(color: colors.due, fontWeight: FontWeight.w800, fontSize: 12),
                             ),
                           ),

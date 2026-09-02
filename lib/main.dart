@@ -11,6 +11,7 @@ import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/app_settings_controller.dart';
+import 'route_observer.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
@@ -73,6 +74,7 @@ class SmartDueApp extends StatelessWidget {
           return MaterialApp(
             title: 'Smart Due',
             debugShowCheckedModeBanner: false,
+            navigatorObservers: [appRouteObserver],
             theme: ThemeData(
               useMaterial3: true,
               brightness: Brightness.light,

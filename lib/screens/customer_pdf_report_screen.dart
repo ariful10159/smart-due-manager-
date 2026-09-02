@@ -109,6 +109,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     List<Customer> customers,
     String businessName,
     String ownerName,
+    String currencySymbol,
     PdfPageFormat format,
   ) async {
     final currencyFmt = NumberFormat('#,##0.00');
@@ -126,7 +127,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
           <td>${escapeHtml(c.phone.isNotEmpty ? c.phone : "-")}</td>
           <td>${escapeHtml(_resolveAddress(c))}</td>
           <td>${dateFmt.format(c.lastPaymentDate)}</td>
-          <td class="right">${currencyFmt.format(c.totalDue)}</td>
+          <td class="right">$currencySymbol${currencyFmt.format(c.totalDue)}</td>
         </tr>
       ''');
     }
@@ -224,7 +225,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     <p class="date">তারিখ: ${dateFmt.format(now)}</p>
   </div>
   <p class="summary-line">
-    মোট কাস্টমার: ${customers.length} &nbsp;|&nbsp; মোট বকেয়া: ৳${currencyFmt.format(totalDue)}
+    মোট কাস্টমার: ${customers.length} &nbsp;|&nbsp; মোট বকেয়া: $currencySymbol${currencyFmt.format(totalDue)}
   </p>
   <table>
     <thead>
@@ -243,7 +244,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
   </table>
   <div class="total-box">
     <span class="total-label">সর্বমোট বকেয়া</span>
-    <span class="total-value">৳${currencyFmt.format(totalDue)}</span>
+    <span class="total-value">$currencySymbol${currencyFmt.format(totalDue)}</span>
   </div>
 </body>
 </html>
@@ -258,7 +259,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
       final customers = _filteredSorted;
       final settings = AppSettingsScope.settingsOf(context);
       await Printing.layoutPdf(
-        onLayout: (format) => _buildPdf(customers, settings.businessName, settings.ownerName, format),
+        onLayout: (format) => _buildPdf(customers, settings.businessName, settings.ownerName, settings.currencySymbol, format),
         name: 'smart_due_customer_report.pdf',
       );
     } finally {
@@ -271,7 +272,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     try {
       final customers = _filteredSorted;
       final settings = AppSettingsScope.settingsOf(context);
-      final bytes = await _buildPdf(customers, settings.businessName, settings.ownerName, PdfPageFormat.a4);
+      final bytes = await _buildPdf(customers, settings.businessName, settings.ownerName, settings.currencySymbol, PdfPageFormat.a4);
       await Printing.sharePdf(
         bytes: bytes,
         filename: 'smart_due_customer_report.pdf',
@@ -286,6 +287,8 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
     final colors = AppColors.of(context);
     final result = _filteredSorted;
     final totalDue = result.fold<double>(0, (sum, c) => sum + c.totalDue);
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -342,7 +345,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  "মোট বকেয়া: ৳${totalDue.toStringAsFixed(2)}",
+                                  "মোট বকেয়া: $currencySymbol${currencyFmt.format(totalDue)}",
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.9),
                                     fontSize: 12.5,
@@ -484,7 +487,7 @@ class _CustomerPdfReportScreenState extends State<CustomerPdfReportScreen> {
                                     ),
                                   ),
                                   Text(
-                                    c.totalDue.toStringAsFixed(2),
+                                    '$currencySymbol${currencyFmt.format(c.totalDue)}',
                                     style: TextStyle(color: dueColor, fontWeight: FontWeight.w800, fontSize: 13),
                                   ),
                                 ],

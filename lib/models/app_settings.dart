@@ -8,12 +8,20 @@ class AppSettings {
   final String ownerName;
   final String businessAddress;
   final String? businessLogoUrl;
+  // ✅ লগইন নাম্বার থেকে আলাদা — দোকানের যোগাযোগের নাম্বার, কাস্টমার কল-ব্যাক
+  // করতে চাইলে বা SMS/PDF এ দেখানোর জন্য
+  final String businessPhone;
+  // ✅ কাস্টমার কোথায় টাকা পাঠাবে তা SMS/PDF এ দেখানোর জন্য দোকানের bKash/Nagad নাম্বার
+  final String bkashNumber;
 
   // ✅ নতুন যোগ করা ফিল্ডগুলো
   final String smsReminderTemplate;
   // ✅ কাস্টমারের বকেয়া সম্পূর্ণ পরিশোধ (৳0) হয়ে গেলে due-reminder টেমপ্লেটের
   // বদলে এই ধন্যবাদ টেমপ্লেট ব্যবহার হয়
   final String fullPaymentThankYouTemplate;
+  // ✅ আংশিক পেমেন্ট (কিছু টাকা দিলেন, কিছু বকেয়া থেকে গেল) হলে due-reminder এর
+  // বদলে এই টেমপ্লেট ব্যবহার হয় — কত টাকা দিলেন ও কত বাকি রইল, দুটোই জানানো হয়
+  final String partialPaymentThankYouTemplate;
   final double fontScale;
   final bool appLockEnabled;
   final String? appLockPinHash;
@@ -28,8 +36,11 @@ class AppSettings {
     this.ownerName = '',
     required this.businessAddress,
     this.businessLogoUrl,
+    this.businessPhone = '',
+    this.bkashNumber = '',
     required this.smsReminderTemplate,
     required this.fullPaymentThankYouTemplate,
+    required this.partialPaymentThankYouTemplate,
     required this.fontScale,
     required this.appLockEnabled,
     this.appLockPinHash,
@@ -46,10 +57,14 @@ class AppSettings {
         ownerName: '',
         businessAddress: '',
         businessLogoUrl: null,
+        businessPhone: '',
+        bkashNumber: '',
         smsReminderTemplate:
             'প্রিয় {name}, আপনার বকেয়া {amount} টাকা। অনুগ্রহ করে {due_date} এর মধ্যে পরিশোধ করুন। ধন্যবাদ — {business_name}',
         fullPaymentThankYouTemplate:
             'প্রিয় {name}, আপনার সম্পূর্ণ বকেয়া পরিশোধ হয়ে গেছে। আমাদের সাথে থাকার জন্য অনেক ধন্যবাদ! — {business_name}',
+        partialPaymentThankYouTemplate:
+            'প্রিয় {name}, আপনার {paid_amount} টাকা পেমেন্ট পেয়েছি, ধন্যবাদ! আপনার বাকি বকেয়া {remaining_due} টাকা। — {business_name}',
         fontScale: 1.0,
         appLockEnabled: false,
         appLockPinHash: null,
@@ -69,10 +84,15 @@ class AppSettings {
       businessAddress:
           map['businessAddress'] as String? ?? defaults.businessAddress,
       businessLogoUrl: map['businessLogoUrl'] as String?,
+      businessPhone: map['businessPhone'] as String? ?? defaults.businessPhone,
+      bkashNumber: map['bkashNumber'] as String? ?? defaults.bkashNumber,
       smsReminderTemplate: map['smsReminderTemplate'] as String? ??
           defaults.smsReminderTemplate,
       fullPaymentThankYouTemplate: map['fullPaymentThankYouTemplate'] as String? ??
           defaults.fullPaymentThankYouTemplate,
+      partialPaymentThankYouTemplate:
+          map['partialPaymentThankYouTemplate'] as String? ??
+              defaults.partialPaymentThankYouTemplate,
       fontScale: (map['fontScale'] as num?)?.toDouble() ?? defaults.fontScale,
       appLockEnabled:
           map['appLockEnabled'] as bool? ?? defaults.appLockEnabled,
@@ -90,8 +110,11 @@ class AppSettings {
       'ownerName': ownerName,
       'businessAddress': businessAddress,
       'businessLogoUrl': businessLogoUrl,
+      'businessPhone': businessPhone,
+      'bkashNumber': bkashNumber,
       'smsReminderTemplate': smsReminderTemplate,
       'fullPaymentThankYouTemplate': fullPaymentThankYouTemplate,
+      'partialPaymentThankYouTemplate': partialPaymentThankYouTemplate,
       'fontScale': fontScale,
       'appLockEnabled': appLockEnabled,
       'appLockPinHash': appLockPinHash,
@@ -107,8 +130,11 @@ class AppSettings {
     String? ownerName,
     String? businessAddress,
     String? businessLogoUrl,
+    String? businessPhone,
+    String? bkashNumber,
     String? smsReminderTemplate,
     String? fullPaymentThankYouTemplate,
+    String? partialPaymentThankYouTemplate,
     double? fontScale,
     bool? appLockEnabled,
     String? appLockPinHash,
@@ -123,9 +149,13 @@ class AppSettings {
       ownerName: ownerName ?? this.ownerName,
       businessAddress: businessAddress ?? this.businessAddress,
       businessLogoUrl: businessLogoUrl ?? this.businessLogoUrl,
+      businessPhone: businessPhone ?? this.businessPhone,
+      bkashNumber: bkashNumber ?? this.bkashNumber,
       smsReminderTemplate: smsReminderTemplate ?? this.smsReminderTemplate,
       fullPaymentThankYouTemplate:
           fullPaymentThankYouTemplate ?? this.fullPaymentThankYouTemplate,
+      partialPaymentThankYouTemplate: partialPaymentThankYouTemplate ??
+          this.partialPaymentThankYouTemplate,
       fontScale: fontScale ?? this.fontScale,
       appLockEnabled: appLockEnabled ?? this.appLockEnabled,
       appLockPinHash: clearPin ? null : (appLockPinHash ?? this.appLockPinHash),
@@ -163,6 +193,8 @@ class AppSettings {
     '{due_date}',
     '{business_name}',
     '{phone}',
+    '{business_phone}',
+    '{bkash_number}',
   ];
 
   // ✅ Full-payment thank-you টেমপ্লেটে {amount}/{due_date} অর্থহীন (বকেয়া ৳0),
@@ -171,5 +203,19 @@ class AppSettings {
     '{name}',
     '{business_name}',
     '{phone}',
+    '{business_phone}',
+  ];
+
+  // ✅ Partial-payment টেমপ্লেটে কত টাকা দিলেন ও কত বাকি রইল — দুটো আলাদা
+  // placeholder লাগে ({amount} এখানে ব্যবহার হয় না, কারণ "বকেয়া" vs "এইমাত্র যা দিলেন"
+  // গুলিয়ে ফেলার সুযোগ থাকে)
+  static const List<String> partialPaymentPlaceholders = [
+    '{name}',
+    '{paid_amount}',
+    '{remaining_due}',
+    '{business_name}',
+    '{phone}',
+    '{business_phone}',
+    '{bkash_number}',
   ];
 }

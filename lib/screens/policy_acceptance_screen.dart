@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
-import 'login_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 
@@ -49,10 +48,10 @@ class _PolicyAcceptanceScreenState extends State<PolicyAcceptanceScreen> {
   Future<void> _logout() async {
     await AuthService.logout();
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    // ✅ আগে সরাসরি LoginScreen() push করে root route (AppConfigGate/AppLockGate/
+    // AuthWrapper সমেত) মুছে ফেলা হতো — এখন root এ popUntil করে ফেরত যাওয়া হচ্ছে,
+    // যাতে AuthWrapper অক্ষত থেকে নিজে থেকেই LoginScreen দেখায়, বাকি গেটগুলোও বেঁচে থাকে
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override

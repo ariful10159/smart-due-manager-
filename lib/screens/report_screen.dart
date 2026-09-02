@@ -23,6 +23,20 @@ enum ReportPeriod { daily, weekly, monthly }
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
 
+  // ✅ আগের সেশনে লোড করা রিপোর্ট ডেটা — প্রতিবার স্ক্রিন খুললেই (Navigator.push
+  // দিয়ে নতুন State তৈরি হয়) N+1 Firestore query (প্রতি কাস্টমারের জন্য আলাদা
+  // payments subcollection read) নতুন করে চালানো লাগত, তাই স্ক্রিন খুলতে সময়
+  // লাগত। এখন cache থাকলে সাথে সাথেই পুরনো ডেটা দেখানো হয়, নতুন ডেটা background
+  // এ silently রিফ্রেশ হয় — public class-এ রাখা হয়েছে যাতে AuthService.logout()
+  // থেকে ক্লিয়ার করা যায় (account বদলালে আগের ইউজারের ডেটা যেন না দেখায়)
+  static List<Customer>? _cachedCustomers;
+  static List<Payment>? _cachedPayments;
+
+  static void clearCache() {
+    _cachedCustomers = null;
+    _cachedPayments = null;
+  }
+
   @override
   State<ReportScreen> createState() => _ReportScreenState();
 }
@@ -40,7 +54,14 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    final hasCache =
+        ReportScreen._cachedCustomers != null && ReportScreen._cachedPayments != null;
+    if (hasCache) {
+      _customers = ReportScreen._cachedCustomers!;
+      _payments = ReportScreen._cachedPayments!;
+      _loading = false;
+    }
+    _loadData(silent: hasCache);
   }
 
   // ✅ প্রতিটা কাস্টমারের payments subcollection আলাদাভাবে query করা হয় — Firestore
@@ -49,8 +70,11 @@ class _ReportScreenState extends State<ReportScreen> {
   // filter করা যায় না (Firestore পুরো query-টাই প্রমাণযোগ্য হতে হয়), তাই সেই
   // rule শুধু `request.auth != null` চেক করত — যেকোনো লগইন করা ইউজার সব
   // ইউজারের পেমেন্ট ডেটা ডাউনলোড করতে পারত।
-  Future<void> _loadData() async {
-    setState(() => _loading = true);
+  // ✅ `silent: true` হলে (cache থেকে ইতিমধ্যে পুরনো ডেটা দেখানো হয়ে গেছে, বা
+  // pull-to-refresh চলছে) পূর্ণ-স্ক্রিন স্পিনার আর দেখানো হয় না — বিদ্যমান
+  // কনটেন্ট দেখা যেতে থাকে, নতুন ডেটা এলে নিঃশব্দে বদলে যায়
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       final customers = await _repo.fetchCustomersOnce();
       final List<Payment> allPayments = [];
@@ -77,6 +101,8 @@ class _ReportScreenState extends State<ReportScreen> {
       }
 
       if (!mounted) return;
+      ReportScreen._cachedCustomers = customers;
+      ReportScreen._cachedPayments = allPayments;
       setState(() {
         _customers = customers;
         _payments = allPayments;
@@ -85,11 +111,15 @@ class _ReportScreenState extends State<ReportScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.failedToLoadReport),
-        ),
-      );
+      // ✅ silent রিফ্রেশ ব্যর্থ হলে আগের (cache করা) ডেটা যা স্ক্রিনে আছে তাই
+      // থেকে যায় — নীরবে, ব্যবহারকারীকে বিরক্ত না করে
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.failedToLoadReport),
+          ),
+        );
+      }
     }
   }
 
@@ -263,14 +293,14 @@ class _ReportScreenState extends State<ReportScreen> {
   // ✅ প্রতি কাস্টমারের payment method breakdown — কোনটা cash, কোনটা bKash তা
   // statement table এ স্পষ্টভাবে দেখানোর জন্য (একই period এ একাধিক method এ
   // পেমেন্ট থাকলে সবগুলোই দেখাবে)
-  String _methodBreakdownLabel(Map<String, dynamic> row) {
+  String _methodBreakdownLabel(Map<String, dynamic> row, String Function(String bn, String en) t) {
     final parts = <String>[];
     final cash = (row['cash'] as double?) ?? 0;
     final bkash = (row['bkash'] as double?) ?? 0;
     final other = (row['other'] as double?) ?? 0;
-    if (cash > 0) parts.add('Cash');
+    if (cash > 0) parts.add(t('ক্যাশ', 'Cash'));
     if (bkash > 0) parts.add('bKash');
-    if (other > 0) parts.add('Other');
+    if (other > 0) parts.add(t('অন্যান্য', 'Other'));
     return parts.isEmpty ? '-' : parts.join(' + ');
   }
 
@@ -295,13 +325,30 @@ class _ReportScreenState extends State<ReportScreen> {
     Map<String, double> methodTotals,
     String businessName,
     String ownerName,
+    String businessPhone,
+    String bkashNumber,
+    String currencySymbol,
+    String languageCode,
     PdfPageFormat format,
   ) async {
+    // ✅ PDF এই callback-এর ভেতর widget tree এর অংশ না (Printing.layoutPdf পরে
+    // যেকোনো সময় এটা কল করতে পারে), তাই AppLocalizations.of(context) নিরাপদ না —
+    // customer_detail_screen.dart এর মতোই ভাষা অনুযায়ী লেবেল বেছে নেওয়ার এই ছোট
+    // হেল্পার ব্যবহার করা হচ্ছে
+    final isBn = languageCode != 'en';
+    String t(String bn, String en) => isBn ? bn : en;
+
     final currencyFmt = NumberFormat('#,##0.00');
     final dateFmt = DateFormat('d MMM yyyy');
     final cashTotal = methodTotals['cash'] ?? 0;
     final bkashTotal = methodTotals['bkash'] ?? 0;
     final otherTotal = methodTotals['other'] ?? 0;
+
+    final periodTypeLabel = switch (_period) {
+      ReportPeriod.daily => t('দৈনিক', 'Daily'),
+      ReportPeriod.weekly => t('সাপ্তাহিক', 'Weekly'),
+      ReportPeriod.monthly => t('মাসিক', 'Monthly'),
+    };
 
     final rowsHtml = StringBuffer();
     for (final row in reportData) {
@@ -309,7 +356,7 @@ class _ReportScreenState extends State<ReportScreen> {
         <tr>
           <td>${escapeHtml(row['name'] as String)}</td>
           <td>${escapeHtml(row['phone'] as String)}</td>
-          <td>${escapeHtml(_methodBreakdownLabel(row))}</td>
+          <td>${escapeHtml(_methodBreakdownLabel(row, t))}</td>
           <td>${escapeHtml(_dueDateLabel(row, dateFmt))}</td>
           <td>${escapeHtml(_paymentDatesLabel(row, dateFmt))}</td>
           <td class="right">${currencyFmt.format(row['totalDue'])}</td>
@@ -326,7 +373,7 @@ class _ReportScreenState extends State<ReportScreen> {
     final html =
         '''
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="${isBn ? 'bn' : 'en'}">
 <head>
 <meta charset="UTF-8" />
 <style>
@@ -411,27 +458,29 @@ class _ReportScreenState extends State<ReportScreen> {
   <div class="header">
     <div>
       <p class="shop-name">${escapeHtml(businessName)}</p>
-      ${ownerName.trim().isNotEmpty ? '<p class="owner-name">Owner: ${escapeHtml(ownerName)}</p>' : ''}
+      ${ownerName.trim().isNotEmpty ? '<p class="owner-name">${t('মালিক', 'Owner')}: ${escapeHtml(ownerName)}</p>' : ''}
+      ${businessPhone.trim().isNotEmpty ? '<p class="owner-name">${t('ফোন', 'Phone')}: ${escapeHtml(businessPhone)}</p>' : ''}
+      ${bkashNumber.trim().isNotEmpty ? '<p class="owner-name">bKash/Nagad: ${escapeHtml(bkashNumber)}</p>' : ''}
     </div>
     <div class="header-right">
-      <p class="title">Collection Report &middot; ${_period.name.toUpperCase()}</p>
+      <p class="title">${t('কালেকশন রিপোর্ট', 'Collection Report')} &middot; $periodTypeLabel</p>
       <p class="period">${escapeHtml(_periodLabel())}</p>
     </div>
   </div>
 
-  <p class="section-title">Customer Statement Table</p>
-  ${reportData.isEmpty ? '<p class="empty">No payments received in this period.</p>' : '''
+  <p class="section-title">${t('কাস্টমার স্টেটমেন্ট টেবিল', 'Customer Statement Table')}</p>
+  ${reportData.isEmpty ? '<p class="empty">${t('এই সময়ের মধ্যে কোনো পেমেন্ট পাওয়া যায়নি।', 'No payments received in this period.')}</p>' : '''
   <table>
     <thead>
       <tr>
-        <th>Customer</th>
-        <th>Phone</th>
-        <th>Method</th>
-        <th>Due Date</th>
-        <th>Payment Date</th>
-        <th class="right">Total Due</th>
-        <th class="right">Payment</th>
-        <th class="right">Remaining</th>
+        <th>${t('কাস্টমার', 'Customer')}</th>
+        <th>${t('ফোন', 'Phone')}</th>
+        <th>${t('মাধ্যম', 'Method')}</th>
+        <th>${t('বকেয়ার তারিখ', 'Due Date')}</th>
+        <th>${t('পেমেন্টের তারিখ', 'Payment Date')}</th>
+        <th class="right">${t('মোট বকেয়া', 'Total Due')}</th>
+        <th class="right">${t('পেমেন্ট', 'Payment')}</th>
+        <th class="right">${t('বাকি', 'Remaining')}</th>
       </tr>
     </thead>
     <tbody>
@@ -440,17 +489,17 @@ class _ReportScreenState extends State<ReportScreen> {
   </table>
   '''}
 
-  <p class="section-title">Collection Summary</p>
+  <p class="section-title">${t('কালেকশন সামারি', 'Collection Summary')}</p>
   <div class="total-box">
-    <div class="breakdown-row"><span>Cash</span><span>${currencyFmt.format(cashTotal)} TK</span></div>
-    <div class="breakdown-row"><span>bKash</span><span>${currencyFmt.format(bkashTotal)} TK</span></div>
-    ${otherTotal > 0 ? '<div class="breakdown-row"><span>Other (Nagad/Bank)</span><span>${currencyFmt.format(otherTotal)} TK</span></div>' : ''}
-    <div class="breakdown-row total-row"><span>Total Collection</span><span>${currencyFmt.format(totalCollection)} TK</span></div>
+    <div class="breakdown-row"><span>${t('ক্যাশ', 'Cash')}</span><span>$currencySymbol${currencyFmt.format(cashTotal)}</span></div>
+    <div class="breakdown-row"><span>bKash</span><span>$currencySymbol${currencyFmt.format(bkashTotal)}</span></div>
+    ${otherTotal > 0 ? '<div class="breakdown-row"><span>${t('অন্যান্য (নগদ/ব্যাংক)', 'Other (Nagad/Bank)')}</span><span>$currencySymbol${currencyFmt.format(otherTotal)}</span></div>' : ''}
+    <div class="breakdown-row total-row"><span>${t('মোট কালেকশন', 'Total Collection')}</span><span>$currencySymbol${currencyFmt.format(totalCollection)}</span></div>
   </div>
 
   <div class="footer">
-    <p class="brand">Powered by ${LegalContent.appName}</p>
-    <p class="generated">Generated on $generatedAt</p>
+    <p class="brand">${t('পাওয়ার্ড বাই', 'Powered by')} ${LegalContent.appName}</p>
+    <p class="generated">${t('তৈরি হয়েছে', 'Generated on')} $generatedAt</p>
   </div>
 </body>
 </html>
@@ -470,6 +519,13 @@ class _ReportScreenState extends State<ReportScreen> {
     final methodTotals = _methodTotals(rangePayments);
     final settings = AppSettingsScope.settingsOf(context);
 
+    // ✅ পিরিয়ড টাইপ + শুরুর তারিখ দিয়ে ফাইলনেম বানানো হচ্ছে, যাতে আলাদা আলাদা
+    // পিরিয়ডের রিপোর্ট এক্সপোর্ট করলে ফোনের Downloads ফোল্ডারে একটা আরেকটাকে
+    // ওভাররাইট না করে — আগে সবসময় একই নাম থাকত
+    final periodSlug = _period.name; // daily / weekly / monthly
+    final dateSlug = DateFormat('yyyy-MM-dd').format(start);
+    final fileName = 'smart_due_${periodSlug}_report_$dateSlug.pdf';
+
     await Printing.layoutPdf(
       onLayout: (format) => _buildReportPdf(
         reportData,
@@ -477,9 +533,13 @@ class _ReportScreenState extends State<ReportScreen> {
         methodTotals,
         settings.businessName,
         settings.ownerName,
+        settings.businessPhone,
+        settings.bkashNumber,
+        settings.currencySymbol,
+        settings.languageCode,
         format,
       ),
-      name: 'smart_due_collection_report.pdf',
+      name: fileName,
     );
   }
 
@@ -527,7 +587,7 @@ class _ReportScreenState extends State<ReportScreen> {
       body: _loading
           ? Center(child: CircularProgressIndicator(color: colors.accent))
           : RefreshIndicator(
-              onRefresh: _loadData,
+              onRefresh: () => _loadData(silent: true),
               color: colors.accent,
               child: _buildContent(colors),
             ),
@@ -550,6 +610,7 @@ class _ReportScreenState extends State<ReportScreen> {
     final settings = AppSettingsScope.settingsOf(context);
     final businessName = settings.businessName;
     final ownerName = settings.ownerName;
+    final currencySymbol = settings.currencySymbol;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -563,11 +624,12 @@ class _ReportScreenState extends State<ReportScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _MonthlyTrendCard(trend: _monthlyTrend(), colors: colors),
+        _MonthlyTrendCard(trend: _monthlyTrend(), colors: colors, currencySymbol: currencySymbol),
         const SizedBox(height: 14),
         _TopDefaultersCard(
           defaulters: _topDefaulters(),
           colors: colors,
+          currencySymbol: currencySymbol,
           onTapCustomer: (customer) {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -763,18 +825,21 @@ class _ReportScreenState extends State<ReportScreen> {
                             amount: row['totalDue'],
                             color: colors.warn,
                             textColor: colors.textSecondary,
+                            currencySymbol: currencySymbol,
                           ),
                           _AmountInfo(
                             label: l10n.paymentLabel,
                             amount: row['paid'],
                             color: colors.clear,
                             textColor: colors.textSecondary,
+                            currencySymbol: currencySymbol,
                           ),
                           _AmountInfo(
                             label: l10n.remainingLabel,
                             amount: row['remaining'],
                             color: colors.due,
                             textColor: colors.textSecondary,
+                            currencySymbol: currencySymbol,
                           ),
                         ],
                       ),
@@ -816,12 +881,18 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             child: Column(
               children: [
-                _BreakdownRow(label: l10n.cashMethod, amount: cashTotal, colors: colors),
+                _BreakdownRow(
+                  label: l10n.cashMethod,
+                  amount: cashTotal,
+                  colors: colors,
+                  currencySymbol: currencySymbol,
+                ),
                 const SizedBox(height: 10),
                 _BreakdownRow(
                   label: "bKash",
                   amount: bkashTotal,
                   colors: colors,
+                  currencySymbol: currencySymbol,
                 ),
                 if (otherTotal > 0) ...[
                   const SizedBox(height: 10),
@@ -829,6 +900,7 @@ class _ReportScreenState extends State<ReportScreen> {
                     label: l10n.otherNagadBank,
                     amount: otherTotal,
                     colors: colors,
+                    currencySymbol: currencySymbol,
                   ),
                 ],
                 const SizedBox(height: 14),
@@ -840,7 +912,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "${totalCollection.toStringAsFixed(0)} TK",
+                  "$currencySymbol${totalCollection.toStringAsFixed(0)}",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -884,11 +956,13 @@ class _BreakdownRow extends StatelessWidget {
     required this.label,
     required this.amount,
     required this.colors,
+    required this.currencySymbol,
   });
 
   final String label;
   final double amount;
   final AppColors colors;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -904,7 +978,7 @@ class _BreakdownRow extends StatelessWidget {
           ),
         ),
         Text(
-          "${amount.toStringAsFixed(0)} TK",
+          "$currencySymbol${amount.toStringAsFixed(0)}",
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.w700,
@@ -922,11 +996,13 @@ class _AmountInfo extends StatelessWidget {
     required this.amount,
     required this.color,
     required this.textColor,
+    required this.currencySymbol,
   });
   final String label;
   final double amount;
   final Color color;
   final Color textColor;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -936,7 +1012,7 @@ class _AmountInfo extends StatelessWidget {
         Text(label, style: TextStyle(fontSize: 11, color: textColor)),
         const SizedBox(height: 2),
         Text(
-          "${amount.toStringAsFixed(0)} TK",
+          "$currencySymbol${amount.toStringAsFixed(0)}",
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -1000,10 +1076,11 @@ double _niceAxisMax(double rawMax) {
 }
 
 class _MonthlyTrendCard extends StatelessWidget {
-  const _MonthlyTrendCard({required this.trend, required this.colors});
+  const _MonthlyTrendCard({required this.trend, required this.colors, required this.currencySymbol});
 
   final List<(DateTime month, double total)> trend;
   final AppColors colors;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -1068,7 +1145,7 @@ class _MonthlyTrendCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      "${currencyFmt.format(latest.$2)} TK",
+                      "$currencySymbol${currencyFmt.format(latest.$2)}",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -1167,7 +1244,7 @@ class _MonthlyTrendCard extends StatelessWidget {
                           ),
                           children: [
                             TextSpan(
-                              text: "${currencyFmt.format(rod.toY)} TK",
+                              text: "$currencySymbol${currencyFmt.format(rod.toY)}",
                               style: TextStyle(
                                 color: colors.clear,
                                 fontWeight: FontWeight.w800,
@@ -1210,11 +1287,13 @@ class _TopDefaultersCard extends StatelessWidget {
     required this.defaulters,
     required this.colors,
     required this.onTapCustomer,
+    required this.currencySymbol,
   });
 
   final List<Customer> defaulters;
   final AppColors colors;
   final ValueChanged<Customer> onTapCustomer;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -1275,6 +1354,7 @@ class _TopDefaultersCard extends StatelessWidget {
                 fraction: maxDue == 0 ? 0 : defaulters[i].totalDue / maxDue,
                 currencyFmt: currencyFmt,
                 colors: colors,
+                currencySymbol: currencySymbol,
                 onTap: () => onTapCustomer(defaulters[i]),
               ),
               if (i != defaulters.length - 1) const SizedBox(height: 12),
@@ -1293,6 +1373,7 @@ class _DefaulterRow extends StatelessWidget {
     required this.currencyFmt,
     required this.colors,
     required this.onTap,
+    required this.currencySymbol,
   });
 
   final int rank;
@@ -1300,6 +1381,7 @@ class _DefaulterRow extends StatelessWidget {
   final double fraction;
   final NumberFormat currencyFmt;
   final AppColors colors;
+  final String currencySymbol;
   final VoidCallback onTap;
 
   @override
@@ -1338,7 +1420,7 @@ class _DefaulterRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    "${currencyFmt.format(customer.totalDue)} TK",
+                    "$currencySymbol${currencyFmt.format(customer.totalDue)}",
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,

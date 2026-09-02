@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../l10n/app_localizations.dart';
@@ -43,22 +42,38 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return DateFormat('d MMMM yyyy').format(date);
   }
 
-  String _buildDueMessage(Customer customer) {
+  // ✅ `paidAmount` দিলে (অর্থাৎ এইমাত্র কোনো payment হয়েছে) এবং customer.totalDue
+  // এখনও ০ এর বেশি থাকলে partial-payment টেমপ্লেট ব্যবহার হয় — না হলে আগের
+  // দুই-ধাপি (full-paid / plain reminder) লজিকই চলে
+  String _buildDueMessage(Customer customer, {double? paidAmount}) {
     final settings = AppSettingsScope.of(context).settings;
     final dateFmt = DateFormat('d MMM yyyy');
     final currencyFmt = NumberFormat('#,##0.00');
 
-    // ✅ বকেয়া সম্পূর্ণ পরিশোধ হয়ে গেলে due-reminder এর বদলে thank-you টেমপ্লেট
-    final template = customer.totalDue <= 0
-        ? settings.fullPaymentThankYouTemplate
-        : settings.smsReminderTemplate;
+    final String template;
+    if (customer.totalDue <= 0) {
+      // ✅ বকেয়া সম্পূর্ণ পরিশোধ হয়ে গেলে thank-you টেমপ্লেট
+      template = settings.fullPaymentThankYouTemplate;
+    } else if (paidAmount != null && paidAmount > 0) {
+      // ✅ কিছু টাকা এইমাত্র পরিশোধ হয়েছে, কিছু বকেয়া এখনও বাকি
+      template = settings.partialPaymentThankYouTemplate;
+    } else {
+      template = settings.smsReminderTemplate;
+    }
 
     return template
         .replaceAll('{name}', customer.name)
         .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
         .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
         .replaceAll('{business_name}', settings.businessName)
-        .replaceAll('{phone}', customer.phone);
+        .replaceAll('{phone}', customer.phone)
+        .replaceAll('{business_phone}', settings.businessPhone)
+        .replaceAll('{bkash_number}', settings.bkashNumber)
+        .replaceAll(
+          '{paid_amount}',
+          paidAmount != null ? currencyFmt.format(paidAmount) : '',
+        )
+        .replaceAll('{remaining_due}', currencyFmt.format(customer.totalDue));
   }
 
   String _daysSincePayment(DateTime lastPaymentDate) {
@@ -228,7 +243,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
                         child: pw.Text(
-                          payment.amount.toStringAsFixed(2),
+                          '${settings.currencySymbol}${payment.amount.toStringAsFixed(2)}',
                           style: pw.TextStyle(font: regularFont, fontSize: 9),
                         ),
                       ),
@@ -253,36 +268,22 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 
+  // ✅ আগে সরাসরি '/storage/emulated/0/Download' এ raw path দিয়ে ফাইল লিখত —
+  // কোনো storage permission declare করা নেই (AndroidManifest এ), তাই Android
+  // 10+ এ scoped storage এর কারণে এটা প্রায়ই permission-denied দিয়ে ব্যর্থ
+  // হতো, ইউজার শুধু generic "download failed" দেখত, কারণ বুঝতে পারত না।
+  // এখন payment_history_tile.dart এর মতোই Printing.sharePdf ব্যবহার করা
+  // হচ্ছে — কোনো manual file write/permission লাগে না, OS এর নিজস্ব
+  // share sheet ইউজারকে যেকোনো অ্যাপে (Files, WhatsApp, ইত্যাদি) সেভ/পাঠাতে দেয়
   Future<void> _downloadPdf(Customer customer) async {
     final colors = AppColors.of(context);
     try {
       final pdf = await _generatePdf(customer);
       final bytes = await pdf.save();
 
-      final directory = Directory('/storage/emulated/0/Download');
-
-      if (!await directory.exists()) {
-        await directory.create(recursive: true);
-      }
-
-      final fileName =
-          "${customer.name.replaceAll(" ", "_")}_payment_history.pdf";
-
-      final filePath = "${directory.path}/$fileName";
-      final file = File(filePath);
-      await file.writeAsBytes(bytes);
-
-      if (!mounted) return;
-
-      await Share.shareXFiles([
-        XFile(filePath),
-      ], text: "${customer.name} - Payment History");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: colors.clear,
-          content: Text(AppLocalizations.of(context)!.pdfSavedOpened),
-        ),
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: "${customer.name.replaceAll(" ", "_")}_payment_history.pdf",
       );
     } catch (_) {
       if (!mounted) return;
@@ -320,6 +321,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       customerId: currentCustomer.id,
       payment: payment,
     );
+
+    // ✅ কাস্টমার আসলেই টাকা পরিশোধ করলে (due বাড়ানো নয়) payment সেভের সাথে সাথেই
+    // SMS confirm dialog auto-খুলে যায় — updatedDue পূর্ণ পরিশোধ হোক বা আংশিক,
+    // দুই ক্ষেত্রেই সঠিক টেমপ্লেট বেছে নেয় _buildDueMessage
+    if (type == PaymentType.payment && mounted) {
+      final updatedCustomer = currentCustomer.copyWith(totalDue: updatedDue);
+      await _confirmSendSms(updatedCustomer, paidAmount: payment.amount);
+    }
   }
 
   Future<void> _setReminder(Customer customer) async {
@@ -365,17 +374,19 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       recurrenceType: recurrenceType,
     );
 
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+
     await NotificationService.scheduleReminder(
-      id: customer.hashCode,
-      title: "Payment Reminder",
-      body: "${customer.name} will pay now",
+      id: NotificationService.reminderIdFor(customer.id),
+      title: l10n.reminderNotificationTitle,
+      body: l10n.reminderNotificationBody(customer.name),
       scheduledDate: scheduledDateTime,
       smsPhone: customer.phone,
       smsMessage: _buildDueMessage(customer),
     );
 
     if (!mounted) return;
-    final l10n = AppLocalizations.of(context)!;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -474,11 +485,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     try {
       final nextDate = await _customerRepo.advanceRecurringReminder(customer);
       if (nextDate == null) return;
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       await NotificationService.scheduleReminder(
-        id: customer.hashCode,
-        title: "Payment Reminder",
-        body: "${customer.name} will pay now",
+        id: NotificationService.reminderIdFor(customer.id),
+        title: l10n.reminderNotificationTitle,
+        body: l10n.reminderNotificationBody(customer.name),
         scheduledDate: nextDate,
         smsPhone: customer.phone,
         smsMessage: _buildDueMessage(customer),
@@ -622,7 +635,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     final colors = AppColors.of(context);
     try {
       await _customerRepo.clearReminder(customer.id);
-      await NotificationService.cancelReminder(customer.hashCode);
+      await NotificationService.cancelReminder(NotificationService.reminderIdFor(customer.id));
 
       if (!mounted) return;
 
@@ -643,10 +656,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     }
   }
 
-  Future<void> _confirmSendSms(Customer customer) async {
+  Future<void> _confirmSendSms(Customer customer, {double? paidAmount}) async {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final message = _buildDueMessage(customer);
+    final message = _buildDueMessage(customer, paidAmount: paidAmount);
+    final isPartialPayment =
+        customer.totalDue > 0 && paidAmount != null && paidAmount > 0;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -664,7 +679,9 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               Text(
                 customer.totalDue <= 0
                     ? l10n.thankYouSmsConfirm(customer.name, customer.phone)
-                    : l10n.dueReminderSmsConfirm(customer.name, customer.phone),
+                    : isPartialPayment
+                        ? l10n.partialPaymentSmsConfirm(customer.name, customer.phone)
+                        : l10n.dueReminderSmsConfirm(customer.name, customer.phone),
                 style: TextStyle(color: colors.textSecondary),
               ),
               const SizedBox(height: 12),
@@ -701,13 +718,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     // ✅ Play Store policy অনুযায়ী app নিজে SMS পাঠাতে পারে না — default SMS app
     // prefilled অবস্থায় খুলে দেওয়া হয়, ব্যবহারকারী নিজে Send করবেন
-    final uri = buildSmsComposeUri(customer.phone, _buildDueMessage(customer));
+    final uri = buildSmsComposeUri(customer.phone, message);
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
       await _customerRepo.logSmsSent(
         customerId: customer.id,
-        type: 'manual',
+        type: isPartialPayment ? 'partial_payment' : 'manual',
       );
     } else {
       if (mounted) {
@@ -1221,6 +1238,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
+    // ✅ আগে এই স্ক্রিনে (সবচেয়ে বেশি দেখা স্ক্রিন — একজন নির্দিষ্ট কাস্টমারের
+    // বকেয়া চেক করার জায়গা) কোনো currency symbol ছিল না, শুধু raw সংখ্যা —
+    // অথচ এই একই স্ক্রিনের PDF export ঠিকই symbol ব্যবহার করত
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
@@ -1416,7 +1438,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  l10n.totalDueColon(customer.totalDue.toStringAsFixed(2)),
+                  l10n.totalDueColon('$currencySymbol${currencyFmt.format(customer.totalDue)}'),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: customer.totalDue > 0 ? colors.due : colors.clear,

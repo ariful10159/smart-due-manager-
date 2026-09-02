@@ -72,6 +72,9 @@
   "businessShopName": "Business/Shop Name",
   "ownerNameLabel": "Owner Name",
   "addressLabel": "Address",
+  "businessPhoneLabel": "Business Phone",
+  "bkashNumberLabel": "bKash/Nagad Number",
+  "bkashNumberDesc": "Shown to customers so they know where to send payment",
   "smsTemplate": "SMS Template",
   "dueReminderLabel": "Due Reminder",
   "dueReminderDesc": "Used when the customer's due is more than ৳0",
@@ -79,6 +82,9 @@
   "fullPaymentThankYouLabel": "Full Payment Thank You",
   "fullPaymentThankYouDesc": "Used when the customer's due becomes fully paid (৳0)",
   "thankYouTemplateHint": "Write your thank-you SMS template...",
+  "partialPaymentLabel": "Partial Payment Thank You",
+  "partialPaymentDesc": "Used when the customer pays part of the due and some due remains",
+  "partialPaymentTemplateHint": "Write your partial-payment SMS template...",
   "templateSaved": "Template saved",
   "saveTemplate": "Save Template",
   "placeholderHelpLabel": "What do the placeholders mean? Tap to see",
@@ -88,13 +94,38 @@
   "placeholderDueDateDesc": "Payment due date",
   "placeholderBusinessNameDesc": "Your business/shop name",
   "placeholderPhoneDesc": "Customer's phone number",
+  "placeholderPaidAmountDesc": "Amount just paid",
+  "placeholderRemainingDueDesc": "Due remaining after this payment",
+  "placeholderBusinessPhoneDesc": "Your business phone number",
+  "placeholderBkashNumberDesc": "Your bKash/Nagad number to receive payment",
   "groupSecurity": "Security & Data",
+  "changePassword": "Change Password",
+  "changePasswordDesc": "Update your account login password",
+  "changingPasswordForAccount": "Changing password for account: {phone}",
+  "@changingPasswordForAccount": {
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "currentPasswordLabel": "Current Password",
+  "enterCurrentPassword": "Enter your current password",
+  "passwordChangedSuccess": "Password changed successfully",
   "appLock": "App Lock (Security)",
   "appLockEnabledStatus": "App Lock is enabled",
   "appLockDisabledStatus": "App Lock is disabled",
   "changePin": "Change PIN",
   "enabled": "Enabled",
   "disabled": "Disabled",
+  "groupDangerZone": "Danger Zone",
+  "deleteAccount": "Delete Account",
+  "deleteAccountDesc": "Permanently delete your account and all data",
+  "deleteAccountWarningTitle": "This cannot be undone",
+  "deleteAccountWarningBody": "Deleting your account permanently removes all your customers, payment history, notebooks, and settings. This cannot be recovered.",
+  "deleteAccountWarningBodyWithCount": "Deleting your account permanently removes all {count} customers, their full payment history, notebooks, and settings. This cannot be recovered.",
+  "@deleteAccountWarningBodyWithCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "deleteAccountAcknowledge": "I understand this action is permanent and cannot be undone",
+  "deleteAccountFinalConfirmTitle": "Delete account permanently?",
+  "deleteAccountFinalConfirmBody": "This is your last chance to cancel. All your data will be deleted right now and cannot be recovered.",
   "dataBackup": "Data Backup",
   "exportFailed": "Export failed, please try again",
   "noValidCustomersFound": "No valid customers found in the file",
@@ -263,6 +294,11 @@
   "advanceReminderFailed": "Failed to advance reminder, please try again",
   "addNoteOptional": "Add Note (Optional)",
   "reminderNoteHint": "Write a note about this reminder...",
+  "reminderNotificationTitle": "Payment Reminder",
+  "reminderNotificationBody": "Time to collect payment from {name}",
+  "@reminderNotificationBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
   "reminderUpdatedSuccess": "Reminder Updated",
   "reminderUpdatedWithRepeat": "Reminder Updated (auto-repeats {label})",
   "@reminderUpdatedWithRepeat": {
@@ -347,6 +383,10 @@
   "@dueReminderSmsConfirm": {
     "placeholders": { "name": { "type": "String" }, "phone": { "type": "String" } }
   },
+  "partialPaymentSmsConfirm": "Send a payment-received SMS to '{name}' ({phone})?",
+  "@partialPaymentSmsConfirm": {
+    "placeholders": { "name": { "type": "String" }, "phone": { "type": "String" } }
+  },
   "send": "Send",
 
   "callCompleteTitle": "Call Complete?",
@@ -412,6 +452,7 @@
   },
 
   "failedToLoadReport": "Failed to load report, please try again",
+  "failedToLoadCollectionStats": "Failed to load today's/week's collection, please try again",
   "collectionReportsTitle": "Collection Reports",
   "customerPdfReportTooltip": "Customer PDF Report",
   "downloadPdfTooltip": "Download PDF",
@@ -558,6 +599,7 @@
   "statusDueToday": "Due Today",
   "statusOverdue": "Overdue",
   "statusReplaced": "Replaced",
+  "statusCancelled": "Cancelled",
   "recurringLabel": "Recurring · {label}",
   "@recurringLabel": {
     "placeholders": { "label": { "type": "String" } }

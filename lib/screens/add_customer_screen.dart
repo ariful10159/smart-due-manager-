@@ -862,9 +862,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
+        // ✅ আগে (route) => false root route (গেট-সহ) মুছে ফেলত — এখন
+        // route.isFirst দিয়ে root বজায় রেখেই Home ট্যাবে যাওয়া হচ্ছে
         Navigator.of(context).pushAndRemoveUntil(
           tabTransitionRoute(const HomeScreen(), false),
-          (route) => false,
+          (route) => route.isFirst,
         );
       },
       child: Scaffold(
@@ -1012,6 +1014,18 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                           prefixIcon: Icons.phone_android_rounded,
                         ),
                         keyboardType: TextInputType.phone,
+                        // ✅ আগে এই ফিল্ডে কোনো validation ছিল না — খালি বা ভুল ফোন
+                        // নাম্বার দিয়ে কাস্টমার সেভ হয়ে যেত, পরে Call/SMS/WhatsApp
+                        // ফিচার সেই কাস্টমারের জন্য silently ব্যর্থ হতো
+                        validator: (value) {
+                          final trimmed = (value ?? '').trim();
+                          if (trimmed.isEmpty) return l10n.enterPhoneNumber;
+                          final digitsOnly = trimmed.replaceAll(RegExp(r'[\s\-]'), '');
+                          if (digitsOnly.length < 11 || !RegExp(r'^\+?\d+$').hasMatch(digitsOnly)) {
+                            return l10n.enterValid11DigitPhone;
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
 

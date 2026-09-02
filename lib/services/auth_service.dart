@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../screens/report_screen.dart';
 import 'app_config_service.dart';
 
 class AuthService {
@@ -11,6 +12,17 @@ class AuthService {
   static User? get currentUser => _auth.currentUser;
 
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // ✅ ফোন নম্বর দিয়ে লগইন করলে Firebase auth এ ইমেইল হিসেবে
+  // "<phone>@smartdue.local" সেভ থাকে — এখান থেকে শুধু ফোন নম্বর অংশটুকু বের
+  // করে দেয়, যাতে বিভিন্ন স্ক্রিনে (Change Password, Delete Account, Drawer)
+  // ইউজারকে দেখানো যায় কোন অ্যাকাউন্টে আছেন — ভুল অ্যাকাউন্ট মনে করে সংবেদনশীল
+  // কাজ (পাসওয়ার্ড বদল/অ্যাকাউন্ট ডিলিট) করে ফেলা এড়াতে
+  static String? get currentPhone {
+    final email = _auth.currentUser?.email;
+    if (email == null || email.isEmpty) return null;
+    return email.split('@').first;
+  }
 
   // ✅ Phone number কে Firebase Auth এর জন্য fake email এ রূপান্তর
   static String _phoneToEmail(String phone) {
@@ -240,6 +252,9 @@ class AuthService {
 
   // ✅ Logout — timeout সহ, যাতে কখনো চিরকাল আটকে না থাকে
   static Future<void> logout() async {
+    // ✅ Report স্ক্রিনের static cache পরের ইউজারের কাছে আগের ইউজারের ডেটা
+    // দেখিয়ে না ফেলে, তাই একই ডিভাইসে account বদলালে এটা ক্লিয়ার হওয়া জরুরি
+    ReportScreen.clearCache();
     try {
       await _auth.signOut().timeout(const Duration(seconds: 10));
     } on TimeoutException {
@@ -248,6 +263,44 @@ class AuthService {
     } catch (_) {
       // অন্য যেকোনো এরর হলেও silently এগিয়ে যাওয়া হচ্ছে,
       // কারণ লোকাল সেশন সাধারণত signOut() কল হওয়ার সাথে সাথেই ক্লিয়ার হয়ে যায়
+    }
+  }
+
+  // ✅ Logged-in অবস্থায় পাসওয়ার্ড পরিবর্তন — Firebase sensitive অপারেশনের
+  // (updatePassword) জন্য "recent login" দাবি করে, তাই আগে বর্তমান পাসওয়ার্ড
+  // দিয়ে reauthenticate করা হয়। EmailAuthProvider এর email হিসেবে
+  // user.email ব্যবহার করা হচ্ছে (যেটা login-এর সময়ও _phoneToEmail দিয়ে
+  // বানানো একই ফোন-ভিত্তিক ইমেইল) — আলাদা করে ফোন নাম্বার লাগে না।
+  static Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        return 'সেশন পাওয়া যায়নি, আবার লগইন করুন';
+      }
+
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user
+          .reauthenticateWithCredential(credential)
+          .timeout(const Duration(seconds: 15));
+      await user.updatePassword(newPassword).timeout(const Duration(seconds: 15));
+      return null;
+    } on TimeoutException {
+      return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
+    } on FirebaseAuthException catch (e) {
+      // ✅ _mapAuthError এর wrong-password বার্তায় "ফোন নাম্বার" শব্দ থাকে,
+      // যা এই ফর্মে (ফোন নাম্বার ইনপুট নেই) বিভ্রান্তিকর — তাই আলাদা বার্তা
+      if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        return 'বর্তমান পাসওয়ার্ড সঠিক নয়';
+      }
+      return _mapAuthError(e);
+    } catch (_) {
+      return 'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
     }
   }
 

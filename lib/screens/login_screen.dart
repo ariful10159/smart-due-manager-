@@ -4,7 +4,6 @@ import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import 'forgot_password_screen.dart';
-import 'home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -56,13 +55,16 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // ✅ লগইন সফল — সরাসরি Home এ পাঠিয়ে দেওয়া হচ্ছে,
-    // authStateChanges stream এর উপর নির্ভর না করে
+    // ✅ আগে এখানে সরাসরি HomeScreen() push করে পুরো stack (root route,
+    // AuthWrapper সমেত) মুছে ফেলা হতো — ফলে AccountStatusGate/PolicyAcceptanceGate/
+    // AppLockGate/AppConfigGate কোনোটাই আর widget tree তে থাকত না (admin panel
+    // থেকে disable করা অ্যাকাউন্টও লগইন করে পুরো অ্যাপ ব্যবহার করতে পারত)।
+    // otp_verification_screen.dart এ ঠিক এই একই সমস্যার সমাধানে root route
+    // (AuthWrapper) এ popUntil করে ফেরত যাওয়া হয়, যাতে AuthWrapper এর নিজস্ব
+    // authStateChanges() স্ট্রিম স্বাভাবিকভাবে সব গেট দিয়ে Home দেখায় —
+    // এখানেও সেই একই, প্রমাণিত পদ্ধতি ব্যবহার করা হচ্ছে।
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
-    );
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   InputDecoration _fieldDecoration({
@@ -442,10 +444,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: _isLoading
                                 ? null
                                 : () {
-                                    Navigator.of(context).pushReplacement(
+                                    // ✅ আগে pushReplacement ব্যবহার হতো — যেহেতু
+                                    // LoginScreen নিজেই root route এর ভেতরে থাকে
+                                    // (আলাদা push করা কোনো route না), pushReplacement
+                                    // পুরো root route-টাই (AppConfigGate/AppLockGate/
+                                    // AuthWrapper সমেত) সরিয়ে দিত। এখানে root রেখে
+                                    // (root এর উপর নতুন route push করে, root এর উপরের
+                                    // বাকি সব সরিয়ে) একই "toggle" আচরণ বজায় রাখা হচ্ছে
+                                    Navigator.of(context).pushAndRemoveUntil(
                                       MaterialPageRoute(
                                         builder: (_) => const RegisterScreen(),
                                       ),
+                                      (route) => route.isFirst,
                                     );
                                   },
                             style: TextButton.styleFrom(

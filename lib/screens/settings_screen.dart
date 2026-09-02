@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_settings_scope.dart';
 import 'about_app_screen.dart';
@@ -9,8 +10,10 @@ import 'privacy_policy_screen.dart';
 import 'settings/app_lock_settings_screen.dart';
 import 'settings/app_mode_screen.dart';
 import 'settings/business_profile_screen.dart';
+import 'settings/change_password_screen.dart';
 import 'settings/currency_screen.dart';
 import 'settings/data_backup_screen.dart';
+import 'settings/delete_account_screen.dart';
 import 'settings/font_size_screen.dart' show FontSizeScreen, fontScaleLabel;
 import 'settings/language_screen.dart';
 import 'settings/sms_template_screen.dart';
@@ -129,6 +132,17 @@ class SettingsScreen extends StatelessWidget {
             colors: colors,
             children: [
               _SettingsRow(
+                icon: Icons.password_rounded,
+                title: l10n.changePassword,
+                // ✅ কোন অ্যাকাউন্টের পাসওয়ার্ড বদলাবেন সেটা এক নজরে বোঝার জন্য —
+                // ভুল করে অন্য কারো ফোন দিয়ে লগইন থাকলে যেন সাথে সাথে চোখে পড়ে
+                subtitle: AuthService.currentPhone,
+                colors: colors,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                ),
+              ),
+              _SettingsRow(
                 icon: Icons.lock_rounded,
                 title: l10n.appLock,
                 subtitle: settings.appLockEnabled ? l10n.enabled : l10n.disabled,
@@ -196,6 +210,23 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
+
+          _GroupHeader(label: l10n.groupDangerZone, colors: colors, topPadding: 24),
+          _SettingsGroup(
+            colors: colors,
+            children: [
+              _SettingsRow(
+                icon: Icons.delete_forever_rounded,
+                title: l10n.deleteAccount,
+                colors: colors,
+                isLast: true,
+                isDestructive: true,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -235,6 +266,7 @@ class _SettingsRow extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.isLast = false,
+    this.isDestructive = false,
   });
 
   final IconData icon;
@@ -244,9 +276,13 @@ class _SettingsRow extends StatelessWidget {
   final AppColors colors;
   final VoidCallback onTap;
   final bool isLast;
+  final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = isDestructive ? colors.due : colors.accent;
+    final titleColor = isDestructive ? colors.due : colors.textPrimary;
+
     return Column(
       children: [
         InkWell(
@@ -256,12 +292,12 @@ class _SettingsRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(icon, color: colors.accent, size: 20),
+                Icon(icon, color: iconColor, size: 20),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
+                    style: TextStyle(color: titleColor, fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
                 ),
                 if (subtitle != null) ...[

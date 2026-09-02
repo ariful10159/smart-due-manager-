@@ -19,6 +19,7 @@ import '../widgets/app_drawer.dart';
 import '../widgets/app_settings_scope.dart';
 import '../widgets/announcement_banner.dart';
 import '../widgets/announcement_image_popup.dart';
+import '../route_observer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,21 +28,41 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final _repo = CustomerRepository();
-  int _selectedIndex = 0;
+  final _selectedIndex = 0; // ✅ Home সবসময় bottom nav-এর index 0, কখনো বদলায় না
 
   bool _loadingCollection = true;
   double _todayCollection = 0;
   double _weekCollection = 0;
-
-  bool _isLoggingOut = false; // ✅ logout চলাকালীন ডাবল-ট্যাপ/back বাটন আটকানোর জন্য
 
   @override
   void initState() {
     super.initState();
     _loadCollectionStats();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAnnouncementPopup());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  // ✅ Customer Detail (বা অন্য কোনো পুশ করা) স্ক্রিন থেকে payment যোগ করে Home এ
+  // ফিরে এলে এটা কল হয় — আগে Today's/Week's Collection কার্ড শুধু initState এ
+  // একবার লোড হতো, তাই back করে ফিরলেও নতুন payment ধরত না (customer list এর
+  // মতো live stream না হওয়ায়), দেখাত পুরনো/০ সংখ্যা
+  @override
+  void didPopNext() {
+    _loadCollectionStats();
   }
 
   // ✅ 'popup' টাইপ active announcement থাকলে (schedule window এর মধ্যে পড়লে)
@@ -125,30 +146,63 @@ class _HomeScreenState extends State<HomeScreen> {
       final todayStart = DateTime(now.year, now.month, now.day);
       final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
 
-      // ✅ প্রতিটা কাস্টমারের payments subcollection আলাদা আলাদা query করার বদলে
-      // collectionGroup দিয়ে একটা মাত্র query-তে এই সপ্তাহের সব payment আনা হয়
-      // (customer লিস্টটা শুধু hidden কাস্টমার বাদ দেওয়ার জন্য লাগে) — দুটো
-      // query একে অপরের উপর নির্ভর করে না, তাই একসাথে (parallel) চালানো হয়
-      final results = await Future.wait([
-        _repo.fetchCustomersOnce(),
-        _repo.fetchOwnPaymentsSince(weekStart),
-      ]);
-      final hiddenCustomerIds = (results[0] as List<Customer>)
-          .where((c) => c.isHidden)
-          .map((c) => c.id)
-          .toSet();
-      final payments = results[1] as List<Payment>;
+      // ✅ আগে collectionGroup('payments') + where('ownerId', ...) দিয়ে একটা
+      // মাত্র query চালানো হতো — এটা fast কিন্তু দুটো কারণে চুপচাপ ব্যর্থ হতে
+      // পারত: (১) এই compound query এর জন্য দরকারি Firestore composite index
+      // deploy করা না থাকলে, বা (২) পুরনো/অন্য কোনো path দিয়ে লেখা payment
+      // ডকুমেন্টে 'ownerId' ফিল্ড না থাকলে — দুই ক্ষেত্রেই ফলাফল ছিল silent
+      // ০ (এরর দেখা যেত না)। report_screen.dart ঠিক এই একই ডেটার জন্য প্রতিটা
+      // কাস্টমারের payments subcollection সরাসরি (কোনো where filter ছাড়া)
+      // fetch করে ক্লায়েন্ট-সাইডে ফিল্টার করে — এবং সেটা নির্ভরযোগ্যভাবে কাজ
+      // করে। এখানেও সেই একই প্রমাণিত পদ্ধতি ব্যবহার করা হচ্ছে, index/ownerId
+      // এর উপর নির্ভরতা সম্পূর্ণ বাদ দিয়ে।
+      // ✅ আগে এখানে archived (isHidden) কাস্টমারদের বাদ দেওয়া হতো — কিন্তু
+      // কেউ পুরো বকেয়া পরিশোধ করলে সেই payment টা সত্যিই আজ/এই সপ্তাহে হয়েছে,
+      // পরে কাস্টমারকে archive করে দেওয়াটা শুধু active লিস্ট গোছানোর জন্য —
+      // সেই payment টা historical collection থেকে বাদ যাওয়ার কথা না। report_screen.dart
+      // এই একই হিসাবে কখনোই isHidden ফিল্টার করে না, তাই এখানেও সরানো হলো —
+      // দুই স্ক্রিনের collection সংখ্যা এখন সামঞ্জস্যপূর্ণ থাকবে।
+      // ⚠️ collectionGroup('payments') + composite index (ownerId+type+date)
+      // পদ্ধতিটা চেষ্টা করা হয়েছিল, কিন্তু ওই composite index repo-র
+      // firestore.indexes.json এ লেখা থাকলেও লাইভ Firestore project এ deploy
+      // করা ছিল না — ফলে query FAILED_PRECONDITION এরর দিত এবং কার্ড ৳০ দেখিয়ে
+      // "failed to load" snackbar আসত। তাই আপাতত আগের প্রমাণিত পদ্ধতিতে ফেরত
+      // আনা হলো — প্রতি কাস্টমারের payments subcollection থেকে সরাসরি (কোনো
+      // composite index ছাড়াই) এই সপ্তাহের payment আনা হচ্ছে। index deploy করা
+      // হলে collectionGroup পদ্ধতিতে আবার যাওয়া যাবে (আরও দ্রুত, ১৯৪-টার বদলে
+      // ১-টা request)।
+      final customers = await _repo.fetchCustomersOnce();
+
+      final snapshots = await Future.wait(
+        customers.map(
+          (c) => FirebaseFirestore.instance
+              .collection('customers')
+              .doc(c.id)
+              .collection('payments')
+              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(weekStart))
+              .get(),
+        ),
+      );
 
       double today = 0;
       double week = 0;
 
-      for (final payment in payments) {
-        if (hiddenCustomerIds.contains(payment.customerId)) continue;
+      for (final snapshot in snapshots) {
+        for (final doc in snapshot.docs) {
+          try {
+            final payment = Payment.fromMap({...doc.data(), 'id': doc.id});
+            if (payment.type != PaymentType.payment) continue;
 
-        final paymentDateLocal = payment.date.toLocal();
-        week += payment.amount;
-        if (!paymentDateLocal.isBefore(todayStart)) {
-          today += payment.amount;
+            final paymentDateLocal = payment.date.toLocal();
+            if (paymentDateLocal.isBefore(weekStart)) continue;
+
+            week += payment.amount;
+            if (!paymentDateLocal.isBefore(todayStart)) {
+              today += payment.amount;
+            }
+          } catch (e) {
+            debugPrint('Error parsing payment ID ${doc.id}: $e');
+          }
         }
       }
 
@@ -159,8 +213,18 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadingCollection = false;
       });
     } catch (e) {
+      // ✅ আগে এই এরর কোথাও log হতো না — কালেকশন কার্ড চুপচাপ ০ (বা আগের) ভ্যালু
+      // দেখিয়ে যেত, ইউজার কিছুই বুঝতে পারত না। একই স্ক্রিনের customer stream
+      // ব্যর্থ হলে l10n.dataLoadError দেখানো হয় (নিচের StreamBuilder), এখানেও
+      // সেই একই consistency আনা হলো — শুধু পুরো ড্যাশবোর্ড ঢেকে না দিয়ে (বাকি
+      // অংশ — Total Due, Top Due Customers ইত্যাদি — আলাদা স্ট্রিম থেকে আসে,
+      // এখনও ঠিকঠাক কাজ করে) একটা হালকা SnackBar দিয়ে জানানো হচ্ছে
+      debugPrint('Failed to load collection stats: $e');
       if (!mounted) return;
       setState(() => _loadingCollection = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.failedToLoadCollectionStats)),
+      );
     }
   }
 
@@ -191,15 +255,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
     final l10n = AppLocalizations.of(context)!;
+    final settings = AppSettingsScope.of(context).settings;
     // ✅ ইউজার settings > Business Profile এ shop/business name সেভ করলে top bar এ
     // সেটাই দেখানো হয় — সেভ করা না থাকলে (খালি থাকলে) ডিফল্ট "Smart Due" দেখায়
-    final businessName = AppSettingsScope.of(context).settings.businessName.trim();
+    final businessName = settings.businessName.trim();
     final appBarTitle = businessName.isEmpty ? 'Smart Due' : businessName;
+    // ✅ Settings > Currency তে বেছে নেওয়া symbol — আগে এই স্ক্রিনে টাকার
+    // অ্যামাউন্টে কোনো currency indicator-ই ছিল না, শুধু raw সংখ্যা দেখাত
+    final currencySymbol = settings.currencySymbol;
 
-    return PopScope(
-      // ✅ Logout প্রসেস চলাকালীন back বাটন সম্পূর্ণ ব্লক করা হচ্ছে
-      canPop: !_isLoggingOut,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: colors.scaffoldBg,
         drawer: const AppDrawer(currentRoute: 'home'),
         appBar: AppBar(
@@ -248,11 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const AnnouncementBanner(),
             Expanded(
-              child: _isLoggingOut
-                  ? Center(
-                      child: CircularProgressIndicator(color: colors.accent),
-                    )
-                  : StreamBuilder<List<Customer>>(
+              child: StreamBuilder<List<Customer>>(
                 stream: _repo.streamCustomers(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
@@ -276,6 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   final customers = snapshot.data!;
                   final now = DateTime.now();
+                  final currencyFmt = NumberFormat('#,##0');
 
                   final totalDue = customers.fold<double>(0, (total, c) => total + c.totalDue);
                   final totalCustomers = customers.length;
@@ -302,10 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return RefreshIndicator(
                     color: colors.accent,
                     backgroundColor: colors.surface,
-                    onRefresh: () async {
-                      await _loadCollectionStats();
-                      setState(() {});
-                    },
+                    onRefresh: _loadCollectionStats,
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(14, 10, 14, 90),
                       children: [
@@ -318,7 +377,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: _CollectionCard(
                                 icon: Icons.today_rounded,
                                 label: l10n.todaysCollection,
-                                value: _loadingCollection ? null : _todayCollection.toStringAsFixed(0),
+                                value: _loadingCollection
+                                    ? null
+                                    : '$currencySymbol${currencyFmt.format(_todayCollection)}',
                                 color: colors.accent,
                               ),
                             ),
@@ -327,7 +388,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: _CollectionCard(
                                 icon: Icons.calendar_view_week_rounded,
                                 label: l10n.weeksCollection,
-                                value: _loadingCollection ? null : _weekCollection.toStringAsFixed(0),
+                                value: _loadingCollection
+                                    ? null
+                                    : '$currencySymbol${currencyFmt.format(_weekCollection)}',
                                 color: colors.accentAlt,
                               ),
                             ),
@@ -347,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _StatCard(
                               icon: Icons.account_balance_wallet_rounded,
                               label: l10n.totalDue,
-                              value: totalDue.toStringAsFixed(0),
+                              value: '$currencySymbol${currencyFmt.format(totalDue)}',
                               color: colors.due,
                             ),
                             _StatCard(
@@ -411,6 +474,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ...topFive.map(
                             (customer) => _CustomerDueTile(
                               customer: customer,
+                              currencySymbol: currencySymbol,
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
@@ -439,6 +503,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ...upcomingPreview.map(
                             (customer) => _ReminderTile(
                               customer: customer,
+                              currencySymbol: currencySymbol,
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
@@ -456,21 +521,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        floatingActionButton: _isLoggingOut
-            ? null
-            : FloatingActionButton(
-                onPressed: _openAddCustomer,
-                backgroundColor: colors.accent,
-                foregroundColor: Colors.white,
-                elevation: 4,
-                child: const Icon(Icons.add_rounded),
-              ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _openAddCustomer,
+          backgroundColor: colors.accent,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          child: const Icon(Icons.add_rounded),
+        ),
         bottomNavigationBar: CustomBottomNavBar(
           selectedIndex: _selectedIndex,
-          isDisabled: _isLoggingOut,
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -534,9 +595,9 @@ class _GreetingHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colors.accent.withValues(alpha: 0.3),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+            color: colors.accent.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -607,6 +668,13 @@ class _CollectionCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -628,6 +696,8 @@ class _CollectionCard extends StatelessWidget {
                 )
               : Text(
                   value!,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -671,6 +741,13 @@ class _StatCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -690,6 +767,8 @@ class _StatCard extends StatelessWidget {
               children: [
                 Text(
                   value,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                   style: TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
@@ -817,14 +896,16 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _CustomerDueTile extends StatelessWidget {
-  const _CustomerDueTile({required this.customer, required this.onTap});
+  const _CustomerDueTile({required this.customer, required this.onTap, required this.currencySymbol});
 
   final Customer customer;
   final VoidCallback onTap;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final currencyFmt = NumberFormat('#,##0.00');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -842,6 +923,13 @@ class _CustomerDueTile extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: colors.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -883,7 +971,7 @@ class _CustomerDueTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Text(
-                    customer.totalDue.toStringAsFixed(2),
+                    '$currencySymbol${currencyFmt.format(customer.totalDue)}',
                     style: TextStyle(
                       color: colors.due,
                       fontWeight: FontWeight.w800,
@@ -901,10 +989,11 @@ class _CustomerDueTile extends StatelessWidget {
 }
 
 class _ReminderTile extends StatelessWidget {
-  const _ReminderTile({required this.customer, required this.onTap});
+  const _ReminderTile({required this.customer, required this.onTap, required this.currencySymbol});
 
   final Customer customer;
   final VoidCallback onTap;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -912,6 +1001,7 @@ class _ReminderTile extends StatelessWidget {
     final reminderDate = customer.nextReminderDate!;
     final formatted = DateFormat('d MMM, hh:mm a').format(reminderDate);
     final dueColor = customer.totalDue > 0 ? colors.due : colors.clear;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -930,6 +1020,13 @@ class _ReminderTile extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: colors.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -971,7 +1068,7 @@ class _ReminderTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Text(
-                    customer.totalDue.toStringAsFixed(2),
+                    '$currencySymbol${currencyFmt.format(customer.totalDue)}',
                     style: TextStyle(
                       color: dueColor,
                       fontWeight: FontWeight.w800,
@@ -1009,6 +1106,13 @@ class _EmptyCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         children: [

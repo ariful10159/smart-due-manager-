@@ -12,6 +12,7 @@ import '../models/notebook_page.dart';
 import '../models/notebook_repository.dart';
 import '../models/payment.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_settings_scope.dart';
 import 'customer_detail_screen.dart';
 import 'notebook_screen.dart';
 
@@ -359,6 +360,7 @@ class _CustomerResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dueColor = customer.totalDue > 0 ? colors.due : colors.clear;
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
 
     return _ResultCard(
       colors: colors,
@@ -378,7 +380,7 @@ class _CustomerResultTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(color: dueColor.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(9)),
         child: Text(
-          customer.totalDue.toStringAsFixed(0),
+          '$currencySymbol${NumberFormat('#,##0').format(customer.totalDue)}',
           style: TextStyle(color: dueColor, fontWeight: FontWeight.w800, fontSize: 12),
         ),
       ),
@@ -397,6 +399,7 @@ class _PaymentResultTile extends StatelessWidget {
     final payment = entry.payment;
     final isPayment = payment.type == PaymentType.payment;
     final amountColor = isPayment ? colors.clear : colors.due;
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
 
     return _ResultCard(
       colors: colors,
@@ -419,7 +422,7 @@ class _PaymentResultTile extends StatelessWidget {
           ? payment.description!
           : "${DateFormat('d MMM yyyy').format(payment.date)}${payment.paymentMethod != null ? ' · ${Payment.paymentMethodToString(payment.paymentMethod!)}' : ''}",
       trailing: Text(
-        payment.amount.toStringAsFixed(0),
+        '$currencySymbol${NumberFormat('#,##0').format(payment.amount)}',
         style: TextStyle(color: amountColor, fontWeight: FontWeight.w800, fontSize: 13.5),
       ),
     );

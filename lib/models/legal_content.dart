@@ -113,8 +113,10 @@ class LegalContent {
     LegalSection(
       'আপনার ডেটা মুছে ফেলা',
       'Settings থেকে যেকোনো সময় আপনার সব কাস্টমার ডেটা CSV হিসেবে এক্সপোর্ট করতে '
-      'পারেন। আপনার অ্যাকাউন্ট ও সম্পর্কিত সব ডেটা সম্পূর্ণ মুছে ফেলার অনুরোধ করতে '
-      'নিচের ইমেইলে যোগাযোগ করুন।',
+      'পারেন। আপনার অ্যাকাউন্ট ও সম্পর্কিত সব ডেটা (কাস্টমার, পেমেন্ট হিস্ট্রি, '
+      'নোটবুক, সেটিংস) স্থায়ীভাবে মুছে ফেলতে Settings > Delete Account এ যান। এই '
+      'কাজ সাথে সাথে হয়ে যায় এবং আর ফিরিয়ে আনা যায় না। চাইলে নিচের ইমেইলেও '
+      'যোগাযোগ করে ডিলিট করার অনুরোধ জানাতে পারেন।',
     ),
     LegalSection(
       'পরিবর্তন',
@@ -184,8 +186,10 @@ class LegalContent {
     LegalSection(
       'Deleting Your Data',
       'You can export all your customer data as CSV anytime from '
-      'Settings. To request complete deletion of your account and all '
-      'related data, contact the email below.',
+      'Settings. To permanently delete your account and all related data '
+      '(customers, payment history, notebooks, and settings), go to '
+      'Settings > Delete Account. This action is immediate and cannot be '
+      'undone. You can also contact the email below to request deletion.',
     ),
     LegalSection(
       'Changes',

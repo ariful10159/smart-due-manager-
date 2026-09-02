@@ -488,6 +488,24 @@ abstract class AppLocalizations {
   /// **'Address'**
   String get addressLabel;
 
+  /// No description provided for @businessPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Phone'**
+  String get businessPhoneLabel;
+
+  /// No description provided for @bkashNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'bKash/Nagad Number'**
+  String get bkashNumberLabel;
+
+  /// No description provided for @bkashNumberDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown to customers so they know where to send payment'**
+  String get bkashNumberDesc;
+
   /// No description provided for @smsTemplate.
   ///
   /// In en, this message translates to:
@@ -529,6 +547,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write your thank-you SMS template...'**
   String get thankYouTemplateHint;
+
+  /// No description provided for @partialPaymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial Payment Thank You'**
+  String get partialPaymentLabel;
+
+  /// No description provided for @partialPaymentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when the customer pays part of the due and some due remains'**
+  String get partialPaymentDesc;
+
+  /// No description provided for @partialPaymentTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your partial-payment SMS template...'**
+  String get partialPaymentTemplateHint;
 
   /// No description provided for @templateSaved.
   ///
@@ -584,11 +620,71 @@ abstract class AppLocalizations {
   /// **'Customer\'s phone number'**
   String get placeholderPhoneDesc;
 
+  /// No description provided for @placeholderPaidAmountDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount just paid'**
+  String get placeholderPaidAmountDesc;
+
+  /// No description provided for @placeholderRemainingDueDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Due remaining after this payment'**
+  String get placeholderRemainingDueDesc;
+
+  /// No description provided for @placeholderBusinessPhoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business phone number'**
+  String get placeholderBusinessPhoneDesc;
+
+  /// No description provided for @placeholderBkashNumberDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your bKash/Nagad number to receive payment'**
+  String get placeholderBkashNumberDesc;
+
   /// No description provided for @groupSecurity.
   ///
   /// In en, this message translates to:
   /// **'Security & Data'**
   String get groupSecurity;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
+
+  /// No description provided for @changePasswordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your account login password'**
+  String get changePasswordDesc;
+
+  /// No description provided for @changingPasswordForAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing password for account: {phone}'**
+  String changingPasswordForAccount(String phone);
+
+  /// No description provided for @currentPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Password'**
+  String get currentPasswordLabel;
+
+  /// No description provided for @enterCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password'**
+  String get enterCurrentPassword;
+
+  /// No description provided for @passwordChangedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed successfully'**
+  String get passwordChangedSuccess;
 
   /// No description provided for @appLock.
   ///
@@ -625,6 +721,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disabled'**
   String get disabled;
+
+  /// No description provided for @groupDangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get groupDangerZone;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete your account and all data'**
+  String get deleteAccountDesc;
+
+  /// No description provided for @deleteAccountWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone'**
+  String get deleteAccountWarningTitle;
+
+  /// No description provided for @deleteAccountWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account permanently removes all your customers, payment history, notebooks, and settings. This cannot be recovered.'**
+  String get deleteAccountWarningBody;
+
+  /// No description provided for @deleteAccountWarningBodyWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account permanently removes all {count} customers, their full payment history, notebooks, and settings. This cannot be recovered.'**
+  String deleteAccountWarningBodyWithCount(int count);
+
+  /// No description provided for @deleteAccountAcknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand this action is permanent and cannot be undone'**
+  String get deleteAccountAcknowledge;
+
+  /// No description provided for @deleteAccountFinalConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account permanently?'**
+  String get deleteAccountFinalConfirmTitle;
+
+  /// No description provided for @deleteAccountFinalConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your last chance to cancel. All your data will be deleted right now and cannot be recovered.'**
+  String get deleteAccountFinalConfirmBody;
 
   /// No description provided for @dataBackup.
   ///
@@ -1316,6 +1466,18 @@ abstract class AppLocalizations {
   /// **'Write a note about this reminder...'**
   String get reminderNoteHint;
 
+  /// No description provided for @reminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Reminder'**
+  String get reminderNotificationTitle;
+
+  /// No description provided for @reminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to collect payment from {name}'**
+  String reminderNotificationBody(String name);
+
   /// No description provided for @reminderUpdatedSuccess.
   ///
   /// In en, this message translates to:
@@ -1586,6 +1748,12 @@ abstract class AppLocalizations {
   /// **'Send a due reminder SMS to \'{name}\' ({phone})?'**
   String dueReminderSmsConfirm(String name, String phone);
 
+  /// No description provided for @partialPaymentSmsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a payment-received SMS to \'{name}\' ({phone})?'**
+  String partialPaymentSmsConfirm(String name, String phone);
+
   /// No description provided for @send.
   ///
   /// In en, this message translates to:
@@ -1819,6 +1987,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load report, please try again'**
   String get failedToLoadReport;
+
+  /// No description provided for @failedToLoadCollectionStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load today\'s/week\'s collection, please try again'**
+  String get failedToLoadCollectionStats;
 
   /// No description provided for @collectionReportsTitle.
   ///
@@ -2431,6 +2605,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replaced'**
   String get statusReplaced;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
 
   /// No description provided for @recurringLabel.
   ///

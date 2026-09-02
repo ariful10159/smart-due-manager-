@@ -77,7 +77,9 @@ class _ReminderScreenState extends State<ReminderScreen> {
         .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
         .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
         .replaceAll('{business_name}', settings.businessName)
-        .replaceAll('{phone}', customer.phone);
+        .replaceAll('{phone}', customer.phone)
+        .replaceAll('{business_phone}', settings.businessPhone)
+        .replaceAll('{bkash_number}', settings.bkashNumber);
   }
 
   void _enterSelectionMode(String customerId) {
@@ -339,7 +341,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       if (!mounted) return;
 
       await NotificationService.scheduleReminder(
-        id: customer.hashCode,
+        id: NotificationService.reminderIdFor(customer.id),
         title: "Payment Reminder",
         body: "${customer.name} will pay now",
         scheduledDate: nextDate,
@@ -358,7 +360,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       if (nextDate == null) return;
 
       await NotificationService.scheduleReminder(
-        id: customer.hashCode,
+        id: NotificationService.reminderIdFor(customer.id),
         title: "Payment Reminder",
         body: "${customer.name} will pay now",
         scheduledDate: nextDate,
@@ -401,7 +403,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
     final colors = AppColors.of(context);
     try {
       await _repo.clearReminder(customer.id);
-      await NotificationService.cancelReminder(customer.hashCode);
+      await NotificationService.cancelReminder(NotificationService.reminderIdFor(customer.id));
 
       if (!mounted) return;
 
@@ -677,7 +679,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
       // ✅ এখন Settings-এ সেভ করা টেমপ্লেট থেকে SMS মেসেজ তৈরি হচ্ছে
       await NotificationService.scheduleReminder(
-        id: customer.hashCode,
+        id: NotificationService.reminderIdFor(customer.id),
         title: "Payment Reminder",
         body: "${customer.name} will pay now",
         scheduledDate: newDate,
@@ -711,6 +713,8 @@ class _ReminderScreenState extends State<ReminderScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
     final l10n = AppLocalizations.of(context)!;
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     return PopScope(
       canPop: false,
@@ -720,9 +724,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
           _exitSelectionMode();
           return;
         }
+        // ✅ আগে (route) => false root route (গেট-সহ) মুছে ফেলত — এখন
+        // route.isFirst দিয়ে root বজায় রেখেই Home ট্যাবে যাওয়া হচ্ছে
         Navigator.of(context).pushAndRemoveUntil(
           tabTransitionRoute(const HomeScreen(), false),
-          (route) => false,
+          (route) => route.isFirst,
         );
       },
       child: StreamBuilder<List<Customer>>(
@@ -1112,7 +1118,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                                           borderRadius: BorderRadius.circular(10),
                                                         ),
                                                         child: Text(
-                                                          customer.totalDue.toStringAsFixed(2),
+                                                          '$currencySymbol${currencyFmt.format(customer.totalDue)}',
                                                           style: TextStyle(
                                                             color: customer.totalDue > 0 ? colors.due : colors.clear,
                                                             fontWeight: FontWeight.w800,
