@@ -156,15 +156,30 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       // fetch করে ক্লায়েন্ট-সাইডে ফিল্টার করে — এবং সেটা নির্ভরযোগ্যভাবে কাজ
       // করে। এখানেও সেই একই প্রমাণিত পদ্ধতি ব্যবহার করা হচ্ছে, index/ownerId
       // এর উপর নির্ভরতা সম্পূর্ণ বাদ দিয়ে।
+      // ✅ আগে এখানে archived (isHidden) কাস্টমারদের বাদ দেওয়া হতো — কিন্তু
+      // কেউ পুরো বকেয়া পরিশোধ করলে সেই payment টা সত্যিই আজ/এই সপ্তাহে হয়েছে,
+      // পরে কাস্টমারকে archive করে দেওয়াটা শুধু active লিস্ট গোছানোর জন্য —
+      // সেই payment টা historical collection থেকে বাদ যাওয়ার কথা না। report_screen.dart
+      // এই একই হিসাবে কখনোই isHidden ফিল্টার করে না, তাই এখানেও সরানো হলো —
+      // দুই স্ক্রিনের collection সংখ্যা এখন সামঞ্জস্যপূর্ণ থাকবে।
+      // ⚠️ collectionGroup('payments') + composite index (ownerId+type+date)
+      // পদ্ধতিটা চেষ্টা করা হয়েছিল, কিন্তু ওই composite index repo-র
+      // firestore.indexes.json এ লেখা থাকলেও লাইভ Firestore project এ deploy
+      // করা ছিল না — ফলে query FAILED_PRECONDITION এরর দিত এবং কার্ড ৳০ দেখিয়ে
+      // "failed to load" snackbar আসত। তাই আপাতত আগের প্রমাণিত পদ্ধতিতে ফেরত
+      // আনা হলো — প্রতি কাস্টমারের payments subcollection থেকে সরাসরি (কোনো
+      // composite index ছাড়াই) এই সপ্তাহের payment আনা হচ্ছে। index deploy করা
+      // হলে collectionGroup পদ্ধতিতে আবার যাওয়া যাবে (আরও দ্রুত, ১৯৪-টার বদলে
+      // ১-টা request)।
       final customers = await _repo.fetchCustomersOnce();
-      final visibleCustomers = customers.where((c) => !c.isHidden).toList();
 
       final snapshots = await Future.wait(
-        visibleCustomers.map(
+        customers.map(
           (c) => FirebaseFirestore.instance
               .collection('customers')
               .doc(c.id)
               .collection('payments')
+              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(weekStart))
               .get(),
         ),
       );
@@ -580,9 +595,9 @@ class _GreetingHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colors.accent.withValues(alpha: 0.3),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+            color: colors.accent.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -653,6 +668,13 @@ class _CollectionCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -719,6 +741,13 @@ class _StatCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -894,6 +923,13 @@ class _CustomerDueTile extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: colors.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -984,6 +1020,13 @@ class _ReminderTile extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: colors.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -1063,6 +1106,13 @@ class _EmptyCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         children: [
