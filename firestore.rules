@@ -11,15 +11,16 @@ service cloud.firestore {
     }
 
     // ============================================
-    // ✅ ADMINS COLLECTION — নিজের admin ডকুমেন্ট, অথবা অন্য কোনো admin
-    // পড়তে/লিখতে পারবে (নতুন admin যোগ/বাদ দেওয়ার জন্য) — কিন্তু প্রথম admin
-    // ডকুমেন্ট সবসময় Console/CLI দিয়ে ম্যানুয়ালি বসাতে হবে, কারণ non-admin
-    // কখনোই নিজেকে admin বানাতে পারবে না (isAdmin() নিজেই আগে থেকে একটা
-    // admins ডকুমেন্ট থাকা দাবি করে)।
+    // ✅ ADMINS COLLECTION — নিজের admin ডকুমেন্ট, অথবা অন্য কোনো admin পড়তে পারবে।
+    // Write সবসময় false — add/remove/role-change শুধু addAdmin / removeAdmin /
+    // setAdminRole Cloud Functions দিয়ে হয় (functions/index.js), যেখানে caller
+    // super admin কিনা এবং শেষ super admin remove/demote হয়ে যাচ্ছে কিনা — এই
+    // চেকগুলো server-side এ enforce করা হয়। প্রথম admin ডকুমেন্ট সবসময়
+    // Console/CLI দিয়ে ম্যানুয়ালি বসাতে হবে।
     // ============================================
     match /admins/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-      allow write: if isAdmin();
+      allow write: if false;
     }
 
     // ============================================

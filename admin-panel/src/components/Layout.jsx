@@ -14,7 +14,7 @@ const navItems = [
 ]
 
 export default function Layout() {
-  const { user, signOut } = useAuth()
+  const { user, isSuperAdmin, signOut } = useAuth()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -23,6 +23,7 @@ export default function Layout() {
     setSidebarOpen(false)
   }, [location.pathname])
 
+  const visibleNavItems = navItems.filter((item) => item.to !== '/admins' || isSuperAdmin)
   const currentLabel = navItems.find((item) => location.pathname.startsWith(item.to))?.label || 'Smart Due'
 
   return (
@@ -49,7 +50,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

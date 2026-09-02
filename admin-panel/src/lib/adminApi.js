@@ -334,14 +334,21 @@ export async function fetchAdmins() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
-export async function addAdmin(uid, email) {
-  await setDoc(doc(db, 'admins', uid), { email: email || null, createdAt: serverTimestamp() })
-  await logAction('add_admin', { uid, email })
+// role: 'super' | 'staff'. Runs server-side (Cloud Function) — only super admins may call
+// it, and the function itself re-verifies that rather than trusting the client.
+export async function addAdmin(uid, email, role) {
+  await httpsCallable(functions, 'addAdmin')({ uid, email: email || null, role })
 }
 
+// Server-side (Cloud Function) blocks removing the last remaining super admin, so the whole
+// team can't get locked out of the panel.
 export async function removeAdmin(uid) {
-  await deleteDoc(doc(db, 'admins', uid))
-  await logAction('remove_admin', { uid })
+  await httpsCallable(functions, 'removeAdmin')({ uid })
+}
+
+// role: 'super' | 'staff'. Same last-super-admin protection as removeAdmin applies to demotion.
+export async function setAdminRole(uid, role) {
+  await httpsCallable(functions, 'setAdminRole')({ uid, role })
 }
 
 // ============================================
