@@ -70,6 +70,9 @@
   "fullPaymentThankYouLabel": "Full Payment Thank You",
   "fullPaymentThankYouDesc": "Used when the customer's due becomes fully paid (৳0)",
   "thankYouTemplateHint": "Write your thank-you SMS template...",
+  "partialPaymentLabel": "Partial Payment Thank You",
+  "partialPaymentDesc": "Used when the customer pays part of the due and some due remains",
+  "partialPaymentTemplateHint": "Write your partial-payment SMS template...",
   "templateSaved": "Template saved",
   "saveTemplate": "Save Template",
   "placeholderHelpLabel": "What do the placeholders mean? Tap to see",
@@ -79,6 +82,8 @@
   "placeholderDueDateDesc": "Payment due date",
   "placeholderBusinessNameDesc": "Your business/shop name",
   "placeholderPhoneDesc": "Customer's phone number",
+  "placeholderPaidAmountDesc": "Amount just paid",
+  "placeholderRemainingDueDesc": "Due remaining after this payment",
   "groupSecurity": "Security & Data",
   "appLock": "App Lock (Security)",
   "appLockEnabledStatus": "App Lock is enabled",
@@ -336,6 +341,10 @@
   },
   "dueReminderSmsConfirm": "Send a due reminder SMS to '{name}' ({phone})?",
   "@dueReminderSmsConfirm": {
+    "placeholders": { "name": { "type": "String" }, "phone": { "type": "String" } }
+  },
+  "partialPaymentSmsConfirm": "Send a payment-received SMS to '{name}' ({phone})?",
+  "@partialPaymentSmsConfirm": {
     "placeholders": { "name": { "type": "String" }, "phone": { "type": "String" } }
   },
   "send": "Send",

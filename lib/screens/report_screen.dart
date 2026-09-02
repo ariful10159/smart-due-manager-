@@ -23,6 +23,20 @@ enum ReportPeriod { daily, weekly, monthly }
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
 
+  // ✅ আগের সেশনে লোড করা রিপোর্ট ডেটা — প্রতিবার স্ক্রিন খুললেই (Navigator.push
+  // দিয়ে নতুন State তৈরি হয়) N+1 Firestore query (প্রতি কাস্টমারের জন্য আলাদা
+  // payments subcollection read) নতুন করে চালানো লাগত, তাই স্ক্রিন খুলতে সময়
+  // লাগত। এখন cache থাকলে সাথে সাথেই পুরনো ডেটা দেখানো হয়, নতুন ডেটা background
+  // এ silently রিফ্রেশ হয় — public class-এ রাখা হয়েছে যাতে AuthService.logout()
+  // থেকে ক্লিয়ার করা যায় (account বদলালে আগের ইউজারের ডেটা যেন না দেখায়)
+  static List<Customer>? _cachedCustomers;
+  static List<Payment>? _cachedPayments;
+
+  static void clearCache() {
+    _cachedCustomers = null;
+    _cachedPayments = null;
+  }
+
   @override
   State<ReportScreen> createState() => _ReportScreenState();
 }
@@ -40,7 +54,14 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    final hasCache =
+        ReportScreen._cachedCustomers != null && ReportScreen._cachedPayments != null;
+    if (hasCache) {
+      _customers = ReportScreen._cachedCustomers!;
+      _payments = ReportScreen._cachedPayments!;
+      _loading = false;
+    }
+    _loadData(silent: hasCache);
   }
 
   // ✅ প্রতিটা কাস্টমারের payments subcollection আলাদাভাবে query করা হয় — Firestore
@@ -49,8 +70,11 @@ class _ReportScreenState extends State<ReportScreen> {
   // filter করা যায় না (Firestore পুরো query-টাই প্রমাণযোগ্য হতে হয়), তাই সেই
   // rule শুধু `request.auth != null` চেক করত — যেকোনো লগইন করা ইউজার সব
   // ইউজারের পেমেন্ট ডেটা ডাউনলোড করতে পারত।
-  Future<void> _loadData() async {
-    setState(() => _loading = true);
+  // ✅ `silent: true` হলে (cache থেকে ইতিমধ্যে পুরনো ডেটা দেখানো হয়ে গেছে, বা
+  // pull-to-refresh চলছে) পূর্ণ-স্ক্রিন স্পিনার আর দেখানো হয় না — বিদ্যমান
+  // কনটেন্ট দেখা যেতে থাকে, নতুন ডেটা এলে নিঃশব্দে বদলে যায়
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       final customers = await _repo.fetchCustomersOnce();
       final List<Payment> allPayments = [];
@@ -77,6 +101,8 @@ class _ReportScreenState extends State<ReportScreen> {
       }
 
       if (!mounted) return;
+      ReportScreen._cachedCustomers = customers;
+      ReportScreen._cachedPayments = allPayments;
       setState(() {
         _customers = customers;
         _payments = allPayments;
@@ -85,11 +111,15 @@ class _ReportScreenState extends State<ReportScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.failedToLoadReport),
-        ),
-      );
+      // ✅ silent রিফ্রেশ ব্যর্থ হলে আগের (cache করা) ডেটা যা স্ক্রিনে আছে তাই
+      // থেকে যায় — নীরবে, ব্যবহারকারীকে বিরক্ত না করে
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.failedToLoadReport),
+          ),
+        );
+      }
     }
   }
 
@@ -527,7 +557,7 @@ class _ReportScreenState extends State<ReportScreen> {
       body: _loading
           ? Center(child: CircularProgressIndicator(color: colors.accent))
           : RefreshIndicator(
-              onRefresh: _loadData,
+              onRefresh: () => _loadData(silent: true),
               color: colors.accent,
               child: _buildContent(colors),
             ),

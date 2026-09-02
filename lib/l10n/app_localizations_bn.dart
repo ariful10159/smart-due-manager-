@@ -203,6 +203,17 @@ class AppLocalizationsBn extends AppLocalizations {
   String get thankYouTemplateHint => 'ধন্যবাদ জানানোর SMS টেমপ্লেট লিখুন...';
 
   @override
+  String get partialPaymentLabel => 'আংশিক পেমেন্ট ধন্যবাদ';
+
+  @override
+  String get partialPaymentDesc =>
+      'কাস্টমার বকেয়ার কিছু অংশ পরিশোধ করলে এবং কিছু বকেয়া থেকে গেলে এই টেমপ্লেট ব্যবহার হবে';
+
+  @override
+  String get partialPaymentTemplateHint =>
+      'আংশিক পেমেন্টের SMS টেমপ্লেট লিখুন...';
+
+  @override
   String get templateSaved => 'টেমপ্লেট সেভ হয়েছে';
 
   @override
@@ -229,6 +240,13 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get placeholderPhoneDesc => 'কাস্টমারের ফোন নম্বর';
+
+  @override
+  String get placeholderPaidAmountDesc => 'এইমাত্র যে টাকা পরিশোধ হলো';
+
+  @override
+  String get placeholderRemainingDueDesc =>
+      'এই পেমেন্টের পর যে বকেয়া বাকি রইল';
 
   @override
   String get groupSecurity => 'নিরাপত্তা ও ডেটা';
@@ -794,6 +812,11 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String dueReminderSmsConfirm(String name, String phone) {
     return '\'$name\' কে ($phone) due reminder SMS পাঠাতে চান?';
+  }
+
+  @override
+  String partialPaymentSmsConfirm(String name, String phone) {
+    return '\'$name\' কে ($phone) পেমেন্ট-প্রাপ্তির SMS পাঠাতে চান?';
   }
 
   @override

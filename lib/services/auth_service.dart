@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../screens/report_screen.dart';
 import 'app_config_service.dart';
 
 class AuthService {
@@ -240,6 +241,9 @@ class AuthService {
 
   // ✅ Logout — timeout সহ, যাতে কখনো চিরকাল আটকে না থাকে
   static Future<void> logout() async {
+    // ✅ Report স্ক্রিনের static cache পরের ইউজারের কাছে আগের ইউজারের ডেটা
+    // দেখিয়ে না ফেলে, তাই একই ডিভাইসে account বদলালে এটা ক্লিয়ার হওয়া জরুরি
+    ReportScreen.clearCache();
     try {
       await _auth.signOut().timeout(const Duration(seconds: 10));
     } on TimeoutException {

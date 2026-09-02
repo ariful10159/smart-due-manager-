@@ -482,6 +482,24 @@ abstract class AppLocalizations {
   /// **'Write your thank-you SMS template...'**
   String get thankYouTemplateHint;
 
+  /// No description provided for @partialPaymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial Payment Thank You'**
+  String get partialPaymentLabel;
+
+  /// No description provided for @partialPaymentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when the customer pays part of the due and some due remains'**
+  String get partialPaymentDesc;
+
+  /// No description provided for @partialPaymentTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your partial-payment SMS template...'**
+  String get partialPaymentTemplateHint;
+
   /// No description provided for @templateSaved.
   ///
   /// In en, this message translates to:
@@ -535,6 +553,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Customer\'s phone number'**
   String get placeholderPhoneDesc;
+
+  /// No description provided for @placeholderPaidAmountDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount just paid'**
+  String get placeholderPaidAmountDesc;
+
+  /// No description provided for @placeholderRemainingDueDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Due remaining after this payment'**
+  String get placeholderRemainingDueDesc;
 
   /// No description provided for @groupSecurity.
   ///
@@ -1537,6 +1567,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send a due reminder SMS to \'{name}\' ({phone})?'**
   String dueReminderSmsConfirm(String name, String phone);
+
+  /// No description provided for @partialPaymentSmsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a payment-received SMS to \'{name}\' ({phone})?'**
+  String partialPaymentSmsConfirm(String name, String phone);
 
   /// No description provided for @send.
   ///

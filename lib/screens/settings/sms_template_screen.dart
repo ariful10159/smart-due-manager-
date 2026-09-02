@@ -16,12 +16,14 @@ class SmsTemplateScreen extends StatefulWidget {
 class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
   late TextEditingController _dueTemplateController;
   late TextEditingController _thankYouTemplateController;
+  late TextEditingController _partialPaymentTemplateController;
   bool _initialized = false;
 
   @override
   void dispose() {
     _dueTemplateController.dispose();
     _thankYouTemplateController.dispose();
+    _partialPaymentTemplateController.dispose();
     super.dispose();
   }
 
@@ -85,6 +87,8 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
       ('{due_date}', l10n.placeholderDueDateDesc),
       ('{business_name}', l10n.placeholderBusinessNameDesc),
       ('{phone}', l10n.placeholderPhoneDesc),
+      ('{paid_amount}', l10n.placeholderPaidAmountDesc),
+      ('{remaining_due}', l10n.placeholderRemainingDueDesc),
     ];
 
     await showModalBottomSheet<void>(
@@ -184,6 +188,8 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
     if (!_initialized) {
       _dueTemplateController = TextEditingController(text: settings.smsReminderTemplate);
       _thankYouTemplateController = TextEditingController(text: settings.fullPaymentThankYouTemplate);
+      _partialPaymentTemplateController =
+          TextEditingController(text: settings.partialPaymentThankYouTemplate);
       _initialized = true;
     }
 
@@ -278,6 +284,46 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
           const SizedBox(height: 10),
           _buildPlaceholderChips(colors, _thankYouTemplateController, AppSettings.thankYouPlaceholders),
 
+          const SizedBox(height: 28),
+          Divider(color: colors.borderColor, height: 1),
+          const SizedBox(height: 24),
+
+          Text(
+            l10n.partialPaymentLabel,
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: colors.textPrimary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.partialPaymentDesc,
+            style: TextStyle(fontSize: 12, color: colors.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _partialPaymentTemplateController,
+            maxLines: 5,
+            style: TextStyle(color: colors.textPrimary, fontSize: 13.5),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: colors.surfaceAlt,
+              hintText: l10n.partialPaymentTemplateHint,
+              hintStyle: TextStyle(color: colors.hintColor),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: settings.accentColor, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildPlaceholderChips(colors, _partialPaymentTemplateController, AppSettings.partialPaymentPlaceholders),
+
           const SizedBox(height: 16),
           InkWell(
             borderRadius: BorderRadius.circular(8),
@@ -313,6 +359,8 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
                   settings.copyWith(
                     smsReminderTemplate: _dueTemplateController.text.trim(),
                     fullPaymentThankYouTemplate: _thankYouTemplateController.text.trim(),
+                    partialPaymentThankYouTemplate:
+                        _partialPaymentTemplateController.text.trim(),
                   ),
                 );
                 await _showSuccessDialog(l10n.templateSaved);

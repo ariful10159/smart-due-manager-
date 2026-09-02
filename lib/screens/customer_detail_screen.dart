@@ -43,22 +43,36 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     return DateFormat('d MMMM yyyy').format(date);
   }
 
-  String _buildDueMessage(Customer customer) {
+  // ✅ `paidAmount` দিলে (অর্থাৎ এইমাত্র কোনো payment হয়েছে) এবং customer.totalDue
+  // এখনও ০ এর বেশি থাকলে partial-payment টেমপ্লেট ব্যবহার হয় — না হলে আগের
+  // দুই-ধাপি (full-paid / plain reminder) লজিকই চলে
+  String _buildDueMessage(Customer customer, {double? paidAmount}) {
     final settings = AppSettingsScope.of(context).settings;
     final dateFmt = DateFormat('d MMM yyyy');
     final currencyFmt = NumberFormat('#,##0.00');
 
-    // ✅ বকেয়া সম্পূর্ণ পরিশোধ হয়ে গেলে due-reminder এর বদলে thank-you টেমপ্লেট
-    final template = customer.totalDue <= 0
-        ? settings.fullPaymentThankYouTemplate
-        : settings.smsReminderTemplate;
+    final String template;
+    if (customer.totalDue <= 0) {
+      // ✅ বকেয়া সম্পূর্ণ পরিশোধ হয়ে গেলে thank-you টেমপ্লেট
+      template = settings.fullPaymentThankYouTemplate;
+    } else if (paidAmount != null && paidAmount > 0) {
+      // ✅ কিছু টাকা এইমাত্র পরিশোধ হয়েছে, কিছু বকেয়া এখনও বাকি
+      template = settings.partialPaymentThankYouTemplate;
+    } else {
+      template = settings.smsReminderTemplate;
+    }
 
     return template
         .replaceAll('{name}', customer.name)
         .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
         .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
         .replaceAll('{business_name}', settings.businessName)
-        .replaceAll('{phone}', customer.phone);
+        .replaceAll('{phone}', customer.phone)
+        .replaceAll(
+          '{paid_amount}',
+          paidAmount != null ? currencyFmt.format(paidAmount) : '',
+        )
+        .replaceAll('{remaining_due}', currencyFmt.format(customer.totalDue));
   }
 
   String _daysSincePayment(DateTime lastPaymentDate) {
@@ -320,6 +334,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       customerId: currentCustomer.id,
       payment: payment,
     );
+
+    // ✅ কাস্টমার আসলেই টাকা পরিশোধ করলে (due বাড়ানো নয়) payment সেভের সাথে সাথেই
+    // SMS confirm dialog auto-খুলে যায় — updatedDue পূর্ণ পরিশোধ হোক বা আংশিক,
+    // দুই ক্ষেত্রেই সঠিক টেমপ্লেট বেছে নেয় _buildDueMessage
+    if (type == PaymentType.payment && mounted) {
+      final updatedCustomer = currentCustomer.copyWith(totalDue: updatedDue);
+      await _confirmSendSms(updatedCustomer, paidAmount: payment.amount);
+    }
   }
 
   Future<void> _setReminder(Customer customer) async {
@@ -643,10 +665,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     }
   }
 
-  Future<void> _confirmSendSms(Customer customer) async {
+  Future<void> _confirmSendSms(Customer customer, {double? paidAmount}) async {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final message = _buildDueMessage(customer);
+    final message = _buildDueMessage(customer, paidAmount: paidAmount);
+    final isPartialPayment =
+        customer.totalDue > 0 && paidAmount != null && paidAmount > 0;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -664,7 +688,9 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               Text(
                 customer.totalDue <= 0
                     ? l10n.thankYouSmsConfirm(customer.name, customer.phone)
-                    : l10n.dueReminderSmsConfirm(customer.name, customer.phone),
+                    : isPartialPayment
+                        ? l10n.partialPaymentSmsConfirm(customer.name, customer.phone)
+                        : l10n.dueReminderSmsConfirm(customer.name, customer.phone),
                 style: TextStyle(color: colors.textSecondary),
               ),
               const SizedBox(height: 12),
@@ -701,13 +727,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     // ✅ Play Store policy অনুযায়ী app নিজে SMS পাঠাতে পারে না — default SMS app
     // prefilled অবস্থায় খুলে দেওয়া হয়, ব্যবহারকারী নিজে Send করবেন
-    final uri = buildSmsComposeUri(customer.phone, _buildDueMessage(customer));
+    final uri = buildSmsComposeUri(customer.phone, message);
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
       await _customerRepo.logSmsSent(
         customerId: customer.id,
-        type: 'manual',
+        type: isPartialPayment ? 'partial_payment' : 'manual',
       );
     } else {
       if (mounted) {

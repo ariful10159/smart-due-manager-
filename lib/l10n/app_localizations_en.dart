@@ -202,6 +202,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thankYouTemplateHint => 'Write your thank-you SMS template...';
 
   @override
+  String get partialPaymentLabel => 'Partial Payment Thank You';
+
+  @override
+  String get partialPaymentDesc =>
+      'Used when the customer pays part of the due and some due remains';
+
+  @override
+  String get partialPaymentTemplateHint =>
+      'Write your partial-payment SMS template...';
+
+  @override
   String get templateSaved => 'Template saved';
 
   @override
@@ -228,6 +239,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get placeholderPhoneDesc => 'Customer\'s phone number';
+
+  @override
+  String get placeholderPaidAmountDesc => 'Amount just paid';
+
+  @override
+  String get placeholderRemainingDueDesc => 'Due remaining after this payment';
 
   @override
   String get groupSecurity => 'Security & Data';
@@ -793,6 +810,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String dueReminderSmsConfirm(String name, String phone) {
     return 'Send a due reminder SMS to \'$name\' ($phone)?';
+  }
+
+  @override
+  String partialPaymentSmsConfirm(String name, String phone) {
+    return 'Send a payment-received SMS to \'$name\' ($phone)?';
   }
 
   @override
