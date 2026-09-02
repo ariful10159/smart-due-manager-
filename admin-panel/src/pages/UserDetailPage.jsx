@@ -22,6 +22,7 @@ import {
 } from '../lib/adminApi'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { toCsv, downloadCsv } from '../lib/csv'
+import { useAuth } from '../context/AuthContext'
 
 const currency = (n) => `৳${Math.round(n || 0).toLocaleString('en-US')}`
 
@@ -481,6 +482,7 @@ function StatPill({ label, value, accent }) {
 }
 
 export default function UserDetailPage() {
+  const { isSuperAdmin } = useAuth()
   const { uid } = useParams()
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
@@ -604,12 +606,14 @@ export default function UserDetailPage() {
           >
             {user.disabled ? 'Enable account' : 'Disable account'}
           </button>
-          <button
-            onClick={() => setConfirmDeleteAll(true)}
-            className="rounded-lg bg-red-500/90 px-3 py-1.5 text-sm font-medium text-white shadow-[0_0_0_1px_rgba(248,113,113,0.4)] transition-colors hover:bg-red-500"
-          >
-            Delete all data
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setConfirmDeleteAll(true)}
+              className="rounded-lg bg-red-500/90 px-3 py-1.5 text-sm font-medium text-white shadow-[0_0_0_1px_rgba(248,113,113,0.4)] transition-colors hover:bg-red-500"
+            >
+              Delete all data
+            </button>
+          )}
         </div>
       </div>
 

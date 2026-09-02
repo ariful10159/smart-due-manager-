@@ -18,6 +18,7 @@ const ADMIN_ACTION_LABELS = {
   delete_announcement: 'Deleted announcement',
   add_admin: 'Granted admin access',
   remove_admin: 'Removed admin access',
+  set_admin_role: 'Changed admin role',
   update_problem_report_status: 'Updated problem report status',
 }
 
