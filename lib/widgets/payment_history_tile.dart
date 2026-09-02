@@ -55,6 +55,8 @@ class PaymentHistoryTile extends StatelessWidget {
   void _showPaymentDetail(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     showDialog(
       context: context,
@@ -88,7 +90,7 @@ class PaymentHistoryTile extends StatelessWidget {
                           payment.receiptImageUrl!.isNotEmpty)
                         const SizedBox(height: 16),
                       Text(
-                        l10n.amountColonLabel(payment.amount.toStringAsFixed(2)),
+                        l10n.amountColonLabel('$currencySymbol${currencyFmt.format(payment.amount)}'),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -98,7 +100,7 @@ class PaymentHistoryTile extends StatelessWidget {
                       if (payment.discount > 0) ...[
                         const SizedBox(height: 4),
                         Text(
-                          l10n.discountColonLabel(payment.discount.toStringAsFixed(2)),
+                          l10n.discountColonLabel('$currencySymbol${currencyFmt.format(payment.discount)}'),
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13.5,
@@ -206,6 +208,8 @@ class PaymentHistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
     final isPayment = payment.type == PaymentType.payment;
     final amountColor = isPayment ? colors.clear : colors.due;
 
@@ -256,13 +260,13 @@ class PaymentHistoryTile extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            payment.amount.toStringAsFixed(2),
+                            '$currencySymbol${currencyFmt.format(payment.amount)}',
                             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: colors.textPrimary),
                           ),
                           if (payment.discount > 0) ...[
                             const SizedBox(width: 6),
                             Text(
-                              l10n.discountAppliedLabel(payment.discount.toStringAsFixed(2)),
+                              l10n.discountAppliedLabel('$currencySymbol${currencyFmt.format(payment.discount)}'),
                               style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: colors.clear),
                             ),
                           ],

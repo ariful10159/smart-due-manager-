@@ -102,10 +102,14 @@ class ReminderHistoryScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final reminder = reminders[index];
 
+              // ✅ আগে malformed/missing 'reminderDate' এ সরাসরি `as DateTime`
+              // cast crash করত — createdAt এর মতোই এখন নিরাপদ fallback রাখা হলো
               final timestamp = reminder['reminderDate'];
               final dateTime = timestamp is Timestamp
                   ? timestamp.toDate()
-                  : timestamp as DateTime;
+                  : timestamp is DateTime
+                      ? timestamp
+                      : DateTime.now();
               final formattedDate =
                   DateFormat('d MMMM yyyy • hh:mm a').format(dateTime);
 
@@ -121,7 +125,9 @@ class ReminderHistoryScreen extends StatelessWidget {
               // ✅ 'active' মানে এটাই কাস্টমারের বর্তমান reminder (নতুন কিছু সেট
               // করে replace হয়নি) — কিন্তু তারিখ পার হয়ে গেছে কিনা সেটা Firestore
               // এ ট্র্যাক করা হয় না, তাই সেটা এখানে সময়ের সাথে তুলনা করে বের করা হয়
-              final isActive = reminder['status'] == 'active';
+              final reminderStatus = reminder['status'] as String? ?? 'active';
+              final isActive = reminderStatus == 'active';
+              final isCancelled = reminderStatus == 'cancelled';
               final now = DateTime.now();
               final isSameDay = dateTime.year == now.year &&
                   dateTime.month == now.month &&
@@ -130,7 +136,13 @@ class ReminderHistoryScreen extends StatelessWidget {
 
               final String statusLabel;
               final Color statusColor;
-              if (!isActive) {
+              if (isCancelled) {
+                // ✅ ইউজার নিজে reminder cancel করলে 'Replaced' (নতুন
+                // reminder সেট করে superseded হওয়া) না দেখিয়ে এটা আলাদা
+                // 'Cancelled' লেবেল দেখায়
+                statusLabel = l10n.statusCancelled;
+                statusColor = colors.textSecondary;
+              } else if (!isActive) {
                 statusLabel = l10n.statusReplaced;
                 statusColor = colors.textSecondary;
               } else if (isOverdue) {

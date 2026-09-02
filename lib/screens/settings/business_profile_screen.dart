@@ -17,9 +17,12 @@ class BusinessProfileScreen extends StatefulWidget {
 }
 
 class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _ownerNameController;
   late TextEditingController _addressController;
+  late TextEditingController _businessPhoneController;
+  late TextEditingController _bkashNumberController;
   bool _uploadingLogo = false;
   bool _initialized = false;
 
@@ -28,6 +31,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     _nameController.dispose();
     _ownerNameController.dispose();
     _addressController.dispose();
+    _businessPhoneController.dispose();
+    _bkashNumberController.dispose();
     super.dispose();
   }
 
@@ -52,6 +57,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         ownerName: _ownerNameController.text.trim(),
         address: _addressController.text.trim(),
         logoUrl: url,
+        businessPhone: _businessPhoneController.text.trim(),
+        bkashNumber: _bkashNumberController.text.trim(),
       );
 
       if (!mounted) return;
@@ -68,13 +75,31 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     }
   }
 
+  // ✅ Business Phone/bKash Number দুটোই ঐচ্ছিক ফিল্ড — খালি রাখা যাবে, কিন্তু
+  // কিছু লিখলে সেটা registration/forgot-password স্ক্রিনের মতোই ন্যূনতম
+  // ১১-ডিজিট ফোন ফরম্যাট মেনে চলতে হবে (এলোমেলো টেক্সট SMS/PDF এ চলে যাওয়া
+  // ঠেকাতে)
+  String? _validateOptionalPhone(String? value, AppLocalizations l10n) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    final digitsOnly = trimmed.replaceAll(RegExp(r'[\s\-]'), '');
+    if (digitsOnly.length < 11 || !RegExp(r'^\+?\d+$').hasMatch(digitsOnly)) {
+      return l10n.enterValid11DigitPhone;
+    }
+    return null;
+  }
+
   Future<void> _saveBusinessInfo() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final controller = AppSettingsScope.of(context);
     await controller.updateBusinessInfo(
       name: _nameController.text.trim(),
       ownerName: _ownerNameController.text.trim(),
       address: _addressController.text.trim(),
       logoUrl: controller.settings.businessLogoUrl,
+      businessPhone: _businessPhoneController.text.trim(),
+      bkashNumber: _bkashNumberController.text.trim(),
     );
     if (!mounted) return;
     await _showSuccessDialog(AppLocalizations.of(context)!.businessInfoSaved);
@@ -141,6 +166,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
       _nameController = TextEditingController(text: settings.businessName);
       _ownerNameController = TextEditingController(text: settings.ownerName);
       _addressController = TextEditingController(text: settings.businessAddress);
+      _businessPhoneController = TextEditingController(text: settings.businessPhone);
+      _bkashNumberController = TextEditingController(text: settings.bkashNumber);
       _initialized = true;
     }
 
@@ -156,7 +183,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         elevation: 0,
         iconTheme: IconThemeData(color: colors.textPrimary),
       ),
-      body: ListView(
+      body: Form(
+        key: _formKey,
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Center(
@@ -264,6 +293,60 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _businessPhoneController,
+            keyboardType: TextInputType.phone,
+            style: TextStyle(color: colors.textPrimary),
+            validator: (v) => _validateOptionalPhone(v, l10n),
+            decoration: InputDecoration(
+              labelText: l10n.businessPhoneLabel,
+              labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
+              prefixIcon: Icon(Icons.call_outlined, color: colors.textSecondary, size: 20),
+              filled: true,
+              fillColor: colors.surfaceAlt,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: settings.accentColor, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _bkashNumberController,
+            keyboardType: TextInputType.phone,
+            style: TextStyle(color: colors.textPrimary),
+            validator: (v) => _validateOptionalPhone(v, l10n),
+            decoration: InputDecoration(
+              labelText: l10n.bkashNumberLabel,
+              helperText: l10n.bkashNumberDesc,
+              helperStyle: TextStyle(color: colors.textSecondary, fontSize: 11.5),
+              labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
+              prefixIcon: Icon(Icons.account_balance_wallet_outlined, color: colors.textSecondary, size: 20),
+              filled: true,
+              fillColor: colors.surfaceAlt,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: settings.accentColor, width: 1.5),
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -279,6 +362,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

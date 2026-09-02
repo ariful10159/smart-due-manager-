@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
-import 'login_screen.dart';
 import 'otp_verification_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
@@ -437,11 +436,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginScreen(),
-                                ),
-                              );
+                              // ✅ আগে pushReplacement দিয়ে নতুন LoginScreen() push
+                              // করা হতো, যেটা RegisterScreen এর ঠিক নিচের root route
+                              // (AppConfigGate/AppLockGate/AuthWrapper সমেত, যেখানে
+                              // LoginScreen ইতিমধ্যেই আছে) মুছে ফেলত। RegisterScreen
+                              // সবসময় LoginScreen থেকে push করেই আসা হয়, তাই এখানে
+                              // শুধু pop করলেই সেই বিদ্যমান, অক্ষত LoginScreen এ ফেরত
+                              // যাওয়া যায় — নতুন route তৈরির দরকারই নেই
+                              Navigator.of(context).pop();
                             },
                             child: Text(
                               l10n.loginNow,

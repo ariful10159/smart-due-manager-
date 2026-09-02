@@ -8,6 +8,11 @@ class AppSettings {
   final String ownerName;
   final String businessAddress;
   final String? businessLogoUrl;
+  // ✅ লগইন নাম্বার থেকে আলাদা — দোকানের যোগাযোগের নাম্বার, কাস্টমার কল-ব্যাক
+  // করতে চাইলে বা SMS/PDF এ দেখানোর জন্য
+  final String businessPhone;
+  // ✅ কাস্টমার কোথায় টাকা পাঠাবে তা SMS/PDF এ দেখানোর জন্য দোকানের bKash/Nagad নাম্বার
+  final String bkashNumber;
 
   // ✅ নতুন যোগ করা ফিল্ডগুলো
   final String smsReminderTemplate;
@@ -31,6 +36,8 @@ class AppSettings {
     this.ownerName = '',
     required this.businessAddress,
     this.businessLogoUrl,
+    this.businessPhone = '',
+    this.bkashNumber = '',
     required this.smsReminderTemplate,
     required this.fullPaymentThankYouTemplate,
     required this.partialPaymentThankYouTemplate,
@@ -50,6 +57,8 @@ class AppSettings {
         ownerName: '',
         businessAddress: '',
         businessLogoUrl: null,
+        businessPhone: '',
+        bkashNumber: '',
         smsReminderTemplate:
             'প্রিয় {name}, আপনার বকেয়া {amount} টাকা। অনুগ্রহ করে {due_date} এর মধ্যে পরিশোধ করুন। ধন্যবাদ — {business_name}',
         fullPaymentThankYouTemplate:
@@ -75,6 +84,8 @@ class AppSettings {
       businessAddress:
           map['businessAddress'] as String? ?? defaults.businessAddress,
       businessLogoUrl: map['businessLogoUrl'] as String?,
+      businessPhone: map['businessPhone'] as String? ?? defaults.businessPhone,
+      bkashNumber: map['bkashNumber'] as String? ?? defaults.bkashNumber,
       smsReminderTemplate: map['smsReminderTemplate'] as String? ??
           defaults.smsReminderTemplate,
       fullPaymentThankYouTemplate: map['fullPaymentThankYouTemplate'] as String? ??
@@ -99,6 +110,8 @@ class AppSettings {
       'ownerName': ownerName,
       'businessAddress': businessAddress,
       'businessLogoUrl': businessLogoUrl,
+      'businessPhone': businessPhone,
+      'bkashNumber': bkashNumber,
       'smsReminderTemplate': smsReminderTemplate,
       'fullPaymentThankYouTemplate': fullPaymentThankYouTemplate,
       'partialPaymentThankYouTemplate': partialPaymentThankYouTemplate,
@@ -117,6 +130,8 @@ class AppSettings {
     String? ownerName,
     String? businessAddress,
     String? businessLogoUrl,
+    String? businessPhone,
+    String? bkashNumber,
     String? smsReminderTemplate,
     String? fullPaymentThankYouTemplate,
     String? partialPaymentThankYouTemplate,
@@ -134,6 +149,8 @@ class AppSettings {
       ownerName: ownerName ?? this.ownerName,
       businessAddress: businessAddress ?? this.businessAddress,
       businessLogoUrl: businessLogoUrl ?? this.businessLogoUrl,
+      businessPhone: businessPhone ?? this.businessPhone,
+      bkashNumber: bkashNumber ?? this.bkashNumber,
       smsReminderTemplate: smsReminderTemplate ?? this.smsReminderTemplate,
       fullPaymentThankYouTemplate:
           fullPaymentThankYouTemplate ?? this.fullPaymentThankYouTemplate,
@@ -176,6 +193,8 @@ class AppSettings {
     '{due_date}',
     '{business_name}',
     '{phone}',
+    '{business_phone}',
+    '{bkash_number}',
   ];
 
   // ✅ Full-payment thank-you টেমপ্লেটে {amount}/{due_date} অর্থহীন (বকেয়া ৳0),
@@ -184,6 +203,7 @@ class AppSettings {
     '{name}',
     '{business_name}',
     '{phone}',
+    '{business_phone}',
   ];
 
   // ✅ Partial-payment টেমপ্লেটে কত টাকা দিলেন ও কত বাকি রইল — দুটো আলাদা
@@ -195,5 +215,7 @@ class AppSettings {
     '{remaining_due}',
     '{business_name}',
     '{phone}',
+    '{business_phone}',
+    '{bkash_number}',
   ];
 }

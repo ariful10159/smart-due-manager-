@@ -104,4 +104,21 @@ class NotificationService {
     await _notifications.cancel(id);
     debugPrint('🗑️ REMINDER NOTIFICATION CANCELLED: $id');
   }
+
+  // ✅ আগে schedule/cancel reminder দুটোতেই সরাসরি `customer.hashCode` ব্যবহার হতো —
+  // কিন্তু Customer ক্লাসে hashCode override করা নেই, তাই Dart এর ডিফল্ট identity-based
+  // hashCode ব্যবহার হতো, যেটা customer.id এর সাথে সম্পর্কহীন এবং প্রতিবার নতুন
+  // Customer instance তৈরি হলেই (Firestore stream rebuild, app restart) বদলে যায়।
+  // ফলে cancelReminder() আসল schedule করা notification-টা কখনো খুঁজেই পেত না —
+  // stale/duplicate notification থেকে যেত। এখানে customer.id (স্থায়ী Firestore doc id)
+  // থেকে নিজস্ব djb2 hash দিয়ে একটা সবসময়-একই int বানানো হচ্ছে — Dart এর
+  // String.hashCode ব্যবহার করিনি কারণ সেটার exact algorithm ভবিষ্যতে অপরিবর্তিত
+  // থাকার কোনো ভাষা-স্পেসিফিকেশন গ্যারান্টি নেই, এই ফাংশনটার আছে।
+  static int reminderIdFor(String customerId) {
+    var hash = 5381;
+    for (final unit in customerId.codeUnits) {
+      hash = ((hash << 5) + hash + unit) & 0x7fffffff;
+    }
+    return hash;
+  }
 }

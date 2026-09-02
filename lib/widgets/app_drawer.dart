@@ -7,7 +7,6 @@ import '../providers/app_settings_controller.dart';
 import '../screens/archived_customers_screen.dart';
 import '../screens/help_support_screen.dart';
 import '../screens/home_screen.dart';
-import '../screens/login_screen.dart';
 import '../screens/notebook_list_screen.dart';
 import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
@@ -27,10 +26,7 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context)!;
-    // ✅ ফোন নম্বর দিয়ে লগইন করলে Firebase auth এ ইমেইল হিসেবে
-    // "<phone>@smartdue.local" সেভ থাকে — এখানে শুধু ফোন নম্বর অংশটুকু দেখানো হয়
-    final email = AuthService.currentUser?.email ?? '';
-    final phone = email.split('@').first;
+    final phone = AuthService.currentPhone ?? '';
 
     return Drawer(
       backgroundColor: colors.scaffoldBg,
@@ -90,9 +86,11 @@ class AppDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 if (currentRoute != 'home') {
+                  // ✅ আগে (route) => false root route (গেট-সহ) মুছে ফেলত —
+                  // এখন route.isFirst দিয়ে root বজায় রেখেই Home এ যাওয়া হচ্ছে
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    (route) => false,
+                    (route) => route.isFirst,
                   );
                 }
               },
@@ -273,12 +271,18 @@ class AppDrawer extends StatelessWidget {
     if (confirmed != true) return;
     if (!context.mounted) return;
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
-
+    // ✅ আগে এখানে সরাসরি LoginScreen() push করে পুরো root route (AppConfigGate/
+    // AppLockGate/AuthWrapper সমেত) মুছে ফেলা হতো — signOut() await করার আগেই।
+    // এর ফলে AppLockGate এর background-এ-লক-হওয়ার lifecycle observer (dispose
+    // হয়ে যেত) এবং AppConfigGate এর maintenance/force-update live check —
+    // দুটোই লগআউটের পর বাকি সেশনের জন্য বন্ধ হয়ে যেত। এখন signOut() আগে await
+    // করা হচ্ছে, তারপর root route এ popUntil করে ফেরত যাওয়া হচ্ছে — AuthWrapper
+    // (এখনো mounted, কখনো destroy হয়নি) নিজের authStateChanges() স্ট্রিম দিয়ে
+    // নিজে থেকেই LoginScreen দেখাবে, পুরো গেট কাঠামো অক্ষত থেকে যাবে।
     await AuthService.logout();
+
+    if (!context.mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 }
 

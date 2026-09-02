@@ -89,6 +89,8 @@ class _SmsTemplateScreenState extends State<SmsTemplateScreen> {
       ('{phone}', l10n.placeholderPhoneDesc),
       ('{paid_amount}', l10n.placeholderPaidAmountDesc),
       ('{remaining_due}', l10n.placeholderRemainingDueDesc),
+      ('{business_phone}', l10n.placeholderBusinessPhoneDesc),
+      ('{bkash_number}', l10n.placeholderBkashNumberDesc),
     ];
 
     await showModalBottomSheet<void>(

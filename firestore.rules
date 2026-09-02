@@ -80,11 +80,15 @@ service cloud.firestore {
 
     // ============================================
     // ✅ USERS COLLECTION — নিজের profile অথবা admin
+    // ✅ delete এ self-delete যোগ করা হয়েছে (আগে শুধু admin) — Delete Account
+    // ফিচারে ইউজার নিজের users/{uid} ডকুমেন্ট নিজেই মুছে ফেলতে পারবে
+    // (Google Play Data Safety policy অনুযায়ী in-app account deletion বাধ্যতামূলক)
     // ============================================
     match /users/{userId} {
       allow read, create, update: if request.auth != null &&
                                    (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
+      allow delete: if request.auth != null &&
+                    (request.auth.uid == userId || isAdmin());
     }
 
     // ============================================

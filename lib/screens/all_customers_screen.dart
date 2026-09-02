@@ -78,7 +78,9 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
         .replaceAll('{amount}', currencyFmt.format(customer.totalDue))
         .replaceAll('{due_date}', dateFmt.format(customer.lastPaymentDate))
         .replaceAll('{business_name}', settings.businessName)
-        .replaceAll('{phone}', customer.phone);
+        .replaceAll('{phone}', customer.phone)
+        .replaceAll('{business_phone}', settings.businessPhone)
+        .replaceAll('{bkash_number}', settings.bkashNumber);
   }
 
   void _enterSelectionMode(String customerId) {
@@ -302,6 +304,22 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
     return months;
   }
 
+  // ✅ আগে এই ফিল্টার সরাসরি l10n.reminderSet/l10n.noReminder (translated
+  // display text) কে option value হিসেবে ব্যবহার করত, আর _applyFilters এ
+  // hardcoded ইংরেজি লিটারেল ("Reminder Set"/"No Reminder") এর সাথে তুলনা
+  // করত। এখন পর্যন্ত কাকতালীয়ভাবে কাজ করছিল কারণ app_bn.arb তেও এই দুটো
+  // স্ট্রিং এখনো ইংরেজিতেই আছে — কিন্তু কেউ সেগুলো বাংলায় translate করলেই এই
+  // ফিল্টার নিঃশব্দে ভেঙে যেত (কোনো crash ছাড়াই, শুধু ফিল্টার কিছুই করত না)।
+  // এখন থেকে স্থিতিশীল internal key (_reminderFilterSet/_reminderFilterNone)
+  // ব্যবহার হচ্ছে, ভাষা নির্বিশেষে — display label আলাদাভাবে _reminderFilterLabel এ।
+  static const _reminderFilterSet = 'set';
+  static const _reminderFilterNone = 'none';
+
+  String _reminderFilterLabel(String key) {
+    final l10n = AppLocalizations.of(context)!;
+    return key == _reminderFilterSet ? l10n.reminderSet : l10n.noReminder;
+  }
+
   List<String> _availableReminderOptions(List<Customer> customers) {
     final options = <String>[];
 
@@ -316,9 +334,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
           !c.nextReminderDate!.isAfter(DateTime.now()),
     );
 
-    final l10n = AppLocalizations.of(context)!;
-    if (hasReminderSet) options.add(l10n.reminderSet);
-    if (hasNoReminder) options.add(l10n.noReminder);
+    if (hasReminderSet) options.add(_reminderFilterSet);
+    if (hasNoReminder) options.add(_reminderFilterNone);
 
     return options;
   }
@@ -354,11 +371,11 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
             customer.nextReminderDate != null &&
             customer.nextReminderDate!.isAfter(DateTime.now());
 
-        if (_reminderFilter == "Reminder Set" && !hasActiveReminder) {
+        if (_reminderFilter == _reminderFilterSet && !hasActiveReminder) {
           return false;
         }
 
-        if (_reminderFilter == "No Reminder" && hasActiveReminder) {
+        if (_reminderFilter == _reminderFilterNone && hasActiveReminder) {
           return false;
         }
       }
@@ -467,6 +484,8 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
     final l10n = AppLocalizations.of(context)!;
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     return PopScope(
       canPop: false,
@@ -476,9 +495,11 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
           _exitSelectionMode();
           return;
         }
+        // ✅ আগে (route) => false root route (গেট-সহ) মুছে ফেলত — এখন
+        // route.isFirst দিয়ে root বজায় রেখেই Home ট্যাবে যাওয়া হচ্ছে
         Navigator.of(context).pushAndRemoveUntil(
           tabTransitionRoute(const HomeScreen(), false),
-          (route) => false,
+          (route) => route.isFirst,
         );
       },
       child: StreamBuilder<List<Customer>>(
@@ -884,7 +905,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                               return DropdownMenuItem(
                                 value: option,
                                 child: Text(
-                                  option,
+                                  _reminderFilterLabel(option),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               );
@@ -964,7 +985,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                         ],
                       ),
                       Text(
-                        l10n.totalDueColon(totalDueInView.toStringAsFixed(2)),
+                        l10n.totalDueColon('$currencySymbol${currencyFmt.format(totalDueInView)}'),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -1166,9 +1187,7 @@ class _AllCustomersScreenState extends State<AllCustomersScreen> {
                                             ),
                                           ),
                                           child: Text(
-                                            customer.totalDue.toStringAsFixed(
-                                              2,
-                                            ),
+                                            '$currencySymbol${currencyFmt.format(customer.totalDue)}',
                                             style: TextStyle(
                                               color: dueColor,
                                               fontWeight: FontWeight.w800,

@@ -102,30 +102,43 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     // দিক ঠিক হয় — PowerPoint-এর slide-flow-এর মতো একটা directional feel
     final slideFromRight = index > widget.selectedIndex;
 
+    // ✅ আগে case 0 এ pushAndRemoveUntil(..., (route) => false) — যেটা root route
+    // (AppConfigGate/AppLockGate/AuthWrapper/AccountStatusGate/PolicyAcceptanceGate
+    // সমেত) মুছে ফেলত — আর case 1-3 এ pushReplacement, যেটা তখনকার current top
+    // route রিপ্লেস করত (প্রথমবার Home ট্যাবে ট্যাপ করার পর সেই top route-ই
+    // ছিল bare/গেটহীন root, তাই এরপর প্রতিটা ট্যাব-বদল সবসময় গেটহীন থেকে যেত)।
+    // ফলে অ্যাপ খোলার পর প্রথমবার bottom nav-এ যেকোনো ট্যাবে ট্যাপ করা মাত্রই পুরো
+    // সেশনের জন্য admin-disable/policy-update লাইভ চেক ও maintenance/app-lock
+    // মনিটরিং বন্ধ হয়ে যেত — এটাই bottom nav ব্যবহারকারী প্রায় সব ইউজারকে প্রভাবিত
+    // করত। এখন root route রেখে (route.isFirst predicate দিয়ে) তার উপরের সব
+    // route সরানো হচ্ছে — root (এবং তার ভেতরের সব গেট) কখনো destroy হয় না।
     switch (index) {
       case 0:
         Navigator.pushAndRemoveUntil(
           context,
           tabTransitionRoute(const HomeScreen(), slideFromRight),
-          (route) => false,
+          (route) => route.isFirst,
         );
         break;
       case 1:
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           tabTransitionRoute(const AddCustomerScreen(), slideFromRight),
+          (route) => route.isFirst,
         );
         break;
       case 2:
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           tabTransitionRoute(const AllCustomersScreen(), slideFromRight),
+          (route) => route.isFirst,
         );
         break;
       case 3:
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           tabTransitionRoute(const ReminderScreen(), slideFromRight),
+          (route) => route.isFirst,
         );
         break;
     }

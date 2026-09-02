@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../models/customer.dart';
 import '../models/payment.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_settings_scope.dart';
 
 class AddPaymentScreen extends StatefulWidget {
   const AddPaymentScreen({
@@ -238,6 +240,10 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context); // ✅ dynamic dark/light কালার
     final l10n = AppLocalizations.of(context)!;
+    // ✅ আগে এই স্ক্রিনে সবজায়গায় সরাসরি hardcoded "৳" বসানো ছিল — ইউজার
+    // Settings > Currency তে অন্য symbol বেছে নিলেও এই স্ক্রিন সবসময় ৳ দেখাত
+    final currencySymbol = AppSettingsScope.of(context).settings.currencySymbol;
+    final currencyFmt = NumberFormat('#,##0.00');
 
     final isPayment = widget.type == PaymentType.payment;
     final themeColor = isPayment
@@ -324,7 +330,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              l10n.currentDueLabel('৳${widget.customer.totalDue.toStringAsFixed(2)}'),
+                              l10n.currentDueLabel('$currencySymbol${currencyFmt.format(widget.customer.totalDue)}'),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: colors.due,
@@ -366,7 +372,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                           ),
                           textAlign: TextAlign.center,
                           decoration: InputDecoration(
-                            prefixText: '৳ ',
+                            prefixText: '$currencySymbol ',
                             prefixStyle: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
@@ -427,7 +433,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700),
                     decoration: InputDecoration(
-                      prefixText: '৳ ',
+                      prefixText: '$currencySymbol ',
                       hintText: '0.00',
                       hintStyle: TextStyle(color: colors.hintColor),
                       filled: true,

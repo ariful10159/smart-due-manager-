@@ -171,6 +171,20 @@ class CustomerRepository {
       'isRecurringReminder': false,
       'recurrenceType': null,
     });
+
+    // ✅ আগে reminders subcollection-এর active এন্ট্রি cancel করার পরও
+    // status == 'active' থেকে যেত (addReminder শুধু নতুন reminder সেট করার
+    // সময় পুরনোটাকে 'expired' মার্ক করে, cancel-এর সময় কিছুই আপডেট হতো না) —
+    // ফলে Reminder History স্ক্রিনে cancel করা reminder-ও "Upcoming"/"Overdue"
+    // হিসেবে দেখাত। এখানে addReminder-এর মতোই active এন্ট্রি(গুলো) খুঁজে
+    // 'cancelled' মার্ক করা হচ্ছে।
+    final activeReminders = await _reminderCol(customerId)
+        .where('status', isEqualTo: 'active')
+        .get();
+
+    for (final doc in activeReminders.docs) {
+      await doc.reference.update({'status': 'cancelled'});
+    }
   }
 
   // ✅ Add payment
@@ -294,23 +308,6 @@ class CustomerRepository {
     });
   }
 
-  // ✅ প্রতিটা কাস্টমারের payments subcollection আলাদা আলাদা query না করে
-  // collectionGroup দিয়ে বর্তমান ইউজারের ALL payments একটা মাত্র query-তে আনা
-  // হয় (home screen এর today/week collection স্ট্যাটের জন্য) — 193 আলাদা query
-  // এর বদলে একটাই, আর প্রতিটার parent-customer ownership-চেক get() ও লাগে না
-  Future<List<Payment>> fetchOwnPaymentsSince(DateTime since) async {
-    final snapshot = await _firestore
-        .collectionGroup('payments')
-        .where('ownerId', isEqualTo: _currentUserId)
-        .where('type', isEqualTo: PaymentType.payment.name)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
-        .get();
-
-    return snapshot.docs
-        .map((doc) => Payment.fromMap({...doc.data(), 'id': doc.id}))
-        .toList();
-  }
-
   // ✅ Hide customer (SOFT DELETE)
   Future<void> hideCustomer(String customerId) async {
     await _col.doc(customerId).update({'isHidden': true});
@@ -377,6 +374,14 @@ class CustomerRepository {
 
     final remindersSnapshot = await _reminderCol(customerId).get();
     for (final doc in remindersSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    // ✅ smsLogs subcollection আগে মুছে ফেলা হতো না — customer ডকুমেন্ট চলে
+    // যাওয়ার পরেও এই সাব-কালেকশনের ডকুমেন্ট Firestore এ orphaned থেকে যেত
+    // (parent ছাড়াই)। পুরোপুরি ডেটা মোছার (Delete Account) জন্য এটাও লাগবে।
+    final smsLogsSnapshot = await _smsLogsCol(customerId).get();
+    for (final doc in smsLogsSnapshot.docs) {
       await doc.reference.delete();
     }
 

@@ -180,6 +180,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addressLabel => 'Address';
 
   @override
+  String get businessPhoneLabel => 'Business Phone';
+
+  @override
+  String get bkashNumberLabel => 'bKash/Nagad Number';
+
+  @override
+  String get bkashNumberDesc =>
+      'Shown to customers so they know where to send payment';
+
+  @override
   String get smsTemplate => 'SMS Template';
 
   @override
@@ -247,7 +257,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get placeholderRemainingDueDesc => 'Due remaining after this payment';
 
   @override
+  String get placeholderBusinessPhoneDesc => 'Your business phone number';
+
+  @override
+  String get placeholderBkashNumberDesc =>
+      'Your bKash/Nagad number to receive payment';
+
+  @override
   String get groupSecurity => 'Security & Data';
+
+  @override
+  String get changePassword => 'Change Password';
+
+  @override
+  String get changePasswordDesc => 'Update your account login password';
+
+  @override
+  String changingPasswordForAccount(String phone) {
+    return 'Changing password for account: $phone';
+  }
+
+  @override
+  String get currentPasswordLabel => 'Current Password';
+
+  @override
+  String get enterCurrentPassword => 'Enter your current password';
+
+  @override
+  String get passwordChangedSuccess => 'Password changed successfully';
 
   @override
   String get appLock => 'App Lock (Security)';
@@ -266,6 +303,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get disabled => 'Disabled';
+
+  @override
+  String get groupDangerZone => 'Danger Zone';
+
+  @override
+  String get deleteAccount => 'Delete Account';
+
+  @override
+  String get deleteAccountDesc =>
+      'Permanently delete your account and all data';
+
+  @override
+  String get deleteAccountWarningTitle => 'This cannot be undone';
+
+  @override
+  String get deleteAccountWarningBody =>
+      'Deleting your account permanently removes all your customers, payment history, notebooks, and settings. This cannot be recovered.';
+
+  @override
+  String deleteAccountWarningBodyWithCount(int count) {
+    return 'Deleting your account permanently removes all $count customers, their full payment history, notebooks, and settings. This cannot be recovered.';
+  }
+
+  @override
+  String get deleteAccountAcknowledge =>
+      'I understand this action is permanent and cannot be undone';
+
+  @override
+  String get deleteAccountFinalConfirmTitle => 'Delete account permanently?';
+
+  @override
+  String get deleteAccountFinalConfirmBody =>
+      'This is your last chance to cancel. All your data will be deleted right now and cannot be recovered.';
 
   @override
   String get dataBackup => 'Data Backup';
@@ -650,6 +720,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reminderNoteHint => 'Write a note about this reminder...';
 
   @override
+  String get reminderNotificationTitle => 'Payment Reminder';
+
+  @override
+  String reminderNotificationBody(String name) {
+    return 'Time to collect payment from $name';
+  }
+
+  @override
   String get reminderUpdatedSuccess => 'Reminder Updated';
 
   @override
@@ -949,6 +1027,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failedToLoadReport => 'Failed to load report, please try again';
+
+  @override
+  String get failedToLoadCollectionStats =>
+      'Failed to load today\'s/week\'s collection, please try again';
 
   @override
   String get collectionReportsTitle => 'Collection Reports';
@@ -1286,6 +1368,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusReplaced => 'Replaced';
+
+  @override
+  String get statusCancelled => 'Cancelled';
 
   @override
   String recurringLabel(String label) {

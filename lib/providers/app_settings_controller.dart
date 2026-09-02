@@ -90,11 +90,15 @@ class AppSettingsController extends ChangeNotifier {
     required String address,
     String? ownerName,
     String? logoUrl,
+    String? businessPhone,
+    String? bkashNumber,
   }) =>
       update(_settings.copyWith(
         businessName: name,
         ownerName: ownerName,
         businessAddress: address,
         businessLogoUrl: logoUrl,
+        businessPhone: businessPhone,
+        bkashNumber: bkashNumber,
       ));
 }
