@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -15,6 +16,8 @@ import 'route_observer.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/app_version_report_service.dart';
+import 'services/fcm_service.dart';
 import 'services/notification_service.dart';
 import 'widgets/app_settings_scope.dart';
 import 'widgets/app_lock_gate.dart'; // ✅ AppLockGate ইমপোর্ট করা হলো
@@ -26,6 +29,27 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ App Check — Firestore/Storage/Cloud Functions যেন শুধু এই আসল app থেকেই কল হয়,
+  // কেউ Firebase config (যেটা secret না) কপি করে script/Postman দিয়ে সরাসরি hit
+  // করতে না পারে। Android-এ Play Integrity (রিয়েল ডিভাইস+আসল app signature verify
+  // করে), debug build-এ debug provider (নাহলে প্রতিটা developer/emulator ব্লক
+  // হয়ে যেত)। Web-এ reCAPTCHA v3 — সাইট কী কনফিগার করা না থাকলে (এখনও Firebase
+  // Console-এ App Check রেজিস্টার করা হয়নি) নিরাপদে স্কিপ করা হয়, পরে কী বসালেই
+  // চালু হয়ে যাবে, কোড বদলাতে হবে না। Windows/desktop-এ plugin support নেই বলে
+  // স্কিপ করা হয়েছে।
+  if (kIsWeb) {
+    const webRecaptchaSiteKey = String.fromEnvironment('RECAPTCHA_V3_SITE_KEY');
+    if (webRecaptchaSiteKey.isNotEmpty) {
+      await FirebaseAppCheck.instance.activate(
+        webProvider: ReCaptchaV3Provider(webRecaptchaSiteKey),
+      );
+    }
+  } else if (defaultTargetPlatform == TargetPlatform.android) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    );
+  }
 
   // ✅ Crashlytics ওয়েবে সাপোর্টেড না, তাই শুধু native প্ল্যাটফর্মে চালু করা হয়
   if (!kIsWeb) {
@@ -44,6 +68,9 @@ void main() async {
   }
 
   await NotificationService.init();
+  // ✅ runApp() এর আগে দরকার — onBackgroundMessage handler runApp() এর আগেই
+  // register করতে হয়, নাহলে app killed অবস্থায় আসা push মিস হয়ে যেতে পারে।
+  await FcmService.init();
 
   // ✅ App Settings controller ইনিশিয়ালাইজ করা হচ্ছে (theme, currency, business info)
   final settingsController = AppSettingsController();
@@ -55,6 +82,11 @@ void main() async {
   // থাকলে) কিছু ডিভাইসে/Android ভার্সনে Flutter এর প্রথম frame আঁকার আগেই আটকে
   // যেতে পারে, ফলে ব্যবহারকারী শুধু কালো স্ক্রিন দেখে
   unawaited(NotificationService.requestPermissions());
+
+  // ✅ App killed অবস্থায় থাকাকালীন push notification ট্যাপ করে খোলা হলে —
+  // runApp() এর পরে চেক করা হয় যাতে appNavigatorKey ততক্ষণে একটা mounted
+  // Navigator পায়।
+  unawaited(FcmService.handleInitialMessageIfAny());
 }
 
 class SmartDueApp extends StatelessWidget {
@@ -74,6 +106,7 @@ class SmartDueApp extends StatelessWidget {
           return MaterialApp(
             title: 'Smart Due',
             debugShowCheckedModeBanner: false,
+            navigatorKey: appNavigatorKey,
             navigatorObservers: [appRouteObserver],
             theme: ThemeData(
               useMaterial3: true,
@@ -134,6 +167,12 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
+          // ✅ admin panel-এর Dashboard-এ version breakdown দেখানোর জন্য — নিজে থেকেই
+          // দিনে একবার throttle করে, তাই বারবার rebuild হলেও সমস্যা নেই।
+          unawaited(AppVersionReportService.reportIfNeeded());
+          // ✅ Registration, login, ও persisted-session app relaunch — এই তিন
+          // ক্ষেত্রেই এখান থেকে FCM টোকেন সেভ/রিফ্রেশ হয়ে যায়।
+          unawaited(FcmService.saveTokenForCurrentUser());
           return const AccountStatusGate(child: PolicyAcceptanceGate(child: HomeScreen()));
         }
 

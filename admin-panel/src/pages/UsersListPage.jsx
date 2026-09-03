@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchUsers, fetchAllCustomers } from '../lib/adminApi'
 import { toCsv, downloadCsv } from '../lib/csv'
+import LoadError from '../components/LoadError'
 
 const currency = (n) => `৳${Math.round(n || 0).toLocaleString('en-US')}`
+const PAGE_SIZE = 25
 
 const SORT_OPTIONS = [
   { value: 'created_desc', label: 'Newest first' },
@@ -17,27 +19,39 @@ export default function UsersListPage() {
   const [users, setUsers] = useState([])
   const [statsByOwner, setStatsByOwner] = useState(new Map())
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // all | active | disabled
   const [sort, setSort] = useState('created_desc')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     load()
   }, [])
 
+  useEffect(() => {
+    setPage(1)
+  }, [search, statusFilter, sort])
+
   async function load() {
     setLoading(true)
-    const [u, allCustomers] = await Promise.all([fetchUsers(), fetchAllCustomers()])
-    const stats = new Map()
-    allCustomers.forEach((c) => {
-      const s = stats.get(c.ownerId) || { count: 0, due: 0 }
-      s.count += 1
-      s.due += c.totalDue || 0
-      stats.set(c.ownerId, s)
-    })
-    setUsers(u)
-    setStatsByOwner(stats)
-    setLoading(false)
+    setLoadError('')
+    try {
+      const [u, allCustomers] = await Promise.all([fetchUsers(), fetchAllCustomers()])
+      const stats = new Map()
+      allCustomers.forEach((c) => {
+        const s = stats.get(c.ownerId) || { count: 0, due: 0 }
+        s.count += 1
+        s.due += c.totalDue || 0
+        stats.set(c.ownerId, s)
+      })
+      setUsers(u)
+      setStatsByOwner(stats)
+    } catch (e) {
+      setLoadError(e.message || 'Could not load users.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const rows = useMemo(() => {
@@ -74,6 +88,9 @@ export default function UsersListPage() {
 
     return list
   }, [users, statsByOwner, search, statusFilter, sort])
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const pageItems = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const handleExport = () => {
     const csv = toCsv(rows, [
@@ -138,6 +155,8 @@ export default function UsersListPage() {
         <div className="flex h-40 items-center justify-center">
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-ink-700 border-t-indigo-500" />
         </div>
+      ) : loadError ? (
+        <LoadError message={loadError} onRetry={load} />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-ink-800 bg-ink-900/60 shadow-card">
         <div className="overflow-x-auto">
@@ -154,7 +173,7 @@ export default function UsersListPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-800">
-              {rows.map((u) => (
+              {pageItems.map((u) => (
                 <tr key={u.id} className="transition-colors hover:bg-ink-800/60">
                   <td className="px-4 py-3">
                     <Link
@@ -194,6 +213,30 @@ export default function UsersListPage() {
             </tbody>
           </table>
         </div>
+        </div>
+      )}
+
+      {!loading && !loadError && totalPages > 1 && (
+        <div className="mt-3 flex items-center justify-between text-sm text-ink-400">
+          <p>
+            {rows.length} users · page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-lg border border-ink-700 bg-ink-850 px-3 py-1.5 font-medium text-ink-200 transition-colors hover:border-ink-600 hover:text-white disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-lg border border-ink-700 bg-ink-850 px-3 py-1.5 font-medium text-ink-200 transition-colors hover:border-ink-600 hover:text-white disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

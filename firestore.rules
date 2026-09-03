@@ -11,6 +11,41 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ✅ SUPER ADMIN HELPER — 'staff' admin-রা এই সবচেয়ে destructive ডেটা-মোছার
+    // path গুলো (অন্যের users/customers/notebooks ডকুমেন্ট ডিলিট) দিয়ে পুরো
+    // deleteUserData cascade-টা নিজে থেকেই manual Firestore write দিয়ে
+    // পুনরায় তৈরি করতে না পারে, সেজন্য। role field না থাকলে (পুরনো admin
+    // ডকুমেন্ট) super হিসেবেই ধরা হয় — functions/index.js এর roleOf() এর
+    // সাথে সামঞ্জস্যপূর্ণ।
+    // ============================================
+    function isSuperAdmin() {
+      return isAdmin() &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role != 'staff';
+    }
+
+    // ============================================
+    // ✅ ACCEPTED-VERSION SELF-WRITE HELPER — users/{uid} এ acceptedPrivacyVersion/
+    // acceptedTermsVersion touched (create-এ present, বা update-এ changed) হলে প্রতিটা
+    // ফিল্ড হয় '0' (মানে "এখনো accept করেনি" — honest fallback, lib/services/
+    // auth_service.dart config fetch fail করলে এটাই লেখে, PolicyAcceptanceGate
+    // এমনিতেই আবার দেখাবে) অথবা appConfig/main এ বর্তমান published version-এর সাথে
+    // ঠিক মিলতে হবে — নাহলে fake উঁচু version বসিয়ে re-acceptance বাইপাস করা যেত।
+    // appConfig/main এখনো তৈরিই না হয়ে থাকলে (bootstrapping) চেকটা স্কিপ হয়।
+    // ============================================
+    function acceptedVersionsSelfWriteOk(touched) {
+      return !touched ||
+        !exists(/databases/$(database)/documents/appConfig/main) ||
+        (
+          (request.resource.data.acceptedPrivacyVersion == 0 ||
+           request.resource.data.acceptedPrivacyVersion ==
+               get(/databases/$(database)/documents/appConfig/main).data.privacyVersion) &&
+          (request.resource.data.acceptedTermsVersion == 0 ||
+           request.resource.data.acceptedTermsVersion ==
+               get(/databases/$(database)/documents/appConfig/main).data.termsVersion)
+        );
+    }
+
+    // ============================================
     // ✅ ADMINS COLLECTION — নিজের admin ডকুমেন্ট, অথবা অন্য কোনো admin পড়তে পারবে।
     // Write সবসময় false — add/remove/role-change শুধু addAdmin / removeAdmin /
     // setAdminRole Cloud Functions দিয়ে হয় (functions/index.js), যেখানে caller
@@ -62,6 +97,28 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ✅ PUSH NOTIFICATIONS COLLECTION — sendPushNotification Cloud Function এর পাঠানো
+    // প্রতিটা push এর history রেকর্ড। Write সবসময় false — শুধু সেই Cloud Function
+    // (Admin SDK দিয়ে, rules বাইপাস করে) লেখে; admin panel শুধু পড়ে (history list এর জন্য)।
+    // ============================================
+    match /pushNotifications/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ============================================
+    // ✅ USER NOTIFICATIONS COLLECTION — sendPushNotification Cloud Function এর
+    // পাঠানো প্রতিটা push এর per-user কপি, app-এর Notifications screen এ দেখানোর
+    // জন্য। Write সবসময় false — শুধু সেই Cloud Function (Admin SDK) লেখে; ইউজার
+    // শুধু নিজের (recipientUid == নিজের uid) গুলো পড়তে পারবে।
+    // ============================================
+    match /userNotifications/{id} {
+      allow read: if request.auth != null &&
+                   (resource.data.recipientUid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // ============================================
     // ✅ FAQ COLLECTION — সবাই পড়তে পারবে (in-app FAQ স্ক্রিনের জন্য), শুধু admin লিখতে পারবে
     // ============================================
     match /faqs/{id} {
@@ -99,10 +156,47 @@ service cloud.firestore {
     // (Google Play Data Safety policy অনুযায়ী in-app account deletion বাধ্যতামূলক)
     // ============================================
     match /users/{userId} {
-      allow read, create, update: if request.auth != null &&
-                                   (request.auth.uid == userId || isAdmin());
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+
+      // Self-create এও 'disabled' লক (client কখনো এটা লেখে না) এবং accepted-version
+      // fields present থাকলে সেগুলো published version-এর সাথে মেলা বাধ্যতামূলক —
+      // নাহলে registration-এর সময়ই fake version বসিয়ে re-acceptance এড়ানো যেত।
+      allow create: if request.auth != null &&
+                    (request.auth.uid == userId || isAdmin()) &&
+                    (
+                      isAdmin() ||
+                      (
+                        !('disabled' in request.resource.data) &&
+                        acceptedVersionsSelfWriteOk(
+                          'acceptedPrivacyVersion' in request.resource.data ||
+                          'acceptedTermsVersion' in request.resource.data
+                        )
+                      )
+                    );
+
+      // Self-update এ দুইটা compliance-sensitive জায়গা লক করা:
+      // 1. 'disabled' — client কখনো এই ফিল্ড লেখে না (শুধু পড়ে, দেখুন
+      //    lib/widgets/account_status_gate.dart), তাই non-admin এটা touch করলেই reject।
+      // 2. acceptedPrivacyVersion/acceptedTermsVersion — changed হলে published version-এর
+      //    সাথে মিলতে হবে (দেখুন acceptedVersionsSelfWriteOk() উপরে)।
+      allow update: if request.auth != null &&
+                    (request.auth.uid == userId || isAdmin()) &&
+                    (
+                      isAdmin() ||
+                      (
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['disabled']) &&
+                        acceptedVersionsSelfWriteOk(
+                          request.resource.data.diff(resource.data).affectedKeys()
+                              .hasAny(['acceptedPrivacyVersion', 'acceptedTermsVersion'])
+                        )
+                      )
+                    );
+
+      // Admin-initiated delete (নিজের account না) শুধু super admin — staff যাতে
+      // deleteUserData Cloud Function বাইপাস করে অন্যের users ডকুমেন্ট সরাসরি
+      // মুছতে না পারে। নিজের account delete (Delete Account ফিচার) সবার জন্য অক্ষত।
       allow delete: if request.auth != null &&
-                    (request.auth.uid == userId || isAdmin());
+                    (request.auth.uid == userId || isSuperAdmin());
     }
 
     // ============================================
@@ -125,9 +219,11 @@ service cloud.firestore {
                     request.resource.data.ownerId == resource.data.ownerId &&
                     (!request.resource.data.keys().hasAll(['createdAt']) || request.resource.data.createdAt == resource.data.createdAt);
 
-      // ✅ Delete — owner অথবা admin
+      // ✅ Delete — owner অথবা super admin (staff না — নিচের subcollection
+      // delete rule গুলোও একই কারণে super-only, নাহলে deleteCustomer এর
+      // cascade মাঝপথে আটকে গিয়ে customer আংশিক ডেটা নিয়ে থেকে যেতে পারে)
       allow delete: if request.auth != null &&
-                    (resource.data.ownerId == request.auth.uid || isAdmin());
+                    (resource.data.ownerId == request.auth.uid || isSuperAdmin());
 
       // ============================================
       // ✅ PAYMENTS SUBCOLLECTION (নিরাপদ রুলস)
@@ -156,27 +252,34 @@ service cloud.firestore {
                        isAdmin()) &&
                       (isAdmin() || request.resource.data.date == resource.data.date);
 
+        // Admin panel কখনো payment delete করে না নিজে থেকে, শুধু deleteCustomer এর
+        // অংশ হিসেবে — তাই owner ছাড়া শুধু super admin।
         allow delete: if request.auth != null &&
                       (resource.data.ownerId == request.auth.uid ||
                        (!('ownerId' in resource.data) &&
                         get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid) ||
-                       isAdmin());
+                       isSuperAdmin());
       }
 
       // ============================================
-      // ✅ REMINDERS SUBCOLLECTION
+      // ✅ REMINDERS SUBCOLLECTION — admin panel এটা শুধু পড়ে (read-only), কখনো
+      // লেখে না; write শুধু customer delete cascade এর অংশ হিসেবে super admin এর জন্য।
       // ============================================
       match /reminders/{reminderId} {
-        allow read, write: if request.auth != null &&
-                            (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
+        allow read: if request.auth != null &&
+                     (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
+        allow write: if request.auth != null &&
+                     (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isSuperAdmin());
       }
 
       // ============================================
-      // ✅ SMS LOGS SUBCOLLECTION
+      // ✅ SMS LOGS SUBCOLLECTION — reminders এর মতোই, admin panel read-only
       // ============================================
       match /smsLogs/{logId} {
-        allow read, write: if request.auth != null &&
-                            (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
+        allow read: if request.auth != null &&
+                     (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isAdmin());
+        allow write: if request.auth != null &&
+                     (get(/databases/$(database)/documents/customers/$(customerId)).data.ownerId == request.auth.uid || isSuperAdmin());
       }
     }
 
@@ -209,15 +312,20 @@ service cloud.firestore {
                     (resource.data.ownerId == request.auth.uid || isAdmin()) &&
                     request.resource.data.ownerId == resource.data.ownerId;
 
+      // owner অথবা super admin — staff-কে deleteNotebook cascade দিয়ে আটকানো,
+      // নিচের pages subcollection delete rule একই কারণে super-only
       allow delete: if request.auth != null &&
-                    (resource.data.ownerId == request.auth.uid || isAdmin());
+                    (resource.data.ownerId == request.auth.uid || isSuperAdmin());
 
       // ============================================
-      // ✅ PAGES SUBCOLLECTION
+      // ✅ PAGES SUBCOLLECTION — admin panel read করে + delete করে (notebook
+      // delete cascade এর অংশ), কখনো create/update করে না
       // ============================================
       match /pages/{pageId} {
-        allow read, write: if request.auth != null &&
-                            (get(/databases/$(database)/documents/notebooks/$(notebookId)).data.ownerId == request.auth.uid || isAdmin());
+        allow read: if request.auth != null &&
+                     (get(/databases/$(database)/documents/notebooks/$(notebookId)).data.ownerId == request.auth.uid || isAdmin());
+        allow write: if request.auth != null &&
+                     (get(/databases/$(database)/documents/notebooks/$(notebookId)).data.ownerId == request.auth.uid || isSuperAdmin());
       }
     }
 

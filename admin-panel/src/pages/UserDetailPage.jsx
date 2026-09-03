@@ -21,6 +21,7 @@ import {
   deleteUserDataCascade,
 } from '../lib/adminApi'
 import ConfirmDialog from '../components/ConfirmDialog'
+import LoadError from '../components/LoadError'
 import { toCsv, downloadCsv } from '../lib/csv'
 import { useAuth } from '../context/AuthContext'
 
@@ -148,6 +149,7 @@ function PaymentEditModal({ payment, onClose, onSave }) {
 }
 
 function CustomerRow({ customer, onChanged }) {
+  const { isSuperAdmin } = useAuth()
   const [expanded, setExpanded] = useState(false)
   const [tab, setTab] = useState('payments')
   const [payments, setPayments] = useState([])
@@ -203,12 +205,14 @@ function CustomerRow({ customer, onChanged }) {
           >
             Edit
           </button>
-          <button
-            onClick={() => setConfirmDeleteCustomer(true)}
-            className="text-sm font-medium text-red-400 transition-colors hover:text-red-300"
-          >
-            Delete
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setConfirmDeleteCustomer(true)}
+              className="text-sm font-medium text-red-400 transition-colors hover:text-red-300"
+            >
+              Delete
+            </button>
+          )}
         </td>
       </tr>
       {expanded && (
@@ -263,12 +267,14 @@ function CustomerRow({ customer, onChanged }) {
                           >
                             Edit
                           </button>
-                          <button
-                            onClick={() => setConfirmDeletePayment(p)}
-                            className="font-medium text-red-400 transition-colors hover:text-red-300"
-                          >
-                            Delete
-                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => setConfirmDeletePayment(p)}
+                              className="font-medium text-red-400 transition-colors hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -392,6 +398,7 @@ function CustomerRow({ customer, onChanged }) {
 }
 
 function NotebookDetailModal({ notebook, onClose, onDeleted }) {
+  const { isSuperAdmin } = useAuth()
   const [pages, setPages] = useState([])
   const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -411,12 +418,14 @@ function NotebookDetailModal({ notebook, onClose, onDeleted }) {
             <h3 className="text-base font-semibold text-white">{notebook.title || 'Untitled'}</h3>
             {notebook.description && <p className="mt-1 text-sm text-ink-400">{notebook.description}</p>}
           </div>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-300"
-          >
-            Delete notebook
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-300"
+            >
+              Delete notebook
+            </button>
+          )}
         </div>
 
         <div className="mt-4 space-y-3">
@@ -488,6 +497,7 @@ export default function UserDetailPage() {
   const [user, setUser] = useState(null)
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [payments, setPayments] = useState([])
   const [notebooks, setNotebooks] = useState([])
   const [statsLoading, setStatsLoading] = useState(true)
@@ -516,16 +526,28 @@ export default function UserDetailPage() {
 
   async function load() {
     setLoading(true)
-    const [u, c] = await Promise.all([fetchUser(uid), fetchUserCustomers(uid)])
-    setUser(u)
-    setCustomers(c)
+    setLoadError('')
+    let c = []
+    try {
+      const [u, fetchedCustomers] = await Promise.all([fetchUser(uid), fetchUserCustomers(uid)])
+      c = fetchedCustomers
+      setUser(u)
+      setCustomers(c)
+    } catch (e) {
+      setLoadError(e.message || 'Could not load this user.')
+      setLoading(false)
+      return
+    }
     setLoading(false)
 
     setStatsLoading(true)
-    const [p, n] = await Promise.all([fetchAllPayments(c.map((x) => x.id)), fetchUserNotebooks(uid)])
-    setPayments(p)
-    setNotebooks(n)
-    setStatsLoading(false)
+    try {
+      const [p, n] = await Promise.all([fetchAllPayments(c.map((x) => x.id)), fetchUserNotebooks(uid)])
+      setPayments(p)
+      setNotebooks(n)
+    } finally {
+      setStatsLoading(false)
+    }
   }
 
   const filteredSorted = useMemo(() => {
@@ -571,6 +593,7 @@ export default function UserDetailPage() {
       </div>
     )
   }
+  if (loadError) return <LoadError message={loadError} onRetry={load} />
   if (!user) return <div className="p-6 text-sm text-ink-400">User not found.</div>
 
   const settings = user.settings || {}

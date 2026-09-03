@@ -7,6 +7,7 @@ const navItems = [
   { to: '/users', label: 'Users', icon: '👥' },
   { to: '/search', label: 'Search', icon: '🔍' },
   { to: '/announcement', label: 'Announcements', icon: '📣' },
+  { to: '/notifications', label: 'Push Notification', icon: '🔔' },
   { to: '/problem-reports', label: 'Problem Reports', icon: '🐞' },
   { to: '/app-config', label: 'App Config', icon: '⚙️' },
   { to: '/admins', label: 'Admins', icon: '🛡️' },
@@ -23,7 +24,9 @@ export default function Layout() {
     setSidebarOpen(false)
   }, [location.pathname])
 
-  const visibleNavItems = navItems.filter((item) => item.to !== '/admins' || isSuperAdmin)
+  const visibleNavItems = navItems.filter(
+    (item) => (item.to !== '/admins' && item.to !== '/notifications') || isSuperAdmin,
+  )
   const currentLabel = navItems.find((item) => location.pathname.startsWith(item.to))?.label || 'Smart Due'
 
   return (

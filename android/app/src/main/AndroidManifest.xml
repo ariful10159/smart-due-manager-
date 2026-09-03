@@ -54,6 +54,11 @@
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"
             android:value="false" />
+        <!-- ✅ Admin panel থেকে পাঠানো push (background/killed অবস্থায়) এই channel এ
+             route হবে, যাতে user notification settings থেকে নিয়ন্ত্রণ করতে পারে -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="push_channel" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

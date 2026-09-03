@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchAdmins, addAdmin, removeAdmin, setAdminRole } from '../lib/adminApi'
 import { useAuth } from '../context/AuthContext'
 import ConfirmDialog from '../components/ConfirmDialog'
+import LoadError from '../components/LoadError'
 
 const inputClass =
   'w-full rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-sm text-white placeholder:text-ink-400 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
@@ -17,6 +18,7 @@ export default function AdminsPage() {
   const { user, isSuperAdmin } = useAuth()
   const [admins, setAdmins] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [uid, setUid] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('staff')
@@ -25,6 +27,7 @@ export default function AdminsPage() {
   const [roleError, setRoleError] = useState('')
   const [confirmRemove, setConfirmRemove] = useState(null)
   const [removeError, setRemoveError] = useState('')
+  const [confirmRoleChange, setConfirmRoleChange] = useState(null)
 
   useEffect(() => {
     load()
@@ -32,8 +35,14 @@ export default function AdminsPage() {
 
   async function load() {
     setLoading(true)
-    setAdmins(await fetchAdmins())
-    setLoading(false)
+    setLoadError('')
+    try {
+      setAdmins(await fetchAdmins())
+    } catch (e) {
+      setLoadError(e.message || 'Could not load admins.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isSuperAdmin) {
@@ -66,13 +75,16 @@ export default function AdminsPage() {
     }
   }
 
-  const handleRoleChange = async (admin, newRole) => {
+  const handleRoleChange = async () => {
+    const { admin, newRole } = confirmRoleChange
     setRoleError('')
     try {
       await setAdminRole(admin.id, newRole)
+      setConfirmRoleChange(null)
       await load()
     } catch (e) {
       setRoleError(e.message || 'Could not change this admin’s role.')
+      setConfirmRoleChange(null)
     }
   }
 
@@ -80,9 +92,11 @@ export default function AdminsPage() {
     <div className="max-w-2xl p-6 md:p-8">
       <h1 className="text-xl font-semibold text-white">Admins</h1>
       <p className="mt-1 text-sm text-ink-400">
-        Anyone listed here can sign in to this admin panel. <span className="text-ink-300">Super</span> admins can
-        additionally manage other admins and delete a user's entire data. The Firebase Auth account itself must
-        already exist (Console → Authentication → Add user) before granting admin here.
+        Anyone listed here can sign in to this admin panel and manage FAQs, announcements, app config, and problem
+        reports, plus view/edit customers &amp; payments. <span className="text-ink-300">Super</span> admins can
+        additionally manage other admins, and delete a user, their customers, or their notebooks outright. The
+        Firebase Auth account itself must already exist (Console → Authentication → Add user) before granting admin
+        here.
       </p>
 
       <form onSubmit={handleAdd} className="mt-5 rounded-2xl border border-ink-800 bg-ink-900/60 p-5 shadow-card">
@@ -101,7 +115,7 @@ export default function AdminsPage() {
             className={inputClass}
           />
           <select value={role} onChange={(e) => setRole(e.target.value)} className={inputClass}>
-            <option value="staff">Staff — everything except managing admins / deleting users</option>
+            <option value="staff">Staff — everything except managing admins and deleting users/customers/notebooks</option>
             <option value="super">Super — full access</option>
           </select>
         </div>
@@ -121,6 +135,8 @@ export default function AdminsPage() {
         <div className="mt-6 flex h-24 items-center justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink-700 border-t-indigo-500" />
         </div>
+      ) : loadError ? (
+        <LoadError message={loadError} onRetry={load} />
       ) : (
         <div className="mt-6 overflow-hidden rounded-2xl border border-ink-800 bg-ink-900/60 shadow-card">
         <div className="overflow-x-auto">
@@ -144,7 +160,10 @@ export default function AdminsPage() {
                     <div className="flex items-center gap-2">
                       <span className={roleBadgeClass(roleOf(a))}>{roleOf(a) === 'super' ? 'Super' : 'Staff'}</span>
                       <button
-                        onClick={() => handleRoleChange(a, roleOf(a) === 'super' ? 'staff' : 'super')}
+                        onClick={() => {
+                          setRoleError('')
+                          setConfirmRoleChange({ admin: a, newRole: roleOf(a) === 'super' ? 'staff' : 'super' })
+                        }}
                         className="text-xs font-medium text-ink-400 underline-offset-2 transition-colors hover:text-white hover:underline"
                       >
                         Make {roleOf(a) === 'super' ? 'staff' : 'super'}
@@ -199,6 +218,23 @@ export default function AdminsPage() {
             setConfirmRemove(null)
           }
         }}
+      />
+
+      <ConfirmDialog
+        open={!!confirmRoleChange}
+        title={`Make ${confirmRoleChange?.admin.email || confirmRoleChange?.admin.id} ${confirmRoleChange?.newRole}?`}
+        message={
+          confirmRoleChange?.admin.id === user?.uid
+            ? confirmRoleChange?.newRole === 'staff'
+              ? 'This is your own account — demoting it will immediately remove your access to Admins management and full user-data deletion.'
+              : 'This is your own account — you will gain full super admin access.'
+            : confirmRoleChange?.newRole === 'staff'
+              ? 'They will lose access to Admins management and can no longer delete a user\'s entire data.'
+              : 'They will gain full super admin access, including managing other admins.'
+        }
+        confirmLabel={`Make ${confirmRoleChange?.newRole}`}
+        onCancel={() => setConfirmRoleChange(null)}
+        onConfirm={handleRoleChange}
       />
     </div>
   )

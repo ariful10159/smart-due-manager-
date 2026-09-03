@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchUsers, fetchAllCustomers, fetchAllNotebooks, fetchAllPayments } from '../lib/adminApi'
+import LoadError from '../components/LoadError'
 
 const currency = (n) => `৳${Math.round(n || 0).toLocaleString('en-US')}`
 const int = (n) => Math.round(n || 0).toLocaleString('en-US')
@@ -133,8 +134,66 @@ function PaymentMethodBreakdown({ data, delay = 0 }) {
   )
 }
 
+const VERSION_BAR_COLORS = ['bg-indigo-500', 'bg-violet-500', 'bg-sky-500', 'bg-emerald-500', 'bg-amber-500', 'bg-pink-500']
+
+// users.appVersion/platform is stamped by the Flutter app on open (throttled to once/day,
+// see lib/services/app_version_report_service.dart) — this is what tells you, before
+// flipping on Force Update in App Config, whether that would block 10 people or 1000.
+function AppVersionBreakdown({ data, unreportedCount, delay = 0 }) {
+  const [grown, setGrown] = useState(false)
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setTimeout(() => setGrown(true), 50))
+    return () => cancelAnimationFrame(t)
+  }, [])
+
+  const total = data.reduce((sum, d) => sum + d.count, 0)
+  return (
+    <div
+      className="animate-fadeInUp rounded-2xl border border-ink-800 bg-ink-900/60 p-5 shadow-card"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <p className="text-sm font-semibold text-white">App versions</p>
+      <p className="mt-0.5 text-xs text-ink-400">
+        {total} user{total === 1 ? '' : 's'} reporting a version
+        {unreportedCount > 0 ? ` · ${unreportedCount} not reported yet` : ''}
+      </p>
+      <div className="mt-5 space-y-3">
+        {data.map((d, i) => {
+          const pct = total > 0 ? (d.count / total) * 100 : 0
+          return (
+            <div key={d.version}>
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="font-medium text-ink-200">{d.version}</span>
+                <span className="text-ink-400">
+                  {d.count} ({Math.round(pct)}%)
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-ink-800">
+                <div
+                  className={`h-full rounded-full ${VERSION_BAR_COLORS[i % VERSION_BAR_COLORS.length]} transition-all ease-out`}
+                  style={{
+                    width: grown ? `${pct}%` : 0,
+                    transitionDuration: '700ms',
+                    transitionDelay: `${i * 80}ms`,
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })}
+        {data.length === 0 && (
+          <p className="text-sm text-ink-500">
+            No version data yet — this fills in as users open a build that reports its version.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [users, setUsers] = useState([])
   const [customers, setCustomers] = useState([])
   const [notebookCount, setNotebookCount] = useState(0)
@@ -146,13 +205,19 @@ export default function DashboardPage() {
 
   async function load() {
     setLoading(true)
-    const [u, c, n] = await Promise.all([fetchUsers(), fetchAllCustomers(), fetchAllNotebooks()])
-    const p = await fetchAllPayments(c.map((customer) => customer.id))
-    setUsers(u)
-    setCustomers(c)
-    setNotebookCount(n.length)
-    setPayments(p)
-    setLoading(false)
+    setLoadError('')
+    try {
+      const [u, c, n] = await Promise.all([fetchUsers(), fetchAllCustomers(), fetchAllNotebooks()])
+      const p = await fetchAllPayments(c.map((customer) => customer.id))
+      setUsers(u)
+      setCustomers(c)
+      setNotebookCount(n.length)
+      setPayments(p)
+    } catch (e) {
+      setLoadError(e.message || 'Could not load dashboard data.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const stats = useMemo(() => {
@@ -195,6 +260,22 @@ export default function DashboardPage() {
       .filter((d) => d.amount > 0 || d.method !== 'Other')
   }, [payments])
 
+  const appVersionBreakdown = useMemo(() => {
+    const counts = new Map()
+    let unreported = 0
+    users.forEach((u) => {
+      if (!u.appVersion) {
+        unreported += 1
+        return
+      }
+      counts.set(u.appVersion, (counts.get(u.appVersion) || 0) + 1)
+    })
+    const data = [...counts.entries()]
+      .map(([version, count]) => ({ version, count }))
+      .sort((a, b) => b.count - a.count)
+    return { data, unreported }
+  }, [users])
+
   const recentUsers = useMemo(() => {
     return [...users]
       .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
@@ -214,6 +295,15 @@ export default function DashboardPage() {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-7 w-7 animate-spin rounded-full border-2 border-ink-700 border-t-indigo-500" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 md:p-8">
+        <h1 className="text-xl font-semibold text-white">Dashboard</h1>
+        <LoadError message={loadError} onRetry={load} />
       </div>
     )
   }
@@ -311,6 +401,14 @@ export default function DashboardPage() {
           </table>
           </div>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <AppVersionBreakdown
+          data={appVersionBreakdown.data}
+          unreportedCount={appVersionBreakdown.unreported}
+          delay={460}
+        />
       </div>
     </div>
   )

@@ -8,6 +8,7 @@ import UsersListPage from './pages/UsersListPage'
 import UserDetailPage from './pages/UserDetailPage'
 import SearchPage from './pages/SearchPage'
 import AnnouncementPage from './pages/AnnouncementPage'
+import PushNotificationPage from './pages/PushNotificationPage'
 import AdminsPage from './pages/AdminsPage'
 import AuditLogPage from './pages/AuditLogPage'
 import ProblemReportsPage from './pages/ProblemReportsPage'
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/users/:uid" element={<UserDetailPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/announcement" element={<AnnouncementPage />} />
+          <Route path="/notifications" element={<PushNotificationPage />} />
           <Route path="/app-config" element={<AppConfigPage />} />
           <Route path="/app-config/faq" element={<FaqManagementPage />} />
           <Route path="/app-config/policy-acceptance" element={<PolicyAcceptancePage />} />
