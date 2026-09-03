@@ -1540,6 +1540,79 @@ class AppLocalizationsBn extends AppLocalizations {
   String get otpResentSuccess => 'নতুন OTP পাঠানো হয়েছে';
 
   @override
+  String get ok => 'ঠিক আছে';
+
+  @override
+  String get authErrorAlreadyRegistered =>
+      'এই ফোন নাম্বার দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে';
+
+  @override
+  String get authErrorWeakPassword =>
+      'পাসওয়ার্ড খুব দুর্বল, কমপক্ষে ৬ ক্যারেক্টার দিন';
+
+  @override
+  String get authErrorInvalidCredentials =>
+      'ফোন নাম্বার অথবা পাসওয়ার্ড সঠিক নয়';
+
+  @override
+  String get authErrorInvalidPhoneFormat => 'ফোন নাম্বার সঠিক ফরম্যাটে দিন';
+
+  @override
+  String get authErrorNetwork =>
+      'ইন্টারনেট সংযোগ পাওয়া যাচ্ছে না, চেক করে আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorTooManyRequests =>
+      'অনেকবার চেষ্টা করা হয়েছে, কিছুক্ষণ পর আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorInvalidOtp => 'OTP কোডটি সঠিক নয়, আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorOtpExpired => 'OTP এর মেয়াদ শেষ হয়ে গেছে, আবার পাঠান';
+
+  @override
+  String get authErrorVerificationFailed =>
+      'ভেরিফিকেশন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorTimeout =>
+      'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorRegistrationFailed =>
+      'রেজিস্ট্রেশন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorNoAccountForPhone =>
+      'এই ফোন নাম্বার দিয়ে কোনো অ্যাকাউন্ট নেই, আগে রেজিস্ট্রেশন করুন';
+
+  @override
+  String get authErrorPasswordResetFailed =>
+      'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorLoginIncomplete => 'লগইন সম্পন্ন হয়নি, আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorLoginFailed => 'লগইন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+
+  @override
+  String get authErrorSessionNotFound => 'সেশন পাওয়া যায়নি, আবার লগইন করুন';
+
+  @override
+  String get authErrorWrongCurrentPassword => 'বর্তমান পাসওয়ার্ড সঠিক নয়';
+
+  @override
+  String get authErrorChangePasswordFailed =>
+      'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+
+  @override
+  String authErrorUnknown(String code) {
+    return 'কিছু একটা ভুল হয়েছে, আবার চেষ্টা করুন ($code)';
+  }
+
+  @override
   String get forgotPasswordTitle => 'পাসওয়ার্ড রিসেট করুন';
 
   @override

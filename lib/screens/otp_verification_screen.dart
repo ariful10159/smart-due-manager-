@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/auth_error_dialog.dart';
 
 // ✅ Registration ও "forgot password" — দুই জায়গাতেই phone OTP verify করার
 // UI/flow হুবহু একই (send, resend timer, auto-verify, manual code entry)।
@@ -145,29 +146,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  void _showError(String message) {
-    final colors = AppColors.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: colors.due,
-        elevation: 8,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 26),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  // ✅ আগে bottom SnackBar দিয়ে দেখানো হতো — এখন মাঝ-স্ক্রিন popup (icon সহ)
+  // দিয়ে দেখানো হয়, আর message এখন AuthService থেকে আসা internal error code
+  // (যেমন 'already-registered') — showAuthErrorDialog সেটাকে বর্তমান app
+  // language অনুযায়ী localized টেক্সটে রূপান্তর করে দেখায়।
+  void _showError(String code) {
+    showAuthErrorDialog(context, code);
   }
 
   @override
@@ -251,7 +235,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     Icon(Icons.error_outline_rounded, size: 48, color: colors.due),
                     const SizedBox(height: 16),
                     Text(
-                      _sendErrorMessage!,
+                      resolveAuthErrorMessage(context, _sendErrorMessage!),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w500),
                     ),

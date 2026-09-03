@@ -1539,6 +1539,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpResentSuccess => 'New OTP sent';
 
   @override
+  String get ok => 'OK';
+
+  @override
+  String get authErrorAlreadyRegistered =>
+      'An account with this phone number already exists';
+
+  @override
+  String get authErrorWeakPassword =>
+      'Password is too weak, use at least 6 characters';
+
+  @override
+  String get authErrorInvalidCredentials =>
+      'Incorrect phone number or password';
+
+  @override
+  String get authErrorInvalidPhoneFormat =>
+      'Enter the phone number in a valid format';
+
+  @override
+  String get authErrorNetwork =>
+      'No internet connection, please check and try again';
+
+  @override
+  String get authErrorTooManyRequests =>
+      'Too many attempts, please try again later';
+
+  @override
+  String get authErrorInvalidOtp =>
+      'The OTP code is incorrect, please try again';
+
+  @override
+  String get authErrorOtpExpired => 'The OTP has expired, please resend it';
+
+  @override
+  String get authErrorVerificationFailed =>
+      'Verification failed, please try again';
+
+  @override
+  String get authErrorTimeout =>
+      'Trouble connecting to the server, check your internet and try again';
+
+  @override
+  String get authErrorRegistrationFailed =>
+      'Registration failed, please try again';
+
+  @override
+  String get authErrorNoAccountForPhone =>
+      'No account exists with this phone number, please register first';
+
+  @override
+  String get authErrorPasswordResetFailed =>
+      'Password reset failed, please try again';
+
+  @override
+  String get authErrorLoginIncomplete =>
+      'Login did not complete, please try again';
+
+  @override
+  String get authErrorLoginFailed => 'Login failed, please try again';
+
+  @override
+  String get authErrorSessionNotFound =>
+      'Session not found, please login again';
+
+  @override
+  String get authErrorWrongCurrentPassword => 'Current password is incorrect';
+
+  @override
+  String get authErrorChangePasswordFailed =>
+      'Failed to change password, please try again';
+
+  @override
+  String authErrorUnknown(String code) {
+    return 'Something went wrong, please try again ($code)';
+  }
+
+  @override
   String get forgotPasswordTitle => 'Reset Password';
 
   @override

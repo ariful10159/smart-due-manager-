@@ -2864,6 +2864,126 @@ abstract class AppLocalizations {
   /// **'New OTP sent'**
   String get otpResentSuccess;
 
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @authErrorAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this phone number already exists'**
+  String get authErrorAlreadyRegistered;
+
+  /// No description provided for @authErrorWeakPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is too weak, use at least 6 characters'**
+  String get authErrorWeakPassword;
+
+  /// No description provided for @authErrorInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect phone number or password'**
+  String get authErrorInvalidCredentials;
+
+  /// No description provided for @authErrorInvalidPhoneFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the phone number in a valid format'**
+  String get authErrorInvalidPhoneFormat;
+
+  /// No description provided for @authErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection, please check and try again'**
+  String get authErrorNetwork;
+
+  /// No description provided for @authErrorTooManyRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts, please try again later'**
+  String get authErrorTooManyRequests;
+
+  /// No description provided for @authErrorInvalidOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'The OTP code is incorrect, please try again'**
+  String get authErrorInvalidOtp;
+
+  /// No description provided for @authErrorOtpExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The OTP has expired, please resend it'**
+  String get authErrorOtpExpired;
+
+  /// No description provided for @authErrorVerificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed, please try again'**
+  String get authErrorVerificationFailed;
+
+  /// No description provided for @authErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Trouble connecting to the server, check your internet and try again'**
+  String get authErrorTimeout;
+
+  /// No description provided for @authErrorRegistrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed, please try again'**
+  String get authErrorRegistrationFailed;
+
+  /// No description provided for @authErrorNoAccountForPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'No account exists with this phone number, please register first'**
+  String get authErrorNoAccountForPhone;
+
+  /// No description provided for @authErrorPasswordResetFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset failed, please try again'**
+  String get authErrorPasswordResetFailed;
+
+  /// No description provided for @authErrorLoginIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Login did not complete, please try again'**
+  String get authErrorLoginIncomplete;
+
+  /// No description provided for @authErrorLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed, please try again'**
+  String get authErrorLoginFailed;
+
+  /// No description provided for @authErrorSessionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Session not found, please login again'**
+  String get authErrorSessionNotFound;
+
+  /// No description provided for @authErrorWrongCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password is incorrect'**
+  String get authErrorWrongCurrentPassword;
+
+  /// No description provided for @authErrorChangePasswordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to change password, please try again'**
+  String get authErrorChangePasswordFailed;
+
+  /// No description provided for @authErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong, please try again ({code})'**
+  String authErrorUnknown(String code);
+
   /// No description provided for @forgotPasswordTitle.
   ///
   /// In en, this message translates to:

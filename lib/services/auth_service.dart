@@ -24,10 +24,24 @@ class AuthService {
     return email.split('@').first;
   }
 
+  // ✅ ফোন নাম্বার যেভাবেই টাইপ করা হোক (01XXXXXXXXX, +8801XXXXXXXXX,
+  // 8801XXXXXXXXX, মাঝে space/dash সহ) — সবসময় একই canonical local ফরম্যাটে
+  // (01XXXXXXXXX) normalize করা হয়। আগে এই normalization ছিল না, ফলে কেউ
+  // +8801XXXXXXXXX দিয়ে register করে পরে 01XXXXXXXXX দিয়ে login করতে গেলে (বা
+  // উল্টো) সম্পূর্ণ ভিন্ন fake email/account রিসলভ হতো এবং login ব্যর্থ হতো।
+  static String _normalizePhone(String phone) {
+    var clean = phone.replaceAll(RegExp(r'[\s\-]'), '');
+    if (clean.startsWith('+880')) {
+      clean = '0${clean.substring(4)}';
+    } else if (clean.startsWith('880')) {
+      clean = '0${clean.substring(3)}';
+    }
+    return clean;
+  }
+
   // ✅ Phone number কে Firebase Auth এর জন্য fake email এ রূপান্তর
   static String _phoneToEmail(String phone) {
-    final cleanPhone = phone.replaceAll(RegExp(r'[\s\-]'), '');
-    return '$cleanPhone@smartdue.local';
+    return '${_normalizePhone(phone)}@smartdue.local';
   }
 
   // ✅ বাংলাদেশি লোকাল ফরম্যাট (01XXXXXXXXX) কে Firebase Phone Auth এর
@@ -77,7 +91,7 @@ class AuthService {
 
       final user = phoneUserCredential.user;
       if (user == null) {
-        return 'ভেরিফিকেশন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+        return 'verification-failed';
       }
 
       final emailCredential = EmailAuthProvider.credential(
@@ -102,7 +116,7 @@ class AuthService {
 
       await _firestore.collection('users').doc(user.uid).set({
         'name': name,
-        'phone': phone,
+        'phone': _normalizePhone(phone),
         'createdAt': Timestamp.now(),
         'acceptedPrivacyVersion': privacyVersion,
         'acceptedPrivacyAt': Timestamp.now(),
@@ -112,11 +126,11 @@ class AuthService {
 
       return null;
     } on TimeoutException {
-      return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
+      return 'timeout';
     } on FirebaseAuthException catch (e) {
       return _mapAuthError(e);
     } catch (_) {
-      return 'রেজিস্ট্রেশন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+      return 'registration-failed';
     }
   }
 
@@ -172,7 +186,7 @@ class AuthService {
 
       final user = userCredential.user;
       if (user == null) {
-        return 'ভেরিফিকেশন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+        return 'verification-failed';
       }
 
       final hasPasswordAccount = user.providerData.any(
@@ -180,17 +194,17 @@ class AuthService {
       );
       if (!hasPasswordAccount) {
         await user.delete();
-        return 'এই ফোন নাম্বার দিয়ে কোনো অ্যাকাউন্ট নেই, আগে রেজিস্ট্রেশন করুন';
+        return 'no-account-for-phone';
       }
 
       await user.updatePassword(newPassword).timeout(const Duration(seconds: 15));
       return null;
     } on TimeoutException {
-      return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
+      return 'timeout';
     } on FirebaseAuthException catch (e) {
       return _mapAuthError(e);
     } catch (_) {
-      return 'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+      return 'password-reset-failed';
     }
   }
 
@@ -237,16 +251,16 @@ class AuthService {
       }
 
       if (_auth.currentUser == null && credential.user == null) {
-        return 'লগইন সম্পন্ন হয়নি, আবার চেষ্টা করুন';
+        return 'login-incomplete';
       }
 
       return null;
     } on TimeoutException {
-      return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
+      return 'timeout';
     } on FirebaseAuthException catch (e) {
       return _mapAuthError(e);
     } catch (_) {
-      return 'লগইন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+      return 'login-failed';
     }
   }
 
@@ -278,7 +292,7 @@ class AuthService {
     try {
       final user = _auth.currentUser;
       if (user == null || user.email == null) {
-        return 'সেশন পাওয়া যায়নি, আবার লগইন করুন';
+        return 'session-not-found';
       }
 
       final credential = EmailAuthProvider.credential(
@@ -291,47 +305,55 @@ class AuthService {
       await user.updatePassword(newPassword).timeout(const Duration(seconds: 15));
       return null;
     } on TimeoutException {
-      return 'সার্ভারের সাথে সংযোগ করতে সমস্যা হচ্ছে, ইন্টারনেট চেক করে আবার চেষ্টা করুন';
+      return 'timeout';
     } on FirebaseAuthException catch (e) {
-      // ✅ _mapAuthError এর wrong-password বার্তায় "ফোন নাম্বার" শব্দ থাকে,
-      // যা এই ফর্মে (ফোন নাম্বার ইনপুট নেই) বিভ্রান্তিকর — তাই আলাদা বার্তা
+      // ✅ _mapAuthError এর wrong-password কোডে "ফোন নাম্বার" প্রসঙ্গ থাকে,
+      // যা এই ফর্মে (ফোন নাম্বার ইনপুট নেই) বিভ্রান্তিকর — তাই আলাদা কোড
       if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-        return 'বর্তমান পাসওয়ার্ড সঠিক নয়';
+        return 'wrong-current-password';
       }
       return _mapAuthError(e);
     } catch (_) {
-      return 'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে, আবার চেষ্টা করুন';
+      return 'change-password-failed';
     }
   }
 
+  // ✅ এই মেথডটা এখন human-readable বাংলা মেসেজের বদলে একটা internal error
+  // code (String) রিটার্ন করে — UI layer (প্রতিটা স্ক্রিন) এই code-কে
+  // AppLocalizations দিয়ে বর্তমান app language (বাংলা/English, Settings এ
+  // বেছে নেওয়া) অনুযায়ী মেসেজে রূপান্তর করে (দেখুন widgets/auth_error_dialog.dart)।
+  // আগে এখানে সরাসরি বাংলা string hardcode করা ছিল, ফলে ইউজার English
+  // সিলেক্ট করলেও auth এরর মেসেজ সবসময় বাংলাতেই দেখাত।
   static String _mapAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'email-already-in-use':
-        return 'এই ফোন নাম্বার দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে';
+      // ✅ একই নাম্বার দিয়ে দ্বিতীয়বার registration করলে OTP ভেরিফাই হওয়ার
+      // পর এই কোডটাই আসে (linkWithCredential — account-এ আগে থেকেই email/
+      // password provider linked থাকায়)।
+      case 'credential-already-in-use':
+      case 'provider-already-linked':
+        return 'already-registered';
       case 'weak-password':
-        return 'পাসওয়ার্ড খুব দুর্বল, কমপক্ষে ৬ ক্যারেক্টার দিন';
+        return 'weak-password';
       case 'user-not-found':
       case 'wrong-password':
       case 'invalid-credential':
-        return 'ফোন নাম্বার অথবা পাসওয়ার্ড সঠিক নয়';
+        return 'invalid-credentials';
       case 'invalid-email':
-        return 'ফোন নাম্বার সঠিক ফরম্যাটে দিন';
+      case 'invalid-phone-number':
+        return 'invalid-phone-format';
       case 'network-request-failed':
-        return 'ইন্টারনেট সংযোগ পাওয়া যাচ্ছে না, চেক করে আবার চেষ্টা করুন';
+        return 'network-error';
       case 'too-many-requests':
       case 'quota-exceeded':
-        return 'অনেকবার চেষ্টা করা হয়েছে, কিছুক্ষণ পর আবার চেষ্টা করুন';
+        return 'too-many-requests';
       case 'invalid-verification-code':
-        return 'OTP কোডটি সঠিক নয়, আবার চেষ্টা করুন';
+        return 'invalid-otp';
       case 'invalid-verification-id':
       case 'session-expired':
-        return 'OTP এর মেয়াদ শেষ হয়ে গেছে, আবার পাঠান';
-      case 'invalid-phone-number':
-        return 'ফোন নাম্বার সঠিক ফরম্যাটে দিন';
-      case 'credential-already-in-use':
-        return 'এই ফোন নাম্বার দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে';
+        return 'otp-expired';
       default:
-        return 'কিছু একটা ভুল হয়েছে, আবার চেষ্টা করুন (${e.code})';
+        return 'unknown:${e.code}';
     }
   }
 }

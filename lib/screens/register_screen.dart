@@ -174,36 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
-      body: Stack(
-        children: [
-          // ─── 🎨 LUXURY BACKGROUND BLOB LIGHTS ───
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.accent.withValues(alpha: 0.18),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -150,
-            left: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.accentAlt.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-
-          // ─── 📦 MAIN INTERFACE SCROLL VIEW ───
-          SafeArea(
+      body: SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -464,8 +435,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-        ],
-      ),
     );
   }
 }

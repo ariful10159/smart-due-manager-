@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/auth_error_dialog.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
@@ -42,16 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (error != null) {
-      final colors = AppColors.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: colors.due,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(14),
-          content: Text(error, style: const TextStyle(fontWeight: FontWeight.w600)),
-        ),
-      );
+      await showAuthErrorDialog(context, error);
       return;
     }
 
@@ -127,26 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
       resizeToAvoidBottomInset: true,
-      body: Stack(
-        children: [
-          // ✅ Subtle dot-grid texture across the whole background
-          Positioned.fill(
-            child: CustomPaint(painter: _DotGridPainter(color: colors.textPrimary)),
-          ),
-
-          // ✅ Decorative glow blobs
-          Positioned(
-            top: -90,
-            right: -70,
-            child: _GlowBlob(size: 240, color: colors.accent.withValues(alpha: 0.22)),
-          ),
-          Positioned(
-            top: 120,
-            left: -100,
-            child: _GlowBlob(size: 200, color: colors.accentAlt.withValues(alpha: 0.16)),
-          ),
-
-          SafeArea(
+      body: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
@@ -504,53 +477,6 @@ class _LoginScreenState extends State<LoginScreen> {
               },
             ),
           ),
-        ],
-      ),
     );
   }
-}
-
-// ============================================================
-// Decorative helpers
-// ============================================================
-
-class _GlowBlob extends StatelessWidget {
-  const _GlowBlob({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
-  }
-}
-
-class _DotGridPainter extends CustomPainter {
-  _DotGridPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withValues(alpha: 0.035)
-      ..style = PaintingStyle.fill;
-
-    const spacing = 26.0;
-    const radius = 1.1;
-
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DotGridPainter oldDelegate) => oldDelegate.color != color;
 }
