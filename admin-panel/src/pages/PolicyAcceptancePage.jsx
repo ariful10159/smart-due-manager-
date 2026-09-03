@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchUsers, fetchAppConfig } from '../lib/adminApi'
 import { toCsv, downloadCsv } from '../lib/csv'
+import LoadError from '../components/LoadError'
 
 function fmt(ts) {
   if (!ts?.toDate) return '—'
@@ -37,6 +38,7 @@ export default function PolicyAcceptancePage() {
   const [users, setUsers] = useState([])
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [search, setSearch] = useState('')
   const [onlyOutdated, setOnlyOutdated] = useState(false)
 
@@ -46,10 +48,16 @@ export default function PolicyAcceptancePage() {
 
   async function load() {
     setLoading(true)
-    const [u, c] = await Promise.all([fetchUsers(), fetchAppConfig()])
-    setUsers(u)
-    setConfig(c)
-    setLoading(false)
+    setLoadError('')
+    try {
+      const [u, c] = await Promise.all([fetchUsers(), fetchAppConfig()])
+      setUsers(u)
+      setConfig(c)
+    } catch (e) {
+      setLoadError(e.message || 'Could not load policy acceptance data.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const currentPrivacy = config?.privacyVersion || 0
@@ -92,6 +100,15 @@ export default function PolicyAcceptancePage() {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-7 w-7 animate-spin rounded-full border-2 border-ink-700 border-t-indigo-500" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 md:p-8">
+        <h1 className="text-xl font-semibold text-white">Policy Acceptance</h1>
+        <LoadError message={loadError} onRetry={load} />
       </div>
     )
   }

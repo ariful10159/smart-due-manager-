@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { fetchFaqs, addFaq, updateFaq, deleteFaq } from '../lib/adminApi'
 import ConfirmDialog from '../components/ConfirmDialog'
 import FaqExcelImport from '../components/FaqExcelImport'
+import LoadError from '../components/LoadError'
 
 const inputClass =
   'w-full rounded-lg border border-ink-700 bg-ink-850 px-3 py-2.5 text-sm text-white placeholder:text-ink-400 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
@@ -91,6 +92,7 @@ function FaqForm({ initial, nextOrder, onCancel, onSave }) {
 export default function FaqManagementPage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [creating, setCreating] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -101,8 +103,14 @@ export default function FaqManagementPage() {
 
   async function load() {
     setLoading(true)
-    setItems(await fetchFaqs())
-    setLoading(false)
+    setLoadError('')
+    try {
+      setItems(await fetchFaqs())
+    } catch (e) {
+      setLoadError(e.message || 'Could not load FAQs.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleCreate(data) {
@@ -115,6 +123,15 @@ export default function FaqManagementPage() {
     await updateFaq(id, data)
     setEditingId(null)
     await load()
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 md:p-8">
+        <h1 className="text-xl font-semibold text-white">FAQ Management</h1>
+        <LoadError message={loadError} onRetry={load} />
+      </div>
+    )
   }
 
   if (loading) {

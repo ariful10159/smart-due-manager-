@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
-import { addFaq } from '../lib/adminApi'
+import { addFaqsBatch } from '../lib/adminApi'
 
 const COLUMNS = ['order', 'questionEn', 'answerEn', 'questionBn', 'answerBn']
 
@@ -76,16 +76,14 @@ export default function FaqExcelImport({ nextOrder, onImported }) {
     if (!rows) return
     setImporting(true)
     try {
-      for (const row of rows) {
-        await addFaq(row)
-      }
+      await addFaqsBatch(rows)
       setImportResult(`Imported ${rows.length} FAQ item${rows.length === 1 ? '' : 's'}.`)
       setRows(null)
       setFileName('')
       if (fileInputRef.current) fileInputRef.current.value = ''
       await onImported()
     } catch (e) {
-      setParseError(e.message || 'Import failed partway through — check what got added below.')
+      setParseError(e.message || 'Import failed — nothing was added, try again.')
     } finally {
       setImporting(false)
     }

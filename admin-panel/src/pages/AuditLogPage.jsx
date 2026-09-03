@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchAuditLog, fetchUserActivityLog, fetchUsers } from '../lib/adminApi'
+import { fetchAuditLog, fetchUserActivityLog, fetchUsers, AUDIT_LOG_PAGE_SIZE } from '../lib/adminApi'
+import LoadError from '../components/LoadError'
 
 const ADMIN_ACTION_LABELS = {
   disable_user: 'Disabled account',
@@ -20,6 +21,20 @@ const ADMIN_ACTION_LABELS = {
   remove_admin: 'Removed admin access',
   set_admin_role: 'Changed admin role',
   update_problem_report_status: 'Updated problem report status',
+  update_problem_report_priority: 'Updated problem report priority',
+  update_problem_report_notes: 'Updated problem report notes',
+  reply_to_problem_report: 'Replied to problem report',
+  publish_version: 'Published app version',
+  publish_policy: 'Published policy',
+  add_faq: 'Added FAQ',
+  bulk_add_faq: 'Bulk-imported FAQs',
+  update_faq: 'Updated FAQ',
+  delete_faq: 'Deleted FAQ',
+  update_maintenance: 'Updated maintenance mode',
+  update_force_update: 'Updated force update',
+  update_about: 'Updated About App',
+  update_contact: 'Updated contact info',
+  auto_disable_expired_maintenance: 'Auto-disabled expired maintenance',
 }
 
 const USER_ACTION_LABELS = {
@@ -40,8 +55,13 @@ export default function AuditLogPage() {
   const [tab, setTab] = useState('admin')
   const [adminItems, setAdminItems] = useState([])
   const [userItems, setUserItems] = useState([])
+  const [adminHasMore, setAdminHasMore] = useState(false)
+  const [userHasMore, setUserHasMore] = useState(false)
+  const [loadingMoreAdmin, setLoadingMoreAdmin] = useState(false)
+  const [loadingMoreUser, setLoadingMoreUser] = useState(false)
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     load()
@@ -49,6 +69,7 @@ export default function AuditLogPage() {
 
   async function load() {
     setLoading(true)
+    setLoadError('')
     // Independent, so one collection's rules not being deployed yet (or any other
     // failure) never blocks the others from loading.
     const [admin, user, allUsers] = await Promise.allSettled([
@@ -56,10 +77,39 @@ export default function AuditLogPage() {
       fetchUserActivityLog(),
       fetchUsers(),
     ])
-    setAdminItems(admin.status === 'fulfilled' ? admin.value : [])
-    setUserItems(user.status === 'fulfilled' ? user.value : [])
+    const adminData = admin.status === 'fulfilled' ? admin.value : []
+    const userData = user.status === 'fulfilled' ? user.value : []
+    setAdminItems(adminData)
+    setUserItems(userData)
+    setAdminHasMore(adminData.length === AUDIT_LOG_PAGE_SIZE)
+    setUserHasMore(userData.length === AUDIT_LOG_PAGE_SIZE)
     setUsers(allUsers.status === 'fulfilled' ? allUsers.value : [])
+    if (admin.status === 'rejected' && user.status === 'rejected') {
+      setLoadError(admin.reason?.message || 'Could not load the audit log.')
+    }
     setLoading(false)
+  }
+
+  async function loadMoreAdmin() {
+    setLoadingMoreAdmin(true)
+    try {
+      const more = await fetchAuditLog(adminItems[adminItems.length - 1]?.at)
+      setAdminItems((prev) => [...prev, ...more])
+      setAdminHasMore(more.length === AUDIT_LOG_PAGE_SIZE)
+    } finally {
+      setLoadingMoreAdmin(false)
+    }
+  }
+
+  async function loadMoreUser() {
+    setLoadingMoreUser(true)
+    try {
+      const more = await fetchUserActivityLog(userItems[userItems.length - 1]?.at)
+      setUserItems((prev) => [...prev, ...more])
+      setUserHasMore(more.length === AUDIT_LOG_PAGE_SIZE)
+    } finally {
+      setLoadingMoreUser(false)
+    }
   }
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.id, u])), [users])
@@ -67,7 +117,7 @@ export default function AuditLogPage() {
   return (
     <div className="p-6 md:p-8">
       <h1 className="text-xl font-semibold text-white">Audit log</h1>
-      <p className="mt-1 text-sm text-ink-400">Most recent first, up to 200 entries.</p>
+      <p className="mt-1 text-sm text-ink-400">Most recent first — load more as you scroll back.</p>
 
       <div className="mt-4 flex gap-2">
         {[
@@ -92,7 +142,10 @@ export default function AuditLogPage() {
         <div className="mt-8 flex h-24 items-center justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink-700 border-t-indigo-500" />
         </div>
+      ) : loadError ? (
+        <LoadError message={loadError} onRetry={load} />
       ) : tab === 'admin' ? (
+        <>
         <div className="mt-5 overflow-hidden rounded-2xl border border-ink-800 bg-ink-900/60 shadow-card">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-ink-800 text-sm">
@@ -130,7 +183,20 @@ export default function AuditLogPage() {
             </table>
           </div>
         </div>
+        {adminHasMore && (
+          <div className="mt-3 flex justify-center">
+            <button
+              onClick={loadMoreAdmin}
+              disabled={loadingMoreAdmin}
+              className="rounded-lg border border-ink-700 bg-ink-850 px-4 py-2 text-sm font-medium text-ink-200 transition-colors hover:border-ink-600 hover:text-white disabled:opacity-60"
+            >
+              {loadingMoreAdmin ? 'Loading…' : 'Load more'}
+            </button>
+          </div>
+        )}
+        </>
       ) : (
+        <>
         <div className="mt-5 overflow-hidden rounded-2xl border border-ink-800 bg-ink-900/60 shadow-card">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-ink-800 text-sm">
@@ -182,6 +248,18 @@ export default function AuditLogPage() {
             </table>
           </div>
         </div>
+        {userHasMore && (
+          <div className="mt-3 flex justify-center">
+            <button
+              onClick={loadMoreUser}
+              disabled={loadingMoreUser}
+              className="rounded-lg border border-ink-700 bg-ink-850 px-4 py-2 text-sm font-medium text-ink-200 transition-colors hover:border-ink-600 hover:text-white disabled:opacity-60"
+            >
+              {loadingMoreUser ? 'Loading…' : 'Load more'}
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   )

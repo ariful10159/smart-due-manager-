@@ -8,6 +8,7 @@ import {
   dataUrlByteSize,
 } from '../lib/adminApi'
 import ConfirmDialog from '../components/ConfirmDialog'
+import LoadError from '../components/LoadError'
 
 const inputClass =
   'w-full rounded-lg border border-ink-700 bg-ink-850 px-3 py-2.5 text-sm text-white placeholder:text-ink-400 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
@@ -217,6 +218,7 @@ function AnnouncementForm({ initial, onCancel, onSave }) {
 export default function AnnouncementPage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [creating, setCreating] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -227,8 +229,14 @@ export default function AnnouncementPage() {
 
   async function load() {
     setLoading(true)
-    setItems(await fetchAnnouncements())
-    setLoading(false)
+    setLoadError('')
+    try {
+      setItems(await fetchAnnouncements())
+    } catch (e) {
+      setLoadError(e.message || 'Could not load announcements.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleCreate(data) {
@@ -241,6 +249,15 @@ export default function AnnouncementPage() {
     await updateAnnouncement(id, data)
     setEditingId(null)
     await load()
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 md:p-8">
+        <h1 className="text-xl font-semibold text-white">Announcements</h1>
+        <LoadError message={loadError} onRetry={load} />
+      </div>
+    )
   }
 
   if (loading) {

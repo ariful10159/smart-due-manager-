@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { auth, db } from '../firebase'
+import { Sentry } from '../sentry.js'
 
 const AuthContext = createContext(null)
 
@@ -14,23 +15,46 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    return onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribeAdminDoc = null
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser)
+      // Ties error reports to which admin hit them, without logging anything more
+      // sensitive than the email already visible in the sidebar.
+      Sentry.setUser(firebaseUser ? { email: firebaseUser.email, id: firebaseUser.uid } : null)
+
+      if (unsubscribeAdminDoc) {
+        unsubscribeAdminDoc()
+        unsubscribeAdminDoc = null
+      }
+
       if (firebaseUser) {
-        try {
-          const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid))
-          setIsAdmin(adminDoc.exists())
-          setRole(adminDoc.exists() ? (adminDoc.data().role === 'staff' ? 'staff' : 'super') : null)
-        } catch {
-          setIsAdmin(false)
-          setRole(null)
-        }
+        // Live listener (not a one-off getDoc) so if another session removes this admin or
+        // changes their role, this tab reflects it immediately instead of only after a reload.
+        unsubscribeAdminDoc = onSnapshot(
+          doc(db, 'admins', firebaseUser.uid),
+          (adminDoc) => {
+            setIsAdmin(adminDoc.exists())
+            setRole(adminDoc.exists() ? (adminDoc.data().role === 'staff' ? 'staff' : 'super') : null)
+            setLoading(false)
+          },
+          () => {
+            setIsAdmin(false)
+            setRole(null)
+            setLoading(false)
+          },
+        )
       } else {
         setIsAdmin(false)
         setRole(null)
+        setLoading(false)
       }
-      setLoading(false)
     })
+
+    return () => {
+      unsubscribeAuth()
+      if (unsubscribeAdminDoc) unsubscribeAdminDoc()
+    }
   }, [])
 
   const signOut = () => firebaseSignOut(auth)

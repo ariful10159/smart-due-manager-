@@ -72,12 +72,14 @@ class AccountDeletionService {
       } catch (_) {
         // ✅ firestore.rules ডিপ্লয় না হয়ে থাকলে self-delete ব্যর্থ হতে পারে —
         // সেক্ষেত্রে অন্তত ভেতরের সব data মুছে খালি রেখে দেওয়া হচ্ছে, যাতে
-        // personal info (business name/phone/bkash number ইত্যাদি) থেকে না যায়
+        // personal info (business name/phone/bkash number ইত্যাদি) থেকে না যায়।
+        // merge: true — নাহলে 'disabled' ফিল্ড (যদি admin কখনো toggle করে থাকে)
+        // payload থেকে বাদ পড়ে যেত, আর rules সেটাকে touch হিসেবে ধরে reject করত।
         try {
           await userDocRef.set({
             'settings': <String, dynamic>{},
             'accountDeletedAt': FieldValue.serverTimestamp(),
-          });
+          }, SetOptions(merge: true));
         } catch (_) {}
       }
     } catch (_) {

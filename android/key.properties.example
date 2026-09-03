@@ -5,8 +5,8 @@
 # 3. NEVER commit android/key.properties or your .jks/.keystore file — both are
 #    already excluded via android/.gitignore (key.properties, **/*.jks, **/*.keystore).
 #
-# storeFile is resolved relative to the android/ directory, e.g. if your keystore
-# lives at android/app/smart_due_release.jks, use: storeFile=app/smart_due_release.jks
+# storeFile is resolved relative to the android/app/ directory (not android/), e.g. if
+# your keystore lives at android/app/smart_due_release.jks, use: storeFile=smart_due_release.jks
 # (An absolute path, e.g. to a keystore stored outside the repo entirely, also works.)
 
 storePassword=REPLACE_WITH_YOUR_KEYSTORE_PASSWORD

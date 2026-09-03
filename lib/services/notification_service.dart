@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,8 @@ import 'package:timezone/data/latest.dart' as tzData;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../route_observer.dart';
+import '../screens/notifications_screen.dart';
 import '../utils/helpers.dart';
 
 class NotificationService {
@@ -25,6 +28,27 @@ class NotificationService {
     await _notifications.initialize(
       settings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+
+    // ✅ চ্যানেল দুটো এখানেই আগে থেকে বানিয়ে রাখা হয় — নাহলে app চালু হওয়ার পর প্রথম
+    // local notification schedule হওয়ার আগেই (cold-start এ) কোনো FCM push এলে
+    // 'push_channel' চ্যানেলটা তখনো তৈরি না থাকায় Android O+ এ সেটা দেখানো যেত না।
+    final androidPlugin = _notifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'reminder_channel',
+        'Reminders',
+        importance: Importance.max,
+      ),
+    );
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'push_channel',
+        'Push Notifications',
+        importance: Importance.max,
+      ),
     );
   }
 
@@ -53,6 +77,18 @@ class NotificationService {
 
     try {
       final data = jsonDecode(payload) as Map<String, dynamic>;
+
+      // ✅ Foreground এ থাকা অবস্থায় দেখানো admin push ট্যাপ করলে Notifications
+      // screen এ নিয়ে যাওয়া হয় (background/killed অবস্থায় ট্যাপ করলে এটা না,
+      // FcmService.onMessageOpenedApp/getInitialMessage হ্যান্ডেল করে — ওগুলো
+      // flutter_local_notifications-এর payload/response দিয়ে যায় না)।
+      if (data['type'] == 'admin_push') {
+        appNavigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+        );
+        return;
+      }
+
       final phone = data['phone'] as String?;
       final message = data['message'] as String?;
       if (phone == null || message == null) return;
@@ -96,6 +132,31 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
+  }
+
+  // ✅ Admin panel থেকে পাঠানো push, app foreground এ থাকা অবস্থায় দেখানোর জন্য —
+  // Android foreground এ FCM notification payload নিজে থেকে system tray তে দেখায় না,
+  // তাই flutter_local_notifications দিয়ে ম্যানুয়ালি দেখাতে হয় (দেখুন FcmService)।
+  static Future<void> showPushNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    await _notifications.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'push_channel',
+          'Push Notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
       payload: payload,
     );
   }

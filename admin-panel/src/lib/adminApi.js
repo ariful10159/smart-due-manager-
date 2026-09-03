@@ -8,6 +8,7 @@ import {
   where,
   orderBy,
   limit,
+  startAfter,
   updateDoc,
   deleteDoc,
   setDoc,
@@ -17,6 +18,7 @@ import {
 } from 'firebase/firestore'
 import { ref, getDownloadURL } from 'firebase/storage'
 import { httpsCallable } from 'firebase/functions'
+import { Sentry } from '../sentry.js'
 
 const BATCH_LIMIT = 450
 
@@ -45,22 +47,32 @@ async function logAction(action, details = {}) {
   } catch (err) {
     // Audit logging must never block the actual admin action — but a swallowed failure here
     // means an action happened with zero trace of it, so at least surface it loudly to whoever
-    // has devtools open (and to any error-tracking tool that hooks console.error).
+    // has devtools open, and report it to Sentry so it's visible even with no one watching.
     console.error(`[audit log] failed to record "${action}" — the admin action itself still succeeded`, details, err)
+    Sentry.captureException(err, { extra: { context: 'audit log write failed', action, details } })
   }
 }
 
-export async function fetchAuditLog() {
-  const q = query(collection(db, 'adminAuditLog'), orderBy('at', 'desc'), limit(200))
-  const snap = await getDocs(q)
+export const AUDIT_LOG_PAGE_SIZE = 50
+
+// Cursor-based paging (ordered by 'at' desc) instead of a flat cap — pass the last-loaded
+// item's 'at' timestamp as `after` to fetch the next page. Returns up to AUDIT_LOG_PAGE_SIZE
+// items; getting back fewer than that means there's nothing more to load.
+export async function fetchAuditLog(after) {
+  const constraints = [collection(db, 'adminAuditLog'), orderBy('at', 'desc')]
+  if (after) constraints.push(startAfter(after))
+  constraints.push(limit(AUDIT_LOG_PAGE_SIZE))
+  const snap = await getDocs(query(...constraints))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
 // Regular shopkeeper activity (customer/payment add-edit-delete etc.), written directly
-// from the Flutter app — see lib/services/activity_log_service.dart.
-export async function fetchUserActivityLog() {
-  const q = query(collection(db, 'userActivityLog'), orderBy('at', 'desc'), limit(200))
-  const snap = await getDocs(q)
+// from the Flutter app — see lib/services/activity_log_service.dart. Same cursor pattern.
+export async function fetchUserActivityLog(after) {
+  const constraints = [collection(db, 'userActivityLog'), orderBy('at', 'desc')]
+  if (after) constraints.push(startAfter(after))
+  constraints.push(limit(AUDIT_LOG_PAGE_SIZE))
+  const snap = await getDocs(query(...constraints))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
@@ -325,6 +337,32 @@ export async function updateProblemReportStatus(id, status) {
   await logAction('update_problem_report_status', { id, status })
 }
 
+// priority: 'low' | 'medium' | 'high' — internal triage field, admin-only, not shown to the
+// reporting user.
+export async function updateProblemReportPriority(id, priority) {
+  await updateDoc(doc(db, 'problemReports', id), { priority, updatedAt: serverTimestamp() })
+  await logAction('update_problem_report_priority', { id, priority })
+}
+
+// Internal note — visible only in this admin panel, never shown to the reporting user.
+export async function updateProblemReportNotes(id, adminNotes) {
+  await updateDoc(doc(db, 'problemReports', id), { adminNotes, updatedAt: serverTimestamp() })
+  await logAction('update_problem_report_notes', { id })
+}
+
+// Stored on the report so the reply is on record — the Flutter app doesn't yet have a
+// screen that surfaces this back to the reporting user, so for now this is an internal
+// record of what was told to the user (e.g. over phone/SMS), not an in-app notification.
+export async function replyToProblemReport(id, reply) {
+  await updateDoc(doc(db, 'problemReports', id), {
+    adminReply: reply,
+    adminReplyAt: serverTimestamp(),
+    adminReplyBy: auth.currentUser?.email || null,
+    updatedAt: serverTimestamp(),
+  })
+  await logAction('reply_to_problem_report', { id })
+}
+
 // ============================================
 // Admins
 // ============================================
@@ -431,6 +469,31 @@ export async function publishPolicy(type, { textEn, textBn }) {
 }
 
 // ============================================
+// Push notifications
+// ============================================
+
+// targetGroup: 'all' | 'active' | 'newSignups'. newSignupDays only used (and required)
+// for 'newSignups'. Runs server-side (Cloud Function, Admin SDK) — the fcmToken list
+// never touches the browser, and the function itself re-checks super-admin, same as
+// addAdmin. It also writes its own history doc + adminAuditLog entry, so no client-side
+// logAction call here (would just duplicate the audit trail).
+export async function sendPushNotification({ title, body, targetGroup, newSignupDays }) {
+  const result = await httpsCallable(functions, 'sendPushNotification')({
+    title,
+    body,
+    targetGroup,
+    newSignupDays: newSignupDays || null,
+  })
+  return result.data
+}
+
+export async function fetchPushNotifications() {
+  const q = query(collection(db, 'pushNotifications'), orderBy('sentAt', 'desc'), limit(50))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+// ============================================
 // FAQ
 // ============================================
 
@@ -458,4 +521,23 @@ export async function updateFaq(id, data) {
 export async function deleteFaq(id) {
   await deleteDoc(doc(db, 'faqs', id))
   await logAction('delete_faq', { id })
+}
+
+// Bulk import (Excel) — chunked into atomic batches (each chunk all-or-nothing) instead of
+// one addDoc per row, so a failure partway through doesn't leave a half-imported mess for
+// typical import sizes (well under BATCH_LIMIT rows).
+export async function addFaqsBatch(rows) {
+  for (let i = 0; i < rows.length; i += BATCH_LIMIT) {
+    const chunk = rows.slice(i, i + BATCH_LIMIT)
+    const batch = writeBatch(db)
+    for (const row of chunk) {
+      batch.set(doc(collection(db, 'faqs')), {
+        ...row,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    }
+    await batch.commit()
+  }
+  await logAction('bulk_add_faq', { count: rows.length })
 }
