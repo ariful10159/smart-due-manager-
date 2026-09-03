@@ -812,6 +812,18 @@ abstract class AppLocalizations {
   /// **'Import'**
   String get importAction;
 
+  /// No description provided for @importAmountWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the due amount for {count} customer(s) in the file — ৳0 will be used for them'**
+  String importAmountWarning(int count);
+
+  /// No description provided for @importDateWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the date for {count} customer(s) in the file — today\'s date will be used for them'**
+  String importDateWarning(int count);
+
   /// No description provided for @importedResult.
   ///
   /// In en, this message translates to:

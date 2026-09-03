@@ -135,6 +135,14 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "importAction": "Import",
+  "importAmountWarning": "Couldn't read the due amount for {count} customer(s) in the file — ৳0 will be used for them",
+  "@importAmountWarning": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "importDateWarning": "Couldn't read the date for {count} customer(s) in the file — today's date will be used for them",
+  "@importDateWarning": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "importedResult": "{imported} imported",
   "@importedResult": {
     "placeholders": { "imported": { "type": "int" } }

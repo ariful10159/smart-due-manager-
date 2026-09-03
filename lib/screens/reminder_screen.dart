@@ -341,7 +341,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       if (!mounted) return;
 
       await NotificationService.scheduleReminder(
-        id: NotificationService.reminderIdFor(customer.id),
+        id: await NotificationService.reminderIdFor(customer.id),
         title: "Payment Reminder",
         body: "${customer.name} will pay now",
         scheduledDate: nextDate,
@@ -360,7 +360,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       if (nextDate == null) return;
 
       await NotificationService.scheduleReminder(
-        id: NotificationService.reminderIdFor(customer.id),
+        id: await NotificationService.reminderIdFor(customer.id),
         title: "Payment Reminder",
         body: "${customer.name} will pay now",
         scheduledDate: nextDate,
@@ -403,7 +403,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
     final colors = AppColors.of(context);
     try {
       await _repo.clearReminder(customer.id);
-      await NotificationService.cancelReminder(NotificationService.reminderIdFor(customer.id));
+      await NotificationService.cancelReminder(await NotificationService.reminderIdFor(customer.id));
 
       if (!mounted) return;
 
@@ -679,7 +679,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
       // ✅ এখন Settings-এ সেভ করা টেমপ্লেট থেকে SMS মেসেজ তৈরি হচ্ছে
       await NotificationService.scheduleReminder(
-        id: NotificationService.reminderIdFor(customer.id),
+        id: await NotificationService.reminderIdFor(customer.id),
         title: "Payment Reminder",
         body: "${customer.name} will pay now",
         scheduledDate: newDate,

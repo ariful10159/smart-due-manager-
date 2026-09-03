@@ -92,6 +92,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<pw.Document> _generatePdf(Customer customer) async {
     final payments = await _customerRepo.streamPayments(customer.id).first;
+    // ✅ উপরের await চলাকালীন ইউজার স্ক্রিন থেকে back করে বেরিয়ে গেলে এই
+    // State/context deactivated হয়ে যায় — তখন AppSettingsScope.of(context)
+    // সরাসরি throw করত এবং _printPdf() এ কোনো try/catch না থাকায় সেটা
+    // unhandled exception/crash হয়ে যেত। এখন mounted চেক করে একটা সাধারণ,
+    // caller-এর try/catch এ ধরা পড়ার মতো এরর ছুঁড়ে দেওয়া হচ্ছে।
+    if (!mounted) {
+      throw StateError('Customer detail screen is no longer mounted');
+    }
     final settings = AppSettingsScope.of(context).settings;
     final isBn = settings.languageCode != 'en';
     // ✅ PDF widget tree-এর ভেতর BuildContext না থাকায় AppLocalizations ব্যবহার
@@ -264,8 +272,24 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Future<void> _printPdf(Customer customer) async {
-    final pdf = await _generatePdf(customer);
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+    // ✅ আগে এখানে কোনো try/catch ছিল না — PDF generate হওয়ার সময় (async)
+    // দ্রুত back করে বেরিয়ে গেলে _generatePdf() এর ভেতরের deactivated-context
+    // এরর সরাসরি unhandled exception/crash হয়ে যেত। এখন _downloadPdf() এর
+    // মতোই catch করে, mounted থাকলে বন্ধুত্বপূর্ণ মেসেজ দেখানো হচ্ছে, নাহলে
+    // চুপচাপ (স্ক্রিন আর নেই, দেখানোর কিছু নেই) বাদ দেওয়া হচ্ছে।
+    try {
+      final pdf = await _generatePdf(customer);
+      await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+    } catch (_) {
+      if (!mounted) return;
+      final colors = AppColors.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: colors.due,
+          content: Text(AppLocalizations.of(context)!.downloadFailed),
+        ),
+      );
+    }
   }
 
   // ✅ আগে সরাসরি '/storage/emulated/0/Download' এ raw path দিয়ে ফাইল লিখত —
@@ -317,9 +341,13 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       lastPaymentDate: currentCustomer.lastPaymentDate,
     );
 
+    // ✅ এই মুহূর্তের totalDue (updatedDue) payment ডকুমেন্টেই স্ন্যাপশট করে
+    // রাখা হচ্ছে — পরে আরও payment/due যোগ হয়ে customer.totalDue বদলে গেলেও
+    // এই পুরনো payment-এর receipt সবসময় তার নিজের সময়কার সঠিক ব্যালেন্স
+    // দেখাবে (receipt_pdf_service.dart দেখুন)।
     await _customerRepo.addPayment(
       customerId: currentCustomer.id,
-      payment: payment,
+      payment: payment.copyWith(balanceAfter: updatedDue),
     );
 
     // ✅ কাস্টমার আসলেই টাকা পরিশোধ করলে (due বাড়ানো নয়) payment সেভের সাথে সাথেই
@@ -378,7 +406,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     await NotificationService.scheduleReminder(
-      id: NotificationService.reminderIdFor(customer.id),
+      id: await NotificationService.reminderIdFor(customer.id),
       title: l10n.reminderNotificationTitle,
       body: l10n.reminderNotificationBody(customer.name),
       scheduledDate: scheduledDateTime,
@@ -489,7 +517,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       final l10n = AppLocalizations.of(context)!;
 
       await NotificationService.scheduleReminder(
-        id: NotificationService.reminderIdFor(customer.id),
+        id: await NotificationService.reminderIdFor(customer.id),
         title: l10n.reminderNotificationTitle,
         body: l10n.reminderNotificationBody(customer.name),
         scheduledDate: nextDate,
@@ -635,7 +663,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     final colors = AppColors.of(context);
     try {
       await _customerRepo.clearReminder(customer.id);
-      await NotificationService.cancelReminder(NotificationService.reminderIdFor(customer.id));
+      await NotificationService.cancelReminder(await NotificationService.reminderIdFor(customer.id));
 
       if (!mounted) return;
 

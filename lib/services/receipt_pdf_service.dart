@@ -44,12 +44,19 @@ class ReceiptPdfService {
     final isPayment = payment.type == PaymentType.payment;
     final currencyFmt = NumberFormat('#,##0.00');
     final dateFmt = DateFormat('d/M/yyyy');
-    final isFullyPaid = customer.totalDue <= 0;
+
+    // ✅ এই transaction-এর ঠিক পরে ব্যালেন্স কত ছিল — payment.balanceAfter
+    // (এই fix-এর পর থেকে সেভ করা payment এ থাকে) থাকলে সেটাই ব্যবহার হয়,
+    // যাতে পরে customer.totalDue বদলে গেলেও পুরনো receipt ভুল ব্যালেন্স না
+    // দেখায়। এই fix-এর আগের payment (balanceAfter null) এর জন্য আগের মতোই
+    // customer-এর বর্তমান (live) totalDue তেই fallback করা হয়।
+    final resolvedBalance = payment.balanceAfter ?? customer.totalDue;
+    final isFullyPaid = resolvedBalance <= 0;
 
     // ✅ আগের বকেয়া (এই transaction এর আগে ব্যালেন্স কত ছিল)
     final previousDue = isPayment
-        ? customer.totalDue + payment.amount + payment.discount
-        : customer.totalDue - payment.amount;
+        ? resolvedBalance + payment.amount + payment.discount
+        : resolvedBalance - payment.amount;
 
     // ✅ বাংলা টেক্সট হতে পারে এমন সব field আগে থেকেই ছবি বানিয়ে রাখা হচ্ছে
     final businessNameImg = await bengaliTextImage(
@@ -311,7 +318,7 @@ class ReceiptPdfService {
                           children: [
                             pw.Text(t('বাকি বকেয়া', 'Balance Due'), style: pw.TextStyle(font: boldFont, fontSize: 13)),
                             pw.Text(
-                              '${settings.currencySymbol}${currencyFmt.format(customer.totalDue)}',
+                              '${settings.currencySymbol}${currencyFmt.format(resolvedBalance < 0 ? 0 : resolvedBalance)}',
                               style: pw.TextStyle(
                                 font: boldFont,
                                 fontSize: 14,

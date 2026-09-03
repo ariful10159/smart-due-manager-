@@ -63,14 +63,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           verifyButtonLabel: l10n.verifyAndCreateAccount,
           onVerify: (verificationId, smsCode) => AuthService.verifyOtpAndRegister(
             name: name,
-            phone: phone,
             password: password,
             verificationId: verificationId,
             smsCode: smsCode,
           ),
           onAutoVerify: (credential) => AuthService.registerWithAutoVerifiedCredential(
             name: name,
-            phone: phone,
             password: password,
             credential: credential,
           ),

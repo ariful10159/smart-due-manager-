@@ -551,6 +551,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   }
 
   Future<void> _save() async {
+    // ✅ দ্রুত দুইবার ট্যাপ করলে duplicate কাস্টমার তৈরি হতে পারত — প্রথম ট্যাপে
+    // _isSaving true হওয়ার পরেও বাটন spinner-এ বদলে যাওয়ার আগ পর্যন্ত (এক
+    // ফ্রেমের মতো সময়) পুরনো বাটনটাই স্ক্রিনে থেকে যায়, সেই ফাঁকে দ্বিতীয়
+    // ট্যাপ আবার পুরো _save() চালিয়ে আলাদা id সহ আরেকটা কাস্টমার লিখে ফেলত।
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;

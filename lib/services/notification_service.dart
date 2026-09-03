@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzData;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
@@ -105,20 +106,34 @@ class NotificationService {
     debugPrint('🗑️ REMINDER NOTIFICATION CANCELLED: $id');
   }
 
-  // ✅ আগে schedule/cancel reminder দুটোতেই সরাসরি `customer.hashCode` ব্যবহার হতো —
-  // কিন্তু Customer ক্লাসে hashCode override করা নেই, তাই Dart এর ডিফল্ট identity-based
-  // hashCode ব্যবহার হতো, যেটা customer.id এর সাথে সম্পর্কহীন এবং প্রতিবার নতুন
-  // Customer instance তৈরি হলেই (Firestore stream rebuild, app restart) বদলে যায়।
-  // ফলে cancelReminder() আসল schedule করা notification-টা কখনো খুঁজেই পেত না —
-  // stale/duplicate notification থেকে যেত। এখানে customer.id (স্থায়ী Firestore doc id)
-  // থেকে নিজস্ব djb2 hash দিয়ে একটা সবসময়-একই int বানানো হচ্ছে — Dart এর
-  // String.hashCode ব্যবহার করিনি কারণ সেটার exact algorithm ভবিষ্যতে অপরিবর্তিত
-  // থাকার কোনো ভাষা-স্পেসিফিকেশন গ্যারান্টি নেই, এই ফাংশনটার আছে।
-  static int reminderIdFor(String customerId) {
-    var hash = 5381;
-    for (final unit in customerId.codeUnits) {
-      hash = ((hash << 5) + hash + unit) & 0x7fffffff;
-    }
-    return hash;
+  // ✅ আগে customerId কে djb2 hash করে একটা int notification id বানানো হতো।
+  // এটা customer.id এর সাথে সবসময় একই ম্যাপ হতো (আগের identity-hashCode বাগ
+  // ঠিক করেছিল), কিন্তু hash হওয়ায় দুইজন ভিন্ন কাস্টমারের id একই সংখ্যায়
+  // মিলে যাওয়ার (collision) সম্ভাবনা থেকেই যেত — কাস্টমার সংখ্যা কয়েকশ/হাজার
+  // হলে birthday-paradox অনুযায়ী এই ঝুঁকি বাস্তব হয়ে ওঠে। Collision হলে
+  // একজনের schedule করা notification অন্যজনেরটা silently overwrite করে
+  // ফেলত — কেউ বুঝতেই পারত না কেন তার reminder notification আসছে না।
+  //
+  // এখন প্রতিটা customerId-কে ডিভাইসে (SharedPreferences) স্থায়ীভাবে একটা
+  // sequential, guaranteed-unique id assign করে রাখা হয় — hash না হওয়ায়
+  // কখনো দুইজনের id মিলবে না।
+  static const _idMapKey = 'notification_id_map_v1';
+  static const _nextIdKey = 'notification_next_id_v1';
+
+  static Future<int> reminderIdFor(String customerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_idMapKey);
+    final map = raw != null
+        ? Map<String, dynamic>.from(jsonDecode(raw) as Map)
+        : <String, dynamic>{};
+
+    final existing = map[customerId];
+    if (existing is int) return existing;
+
+    final nextId = prefs.getInt(_nextIdKey) ?? 1;
+    map[customerId] = nextId;
+    await prefs.setString(_idMapKey, jsonEncode(map));
+    await prefs.setInt(_nextIdKey, nextId + 1);
+    return nextId;
   }
 }

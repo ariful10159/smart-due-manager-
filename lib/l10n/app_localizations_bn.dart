@@ -388,6 +388,16 @@ class AppLocalizationsBn extends AppLocalizations {
   String get importAction => 'Import করুন';
 
   @override
+  String importAmountWarning(int count) {
+    return 'ফাইলে $count জন কাস্টমারের বকেয়া পরিমাণ পড়া যায়নি — তাদের জন্য ৳0 বসানো হবে';
+  }
+
+  @override
+  String importDateWarning(int count) {
+    return 'ফাইলে $count জন কাস্টমারের তারিখ পড়া যায়নি — তাদের জন্য আজকের তারিখ বসানো হবে';
+  }
+
+  @override
   String importedResult(int imported) {
     return '$imported জন import হয়েছে';
   }

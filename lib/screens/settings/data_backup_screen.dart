@@ -36,7 +36,7 @@ class _DataBackupScreenState extends State<DataBackupScreen> {
     if (csvContent == null) return; // ইউজার বাতিল করেছে
 
     final parsed = BackupService.parseCustomersFromCsv(csvContent);
-    if (parsed.isEmpty) {
+    if (parsed.customers.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.noValidCustomersFound)),
@@ -46,11 +46,34 @@ class _DataBackupScreenState extends State<DataBackupScreen> {
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
+    // ✅ Excel দিয়ে CSV এডিট করলে সংখ্যায় কমা বা তারিখের ফরম্যাট বদলে যেতে
+    // পারে — সেরকম row থাকলে import করার আগেই ইউজারকে সতর্ক করা হচ্ছে, যাতে
+    // চুপচাপ ৳0/আজকের তারিখ বসে যাওয়ার আগেই বুঝে বাতিল/সংশোধন করা যায়
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.confirmImportTitle),
-        content: Text(l10n.confirmImportBody(parsed.length)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.confirmImportBody(parsed.customers.length)),
+            if (parsed.amountWarnings > 0) ...[
+              const SizedBox(height: 10),
+              Text(
+                '⚠️ ${l10n.importAmountWarning(parsed.amountWarnings)}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+            if (parsed.dateWarnings > 0) ...[
+              const SizedBox(height: 10),
+              Text(
+                '⚠️ ${l10n.importDateWarning(parsed.dateWarnings)}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -67,7 +90,7 @@ class _DataBackupScreenState extends State<DataBackupScreen> {
 
     setState(() => _importingBackup = true);
     try {
-      final result = await CustomerRepository().importCustomers(parsed);
+      final result = await CustomerRepository().importCustomers(parsed.customers);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

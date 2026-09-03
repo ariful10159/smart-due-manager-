@@ -387,6 +387,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importAction => 'Import';
 
   @override
+  String importAmountWarning(int count) {
+    return 'Couldn\'t read the due amount for $count customer(s) in the file — ৳0 will be used for them';
+  }
+
+  @override
+  String importDateWarning(int count) {
+    return 'Couldn\'t read the date for $count customer(s) in the file — today\'s date will be used for them';
+  }
+
+  @override
   String importedResult(int imported) {
     return '$imported imported';
   }

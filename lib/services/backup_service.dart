@@ -57,24 +57,65 @@ class BackupService {
     return File(path).readAsString();
   }
 
+  // ✅ কয়েকটা সবচেয়ে-সম্ভাব্য fallback date ফরম্যাট — Excel এ CSV খুলে সেভ
+  // করলে প্রায়ই yyyy-MM-dd বদলে লোকাল ফরম্যাটে (slash-সহ) সেভ হয়ে যায়
+  static final List<DateFormat> _dateFormats = [
+    DateFormat('yyyy-MM-dd'),
+    DateFormat('yyyy/MM/dd'),
+    DateFormat('dd-MM-yyyy'),
+    DateFormat('dd/MM/yyyy'),
+  ];
+
   /// ✅ exportCustomersToCsv এর ঠিক উল্টো — CSV কনটেন্ট থেকে Customer লিস্ট বানায়।
   /// প্রতিটা Customer এর `id` ও `ownerId` খালি স্ট্রিং থাকে — Firestore এ লেখার সময়
   /// (CustomerRepository.importCustomers) fresh id ও বর্তমান user এর ownerId বসানো হয়,
   /// যাতে কেউ এডিট করা CSV দিয়ে অন্য owner এর ডেটা স্পুফ করতে না পারে।
   /// নাম বা ফোন খালি থাকা row গুলো silently বাদ যায় (malformed row হিসেবে ধরা হয়)।
-  static List<Customer> parseCustomersFromCsv(String csvContent) {
+  ///
+  /// ✅ আগে বকেয়া amount বা তারিখ parse করতে ব্যর্থ হলে চুপচাপ ৳0 / আজকের
+  /// তারিখ বসিয়ে দেওয়া হতো — কোনো সংকেত ছাড়াই। এই CSV সাধারণত Excel এ খুলে
+  /// এডিট করা হয়, আর Excel সেভ করার সময় প্রায়ই সংখ্যায় কমা (1,500.00) বা
+  /// তারিখের ফরম্যাট বদলে দেয় — ফলে re-import করলে customer-দের বকেয়া/তারিখ
+  /// নিঃশব্দে ভুল হয়ে যেত। এখন এই ধরনের row গুলো গুনে রাখা হয় এবং
+  /// DataBackupScreen সেটা confirm dialog এ ইউজারকে জানায়, যাতে ভুল ডেটা
+  /// import হওয়ার আগেই বুঝে বাতিল/সংশোধন করা যায়।
+  static ({List<Customer> customers, int amountWarnings, int dateWarnings})
+      parseCustomersFromCsv(String csvContent) {
     final rows = const CsvToListConverter(eol: '\n').convert(csvContent);
-    if (rows.length <= 1) return [];
+    if (rows.length <= 1) {
+      return (customers: <Customer>[], amountWarnings: 0, dateWarnings: 0);
+    }
 
-    final dateFmt = DateFormat('yyyy-MM-dd');
+    var amountWarnings = 0;
+    var dateWarnings = 0;
+
+    double parseAmount(dynamic value) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isEmpty) return 0.0;
+      // ✅ Excel প্রায়ই সংখ্যায় থাউজেন্ড সেপারেটর (কমা) বা কারেন্সি সাইন যোগ
+      // করে দেয় — সেগুলো বাদ দিয়ে চেষ্টা করা হচ্ছে, যাতে "1,500.00" এর মতো
+      // আসলে বৈধ সংখ্যাকে অকারণে ব্যর্থ (এবং ৳0) না ধরা হয়
+      final cleaned = text.replaceAll(RegExp(r'[^\d.\-]'), '');
+      final parsed = double.tryParse(cleaned);
+      if (parsed == null) {
+        amountWarnings++;
+        return 0.0;
+      }
+      return parsed;
+    }
+
     DateTime parseDate(dynamic value, DateTime fallback) {
       final text = value?.toString().trim() ?? '';
       if (text.isEmpty) return fallback;
-      try {
-        return dateFmt.parseStrict(text);
-      } catch (_) {
-        return fallback;
+      for (final format in _dateFormats) {
+        try {
+          return format.parseStrict(text);
+        } catch (_) {
+          continue;
+        }
       }
+      dateWarnings++;
+      return fallback;
     }
 
     final now = DateTime.now();
@@ -94,7 +135,7 @@ class BackupService {
         name: name,
         phone: phone,
         address: address.isEmpty ? null : address,
-        totalDue: double.tryParse(row[4].toString()) ?? 0.0,
+        totalDue: parseAmount(row[4]),
         lastPaymentDate: parseDate(row[5], now),
         createdAt: parseDate(row[6], now),
         isHidden: row[7].toString().trim() == 'হ্যাঁ',
@@ -102,6 +143,6 @@ class BackupService {
       ));
     }
 
-    return customers;
+    return (customers: customers, amountWarnings: amountWarnings, dateWarnings: dateWarnings);
   }
 }

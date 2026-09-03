@@ -17,6 +17,13 @@ class Payment {
   final String? receiptImageUrl;
   final File? receiptImageFile;
   final DateTime date;
+  // ✅ এই transaction-এর ঠিক পরে customer.totalDue কত ছিল, সেটার স্ন্যাপশট।
+  // Receipt PDF-এ "Previous Due"/"Balance Due" আগে customer-এর *বর্তমান* live
+  // totalDue থেকে হিসাব হতো — তাই পরে নতুন payment/due যোগ হলে পুরনো receipt
+  // আবার শেয়ার করলে ভুল ব্যালেন্স দেখাত। নতুন payment থেকে এই ফিল্ড সেভ করা
+  // হয়; পুরনো (এই ফিক্সের আগের) payment ডকুমেন্টে এটা null থাকবে, সেক্ষেত্রে
+  // receipt_pdf_service.dart আগের মতোই live totalDue এ fallback করে।
+  final double? balanceAfter;
 
   const Payment({
     required this.id,
@@ -30,7 +37,25 @@ class Payment {
     this.description,
     this.receiptImageUrl,
     this.receiptImageFile,
+    this.balanceAfter,
   });
+
+  Payment copyWith({double? balanceAfter}) {
+    return Payment(
+      id: id,
+      customerId: customerId,
+      amount: amount,
+      type: type,
+      date: date,
+      discount: discount,
+      paymentMethod: paymentMethod,
+      note: note,
+      description: description,
+      receiptImageUrl: receiptImageUrl,
+      receiptImageFile: receiptImageFile,
+      balanceAfter: balanceAfter ?? this.balanceAfter,
+    );
+  }
 
   static String _asString(dynamic value, {String fallback = ''}) {
     if (value == null) return fallback;
@@ -104,6 +129,7 @@ class Payment {
     'description': description,
     'receiptImageUrl': receiptImageUrl,
     'date': Timestamp.fromDate(date),
+    'balanceAfter': balanceAfter,
   };
 
   // ✅ From Firestore Map (আপডেট ও সম্পূর্ণ সুরক্ষিত)
@@ -125,6 +151,7 @@ class Payment {
 
       // ✅ Handle Timestamp OR String
       date: _asDateTime(map['date']),
+      balanceAfter: map['balanceAfter'] == null ? null : _asDouble(map['balanceAfter']),
     );
   }
 }

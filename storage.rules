@@ -7,9 +7,18 @@ service firebase.storage {
     // business_logos/{uid}.jpg
     // ============================================
     match /business_logos/{uid}.jpg {
-      allow read, write: if request.auth != null &&
+      allow read: if request.auth != null &&
         (request.auth.uid == uid ||
          firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid)));
+
+      // ✅ আগে সাইজ/টাইপের কোনো সীমা ছিল না — owner (বা admin) হলেই যেকোনো
+      // সাইজের/টাইপের ফাইল ".jpg" নামে আপলোড করা যেত (storage cost abuse
+      // ঝুঁকি)। এখন সর্বোচ্চ ২MB এবং সত্যিকারের image ফাইল ছাড়া আপলোড হবে না।
+      allow write: if request.auth != null &&
+        (request.auth.uid == uid ||
+         firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))) &&
+        request.resource.size <= 2 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
     }
 
     // ডিফল্টভাবে অন্য সব রিড-রাইট বন্ধ

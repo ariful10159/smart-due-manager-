@@ -132,6 +132,14 @@
   "confirmImportTitle": "Import নিশ্চিত করুন",
   "confirmImportBody": "{count} জন কাস্টমার পাওয়া গেছে। এগুলো আপনার অ্যাকাউন্টে যোগ করা হবে (যাদের ফোন নাম্বার ইতিমধ্যে আছে, তারা duplicate হিসেবে বাদ যাবে)। এগিয়ে যাবেন?",
   "importAction": "Import করুন",
+  "importAmountWarning": "ফাইলে {count} জন কাস্টমারের বকেয়া পরিমাণ পড়া যায়নি — তাদের জন্য ৳0 বসানো হবে",
+  "@importAmountWarning": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "importDateWarning": "ফাইলে {count} জন কাস্টমারের তারিখ পড়া যায়নি — তাদের জন্য আজকের তারিখ বসানো হবে",
+  "@importDateWarning": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "importedResult": "{imported} জন import হয়েছে",
   "skippedSuffix": ", {skipped} জন duplicate হিসেবে বাদ গেছে",
   "importFailed": "Import ব্যর্থ, আবার চেষ্টা করুন",

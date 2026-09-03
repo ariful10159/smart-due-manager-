@@ -80,7 +80,6 @@ class AuthService {
   // reset — দুটোই সম্ভব হয়, কোনো backend/Cloud Function ছাড়াই।
   static Future<String?> _registerWithPhoneCredential({
     required String name,
-    required String phone,
     required String password,
     required PhoneAuthCredential credential,
   }) async {
@@ -94,8 +93,21 @@ class AuthService {
         return 'verification-failed';
       }
 
+      // ✅ Security fix: আগে এখানে registration form থেকে আসা 'phone' string
+      // দিয়ে email বানানো হতো, OTP দিয়ে আসলে যেই নাম্বার verify হলো
+      // (user.phoneNumber) সেটা না — ফলে কেউ নিজের নাম্বার verify করে অন্য
+      // কারো নাম্বারের নামে email/phone লিখে ফেলতে পারত (phone squatting/
+      // impersonation), কারণ কোনো server-side check এই দুটো মেলায় না। এখন
+      // Firebase নিজেই যেই নাম্বার verify করেছে (user.phoneNumber) শুধু
+      // সেটাই ব্যবহার করা হচ্ছে — client-supplied phone string আর trust করা
+      // হচ্ছে না।
+      final verifiedPhone = user.phoneNumber;
+      if (verifiedPhone == null) {
+        return 'verification-failed';
+      }
+
       final emailCredential = EmailAuthProvider.credential(
-        email: _phoneToEmail(phone),
+        email: _phoneToEmail(verifiedPhone),
         password: password,
       );
       await user.linkWithCredential(emailCredential).timeout(const Duration(seconds: 15));
@@ -116,7 +128,7 @@ class AuthService {
 
       await _firestore.collection('users').doc(user.uid).set({
         'name': name,
-        'phone': _normalizePhone(phone),
+        'phone': _normalizePhone(verifiedPhone),
         'createdAt': Timestamp.now(),
         'acceptedPrivacyVersion': privacyVersion,
         'acceptedPrivacyAt': Timestamp.now(),
@@ -137,7 +149,6 @@ class AuthService {
   // ✅ ম্যানুয়ালি OTP কোড দিয়ে ভেরিফাই করে রেজিস্ট্রেশন সম্পন্ন করা
   static Future<String?> verifyOtpAndRegister({
     required String name,
-    required String phone,
     required String password,
     required String verificationId,
     required String smsCode,
@@ -148,7 +159,6 @@ class AuthService {
     );
     return _registerWithPhoneCredential(
       name: name,
-      phone: phone,
       password: password,
       credential: credential,
     );
@@ -158,13 +168,11 @@ class AuthService {
   // করেই সরাসরি রেজিস্ট্রেশন সম্পন্ন করা
   static Future<String?> registerWithAutoVerifiedCredential({
     required String name,
-    required String phone,
     required String password,
     required PhoneAuthCredential credential,
   }) {
     return _registerWithPhoneCredential(
       name: name,
-      phone: phone,
       password: password,
       credential: credential,
     );
