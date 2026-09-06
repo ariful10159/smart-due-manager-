@@ -39,6 +39,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataLoadError => 'Failed to load data, please login again';
 
   @override
+  String get onboardingGetStarted => 'Get Started';
+
+  @override
+  String get onboardingTitle => 'Welcome to Smart Due';
+
+  @override
+  String get onboardingSubtitle =>
+      'Track customer dues, payments, and reminders — all in one simple app, built for shop owners.';
+
+  @override
+  String get onboardingFeature1 => 'Customer Ledger';
+
+  @override
+  String get onboardingFeature2 => 'Smart Reminders';
+
+  @override
+  String get onboardingFeature3 => 'PDF Receipts';
+
+  @override
   String get todaysCollection => 'Today\'s Collection';
 
   @override
@@ -210,6 +229,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get businessPhoneLabel => 'Business Phone';
+
+  @override
+  String get businessPhoneLockedHint =>
+      'This is your login number and can\'t be edited';
 
   @override
   String get bkashNumberLabel => 'bKash/Nagad Number';

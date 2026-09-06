@@ -39,6 +39,25 @@ class AppLocalizationsBn extends AppLocalizations {
   String get dataLoadError => 'ডেটা লোড করতে সমস্যা হয়েছে, আবার লগইন করুন';
 
   @override
+  String get onboardingGetStarted => 'শুরু করি';
+
+  @override
+  String get onboardingTitle => 'Smart Due-তে স্বাগতম';
+
+  @override
+  String get onboardingSubtitle =>
+      'বকেয়া, পেমেন্ট ও রিমাইন্ডার — সব এক জায়গায়, দোকান মালিকদের জন্য বানানো একটা সহজ অ্যাপ।';
+
+  @override
+  String get onboardingFeature1 => 'কাস্টমার হিসাব';
+
+  @override
+  String get onboardingFeature2 => 'স্মার্ট রিমাইন্ডার';
+
+  @override
+  String get onboardingFeature3 => 'PDF রশিদ';
+
+  @override
   String get todaysCollection => 'আজকের Collection';
 
   @override
@@ -207,6 +226,10 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get businessPhoneLabel => 'দোকানের ফোন নাম্বার';
+
+  @override
+  String get businessPhoneLockedHint =>
+      'এটি আপনার লগইন নাম্বার, এডিট করা যাবে না';
 
   @override
   String get bkashNumberLabel => 'bKash/Nagad নাম্বার';

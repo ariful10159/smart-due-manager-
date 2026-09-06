@@ -158,6 +158,42 @@ abstract class AppLocalizations {
   /// **'Failed to load data, please login again'**
   String get dataLoadError;
 
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboardingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Smart Due'**
+  String get onboardingTitle;
+
+  /// No description provided for @onboardingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track customer dues, payments, and reminders — all in one simple app, built for shop owners.'**
+  String get onboardingSubtitle;
+
+  /// No description provided for @onboardingFeature1.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Ledger'**
+  String get onboardingFeature1;
+
+  /// No description provided for @onboardingFeature2.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Reminders'**
+  String get onboardingFeature2;
+
+  /// No description provided for @onboardingFeature3.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF Receipts'**
+  String get onboardingFeature3;
+
   /// No description provided for @todaysCollection.
   ///
   /// In en, this message translates to:
@@ -493,6 +529,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Business Phone'**
   String get businessPhoneLabel;
+
+  /// No description provided for @businessPhoneLockedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your login number and can\'t be edited'**
+  String get businessPhoneLockedHint;
 
   /// No description provided for @bkashNumberLabel.
   ///

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,6 +26,27 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   late TextEditingController _bkashNumberController;
   bool _uploadingLogo = false;
   bool _initialized = false;
+
+  // ✅ Owner Name আগে কখনো সেভ করা না থাকলে (খালি), রেজিস্ট্রেশনের সময় দেওয়া
+  // নাম (users/{uid}.name — Home স্ক্রিনের "Good Morning" গ্রিটিং কার্ডেও এই
+  // একই ফিল্ড থেকে নাম দেখানো হয়) দিয়ে ডিফল্ট ভরে দেওয়া হয়, যাতে নতুন
+  // ইউজারকে আবার নিজের নাম টাইপ করতে না হয়। এটা শুধু text field prefill করে —
+  // Save চাপার আগ পর্যন্ত database এ কিছু লেখে না।
+  Future<void> _prefillOwnerNameFromAccount() async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final name = (doc.data()?['name'] as String?)?.trim();
+      if (!mounted || name == null || name.isEmpty) return;
+      if (_ownerNameController.text.trim().isEmpty) {
+        setState(() => _ownerNameController.text = name);
+      }
+    } catch (_) {
+      // ✅ ব্যর্থ হলেও চুপচাপ স্কিপ — ফিল্ড খালি থেকে যাবে, ইউজার ম্যানুয়ালি টাইপ করতে পারবেন
+    }
+  }
+
 
   @override
   void dispose() {
@@ -166,9 +188,16 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
       _nameController = TextEditingController(text: settings.businessName);
       _ownerNameController = TextEditingController(text: settings.ownerName);
       _addressController = TextEditingController(text: settings.businessAddress);
-      _businessPhoneController = TextEditingController(text: settings.businessPhone);
+      // ✅ Business Phone এখন আর ম্যানুয়ালি এডিটযোগ্য না — সবসময় লগইন করা
+      // ফোন নাম্বার (AuthService.currentPhone, একাউন্টের সাথে verify করা)
+      // দেখানো হয়, আগে সেভ করা ভিন্ন কোনো নাম্বার থাকলেও সেটা ইগনোর করে।
+      _businessPhoneController =
+          TextEditingController(text: AuthService.currentPhone ?? settings.businessPhone);
       _bkashNumberController = TextEditingController(text: settings.bkashNumber);
       _initialized = true;
+      if (settings.ownerName.trim().isEmpty) {
+        _prefillOwnerNameFromAccount();
+      }
     }
 
     return Scaffold(
@@ -296,13 +325,16 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _businessPhoneController,
+            readOnly: true,
             keyboardType: TextInputType.phone,
-            style: TextStyle(color: colors.textPrimary),
-            validator: (v) => _validateOptionalPhone(v, l10n),
+            style: TextStyle(color: colors.textSecondary),
             decoration: InputDecoration(
               labelText: l10n.businessPhoneLabel,
+              helperText: l10n.businessPhoneLockedHint,
+              helperStyle: TextStyle(color: colors.textSecondary, fontSize: 11.5),
               labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
               prefixIcon: Icon(Icons.call_outlined, color: colors.textSecondary, size: 20),
+              suffixIcon: Icon(Icons.lock_outline_rounded, color: colors.textSecondary, size: 18),
               filled: true,
               fillColor: colors.surfaceAlt,
               border: OutlineInputBorder(
@@ -315,7 +347,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: settings.accentColor, width: 1.5),
+                borderSide: BorderSide(color: colors.borderColor),
               ),
             ),
           ),

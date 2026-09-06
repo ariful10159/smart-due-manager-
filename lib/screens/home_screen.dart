@@ -20,6 +20,7 @@ import '../widgets/app_settings_scope.dart';
 import '../widgets/announcement_banner.dart';
 import '../widgets/announcement_image_popup.dart';
 import '../route_observer.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,12 +36,30 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   bool _loadingCollection = true;
   double _todayCollection = 0;
   double _weekCollection = 0;
+  String? _userName;
 
   @override
   void initState() {
     super.initState();
     _loadCollectionStats();
+    _loadUserName();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAnnouncementPopup());
+  }
+
+  // ✅ Greeting card-এ ইউজারের নাম দেখানোর জন্য registration-এর সময় Firestore
+  // এর users/{uid} ডকুমেন্টে সেভ করা 'name' ফিল্ড থেকে fetch করা হয়
+  Future<void> _loadUserName() async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final name = (doc.data()?['name'] as String?)?.trim();
+      if (!mounted || name == null || name.isEmpty) return;
+      setState(() => _userName = name);
+    } catch (_) {
+      // ✅ নাম fetch ব্যর্থ হলেও চুপচাপ স্কিপ করা হয় — greeting card এ শুধু নাম ছাড়া
+      // ডিফল্ট greeting দেখাবে, পুরো Home স্ক্রিন ব্লক হবে না
+    }
   }
 
   @override
@@ -222,6 +241,15 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       debugPrint('Failed to load collection stats: $e');
       if (!mounted) return;
       setState(() => _loadingCollection = false);
+      // ✅ Logout করার ঠিক সময় এই মেথডের কোনো Firestore request in-flight
+      // থাকলে sign-out এ auth token invalidate হয়ে সেটা permission এরর দিয়ে
+      // ব্যর্থ হয় — HomeScreen widget তখনও এক ফ্রেমের জন্য mounted থাকে
+      // (authStateChanges স্ট্রিম রিবিল্ড হতে একটু সময় নেয়), ফলে এই SnackBar
+      // দেখানো হয়ে যেত এবং MaterialApp-এর root ScaffoldMessenger একই থাকায়
+      // (HomeScreen নিজে আলাদা কোনো ScaffoldMessenger তৈরি করে না) সেটা পরের
+      // LoginScreen এ চলে গিয়েও দেখা যেত। currentUser null মানে ইউজার লগ-আউট
+      // হয়ে গেছেন — তখন এই stale এরর দেখানোর কোনো মানে নেই, তাই চুপচাপ স্কিপ।
+      if (AuthService.currentUser == null) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.failedToLoadCollectionStats)),
       );
@@ -368,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(14, 10, 14, 90),
                       children: [
-                        _GreetingHeader(greeting: _greeting()),
+                        _GreetingHeader(greeting: _greeting(), userName: _userName),
                         const SizedBox(height: 14),
 
                         Row(
@@ -574,14 +602,16 @@ class _AppBarIconButton extends StatelessWidget {
 }
 
 class _GreetingHeader extends StatelessWidget {
-  const _GreetingHeader({required this.greeting});
+  const _GreetingHeader({required this.greeting, this.userName});
 
   final String greeting;
+  final String? userName;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final today = DateFormat('EEEE, d MMMM yyyy').format(DateTime.now());
+    final name = userName?.trim() ?? '';
 
     return Container(
       width: double.infinity,
@@ -608,7 +638,7 @@ class _GreetingHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  greeting,
+                  name.isEmpty ? greeting : '$greeting, $name',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,

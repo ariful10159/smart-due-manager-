@@ -24,6 +24,7 @@ import 'widgets/app_lock_gate.dart'; // ✅ AppLockGate ইমপোর্ট �
 import 'widgets/account_status_gate.dart'; // ✅ Admin panel থেকে disabled হলে ব্লক করার জন্য
 import 'widgets/app_config_gate.dart'; // ✅ Admin panel থেকে maintenance/force-update ব্লক করার জন্য
 import 'widgets/policy_acceptance_gate.dart'; // ✅ পলিসি আপডেট হলে re-accept করানোর জন্য
+import 'widgets/onboarding_gate.dart'; // ✅ প্রথমবার (লগইন করার আগে) walkthrough দেখানোর জন্য
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -176,7 +177,7 @@ class AuthWrapper extends StatelessWidget {
           return const AccountStatusGate(child: PolicyAcceptanceGate(child: HomeScreen()));
         }
 
-        return const LoginScreen();
+        return const OnboardingGate(child: LoginScreen());
       },
     );
   }
